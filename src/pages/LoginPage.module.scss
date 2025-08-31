@@ -1,4 +1,4 @@
-@use '../styles/mixins' as *;
+@use '../styles' as s;
 
 .loginPage {
   position: relative;
@@ -136,7 +136,7 @@
 
 
 
-  @include respond(xxl) {
+  @include s.respond(xxl) {
   .loginPage {
     /* koristi fiksnu visinu web platna iz :root */
     width: var(--page-width); /* 1440px iz varijable */

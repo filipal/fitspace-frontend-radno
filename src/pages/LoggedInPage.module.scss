@@ -1,4 +1,4 @@
-@use '../styles/mixins' as *;
+@use '../styles' as s;
 
 .loadAvatarRow {
   width: 320px;
@@ -159,7 +159,7 @@
   border: none;
 }
 
-@include respond(xxl) {
+@include s.respond(xxl) {
   .appHeader {
     height: 70px;
     padding-top: 0;
@@ -188,7 +188,7 @@
 }
 
 
-@include respond(xl) {
+@include s.respond(xl) {
   .appHeader {
     width: var(--page-width);
     height: 70px;

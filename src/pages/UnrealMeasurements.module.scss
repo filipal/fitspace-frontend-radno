@@ -1,4 +1,4 @@
-@use '../styles/mixins' as *;
+@use '../styles' as s;
 
 .page {
   display: flex;
@@ -313,7 +313,7 @@
   order: 3; // Stavlja label na dno
 }
 
-@include respond(xxl) {
+@include s.respond(xxl) {
   .page {
     width: var(--page-width);
     max-width: var(--page-max-width);
@@ -416,6 +416,6 @@
   }
 }
 
-@include respond(lg) {
+@include s.respond(lg) {
   
 }

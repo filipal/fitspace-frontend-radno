@@ -1,4 +1,4 @@
-@use '../styles/mixins' as *;
+@use '../styles' as s;
 
 .loadingScreenPage {
   position: relative;
@@ -78,7 +78,7 @@
 }
 
 /* Desktop styles */
-@include respond(xl) {
+@include s.respond(xl) {
   .exitButton {
     top: 60px;
     left: 60px;

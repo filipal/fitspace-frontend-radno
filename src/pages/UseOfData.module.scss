@@ -1,4 +1,4 @@
-@use '../styles/mixins' as *;
+@use '../styles' as s;
 
 .useOfDataPage {
   width: var(--page-width);
@@ -100,7 +100,7 @@ ol.dataList {
   cursor: pointer;
 }
 
-@include respond(xxl) {
+@include s.respond(xxl) {
   .content {
     margin-left: 84px;
     margin-right: 89px;
