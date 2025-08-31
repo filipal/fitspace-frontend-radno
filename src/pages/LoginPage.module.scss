@@ -2,7 +2,8 @@
 
 .loginPage {
   position: relative;
-  width: min(100vw, var(--page-max-width));
+  width: 100%;
+  max-width: var(--page-max-width);
   min-height: var(--page-height);
   margin-inline: auto;
   font-family: 'INter', sans-serif;

@@ -10,6 +10,8 @@
 }
 .deleteConfirmRow {
   background: #D44B3E;
+  max-width: var(--page-max-width);
+  margin: 0 auto;  
   color: #fff;
   font-size: 20px;
   display: flex;

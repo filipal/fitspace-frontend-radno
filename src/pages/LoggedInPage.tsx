@@ -122,7 +122,7 @@ export default function LoggedInPage() {
             position: 'fixed',
             top: confirmPos.top,
             left: 0,
-            width: '100vw',
+            width: '100%',
             height: confirmPos.height,
             zIndex: 100,
             display: 'flex',
