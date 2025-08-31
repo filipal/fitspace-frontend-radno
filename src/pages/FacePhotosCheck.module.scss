@@ -1,3 +1,5 @@
+@use '../styles/mixins' as *;
+
 .facePhotosCheckPage {
   position: relative;
   width: var(--page-width);

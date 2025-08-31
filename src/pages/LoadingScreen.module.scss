@@ -1,3 +1,5 @@
+@use '../styles/mixins' as *;
+
 .loadingScreenPage {
   position: relative;
   width: var(--page-width);
@@ -76,7 +78,7 @@
 }
 
 /* Desktop styles */
-@media (min-width: 1280px) {
+@include respond(xl) {
   .exitButton {
     top: 60px;
     left: 60px;

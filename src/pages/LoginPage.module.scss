@@ -1,3 +1,5 @@
+@use '../styles/mixins' as *;
+
 .loginPage {
   position: relative;
   width: min(100vw, var(--page-max-width));
@@ -133,7 +135,7 @@
 
 
 
-  @media (min-width: 1440px) {
+  @include respond(xxl) {
   .loginPage {
     /* koristi fiksnu visinu web platna iz :root */
     width: var(--page-width); /* 1440px iz varijable */

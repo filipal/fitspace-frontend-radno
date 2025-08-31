@@ -1,4 +1,6 @@
-/* Fullscreen background and layout */
+@use '../styles/mixins' as *;
+
+
 .bodyScanPage {
   position: relative;
   width: 100vw;

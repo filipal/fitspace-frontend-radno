@@ -1,3 +1,5 @@
+@use '../styles/mixins' as *;
+
 .loadAvatarRow {
   width: 320px;
   height: 50px;
@@ -155,7 +157,7 @@
   border: none;
 }
 
-@media (min-width: 1440px) {
+@include respond(xxl) {
   .appHeader {
     height: 70px;
     padding-top: 0;
@@ -184,7 +186,7 @@
 }
 
 
-@media (min-width: 1280px) {
+@include respond(xl) {
   .appHeader {
     width: var(--page-width);
     height: 70px;

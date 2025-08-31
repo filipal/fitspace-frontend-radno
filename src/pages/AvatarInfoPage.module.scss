@@ -1,3 +1,5 @@
+@use '../styles/mixins' as *;
+
 .avatarInfoPage {
   position: relative;
   width: var(--page-width);
@@ -282,7 +284,7 @@
 
 /* Desktop pojačanje (opcionalno) */
 
-@media (min-width: 1440px) {
+@include respond(xxl) {
   .pickerValues {
     position: relative;
     height: 31px;
@@ -415,7 +417,7 @@
   }
 }
 
-@media (min-width: 1280px) {
+@include respond(xl) {
   .pickersGroup {
     width: 490px;
     max-width: 100%;

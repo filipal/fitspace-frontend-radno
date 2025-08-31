@@ -1,3 +1,5 @@
+@use '../styles/mixins' as *;
+
 .useOfDataPage {
   width: var(--page-width);
   min-height: var(--page-height);
@@ -98,7 +100,7 @@ ol.dataList {
   cursor: pointer;
 }
 
-@media (min-width: 1440px) {
+@include respond(xxl) {
   .content {
     margin-left: 84px;
     margin-right: 89px;

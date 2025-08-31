@@ -1,3 +1,5 @@
+@use '../styles/mixins' as *;
+
 .bodyPhotosCheckPage {
   position: relative;
   width: var(--page-width);

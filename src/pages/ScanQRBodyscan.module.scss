@@ -1,3 +1,5 @@
+@use '../styles/mixins' as *;
+
 .scanQRPage {
   width: var(--page-width);
   max-width: var(--page-max-width);

@@ -1,3 +1,5 @@
+@use '../styles/mixins' as *;
+
 .faceScanInfoPage {
   position: relative;
   width: var(--page-width);

@@ -1,3 +1,5 @@
+@use '../styles/mixins' as *;
+
 .page {
   display: flex;
   flex-direction: column;
@@ -30,7 +32,7 @@
 }
 
 .avatarSection {
-  width: 430px;
+  width: var(--page-width);
   height: 750px;
   position: relative;
   display: flex;
@@ -311,7 +313,7 @@
   order: 3; // Stavlja label na dno
 }
 
-@media (min-width: 1440px) {
+@include respond(xxl) {
   .page {
     width: var(--page-width);
     max-width: var(--page-max-width);
@@ -414,6 +416,6 @@
   }
 }
 
-@media (min-width: 1024px) {
+@include respond(lg) {
   
 }
