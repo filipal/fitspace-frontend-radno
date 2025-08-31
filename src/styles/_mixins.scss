@@ -7,7 +7,7 @@
   $key: if(type-of($breakpoint) == string, string.unquote($breakpoint), $breakpoint);
   $size: map.get(v.$breakpoints, $key);
   @if $size {
-    @media (max-width: $size) {
+    @media (min-width: $size) {
       @content;
     }
   } @else {

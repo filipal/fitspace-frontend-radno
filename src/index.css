@@ -28,7 +28,7 @@ img, video, canvas, svg { max-width: 100%; height: auto; }
 @media (min-width: 430px) {
   :root {
     --page-max-width: 430px;
-  --page-width: min(100%, var(--page-max-width));
+    --page-width: min(100vw, var(--page-max-width));
     --page-height: 932px;
   }
 }
@@ -37,7 +37,7 @@ img, video, canvas, svg { max-width: 100%; height: auto; }
 @media (min-width: 768px) {
   :root {
     --page-max-width: 768px;
-  --page-width: min(100%, var(--page-max-width));
+    --page-width: min(100vw, var(--page-max-width));
     --page-height: 1024px;
   }
 }
@@ -46,7 +46,7 @@ img, video, canvas, svg { max-width: 100%; height: auto; }
 @media (min-width: 1024px) {
   :root {
     --page-max-width: 1024px;
-    --page-width: min(100%, var(--page-max-width));
+    --page-width: min(100vw, var(--page-max-width));
     --page-height: 768px;
   }
 }
@@ -55,7 +55,7 @@ img, video, canvas, svg { max-width: 100%; height: auto; }
 @media (min-width: 1280px) {
   :root {
     --page-max-width: 1280px;
-    --page-width: min(100%, var(--page-max-width));
+    --page-width: min(100vw, var(--page-max-width));
     --page-height: 800px;
   }
 }
@@ -64,7 +64,7 @@ img, video, canvas, svg { max-width: 100%; height: auto; }
 @media (min-width: 1440px) {
   :root {
     --page-max-width: 1440px; /* Figma web platno */
-    --page-width: min(100%, var(--page-max-width));
+    --page-width: min(100vw, var(--page-max-width));
     --page-height: 1024px;    /* Figma visina (po želji) */
   }
 }
