@@ -33,7 +33,19 @@ Running this command checks the project with ESLint.
 
 ### Page dimensions
 
-The CSS variables `--page-width` and `--page-height` in `src/index.css` define
-the main page dimensions. They default to `430px` and `932px` which match the
-iPhone&nbsp;15&nbsp;Pro&nbsp;Max viewport. Adjust these values if you want to target other
-breakpoints.
+The CSS custom properties `--page-max-width` and `--page-height` in
+`src/index.css` provide the base page dimensions. They default to `360px`
+by `800px` and are progressively overridden at viewport widths of `430px`,
+`768px`, `1024px`, `1280px`, and `1440px` so page modules can read consistent
+sizes across breakpoints.
+
+## Debug Mode
+
+The application includes a debug mode for development and testing purposes.
+
+### How to Use
+- **URL Parameter**: Visit any page with `?debug=true` (e.g., `http://localhost:5173/?debug=true`)
+- **Keyboard Shortcut**: Press `Ctrl+Shift+D` anywhere in the app
+- **Close**: Click the ✕ button or press `Ctrl+Shift+D` again
+
+The debug overlay displays pixel streaming debug information and can be extended with additional debugging tools as needed.
