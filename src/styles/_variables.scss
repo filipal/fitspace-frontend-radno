@@ -3,12 +3,13 @@ $text-color: #000;
 $border-radius: 4px;
 $font-size-base: 16px;
 
-/* Mobile-first breakpoints (min-width pragovi) */
+/* Mobile-first breakpoints (min-width thresholds) */
 $breakpoints: (
-  xs: 360px,   // mali telefoni
-  sm: 430px,   // tvoja mobilna meta (iPhone 14 Pro sl.)
-  md: 768px,   // tableti (portrait)
-  lg: 1024px,  // tableti (landscape)/manji laptopi
-  xl: 1280px,  // desktop
-  xxl: 1440px  // tvoja desktop meta iz Figure
+  xs: 360px,      // compact phones
+  sm: 392px,      // small phones
+  lg-mobile: 430px, // large mobile
+  md: 768px,      // tablet
+  lg: 1024px,     // small desktop
+  xl: 1280px,     // desktop
+  xxl: 1440px     // large desktop
 );

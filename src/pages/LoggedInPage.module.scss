@@ -8,19 +8,30 @@
   align-items: center;
   justify-content: center;
 }
+.deleteConfirmOverlay {
+  position: fixed;
+  left: 0;
+  width: 100%;
+  max-width: var(--page-max-width);
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
 .deleteConfirmRow {
   background: #D44B3E;
   max-width: var(--page-max-width);
-  margin: 0 auto;  
+  margin: 0 auto;
   color: #fff;
   font-size: 20px;
   display: flex;
   text-align: center;
   align-items: center;    /* centriranje okomito   */
-  justify-content: center;/* centriranje vodoravno */ 
+  justify-content: center;/* centriranje vodoravno */
   width: 100%;
   height: 100%;
-  text-align: center; 
+  text-align: center;
+  pointer-events: auto;
 }
 .iconButton img {
   width: 14px;

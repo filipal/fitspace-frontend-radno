@@ -118,19 +118,9 @@ export default function LoggedInPage() {
       {showDeleteConfirm && confirmPos && (
         <div
           className={styles.deleteConfirmOverlay}
-          style={{
-            position: 'fixed',
-            top: confirmPos.top,
-            left: 0,
-            width: '100%',
-            height: confirmPos.height,
-            zIndex: 100,
-            display: 'flex',
-            justifyContent: 'center',
-            pointerEvents: 'none'
-          }}
+          style={{ top: confirmPos.top, height: confirmPos.height }}
         >
-          <div className={styles.deleteConfirmRow} style={{ pointerEvents: 'auto', width: '100%' }}>
+          <div className={styles.deleteConfirmRow}>
             Are you sure?
           </div>
         </div>

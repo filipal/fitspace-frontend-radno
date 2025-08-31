@@ -1,9 +1,11 @@
 @use 'sass:map';
+@use 'sass:string';
 @use './variables' as v;
 
 
 @mixin respond($breakpoint) {
-  $size: map.get(v.$breakpoints, $breakpoint);
+  $key: if(type-of($breakpoint) == string, string.unquote($breakpoint), $breakpoint);
+  $size: map.get(v.$breakpoints, $key);
   @if $size {
     @media (max-width: $size) {
       @content;
@@ -14,8 +16,11 @@
 }
 
 @mixin respond-between($lower, $upper) {
-  $min: map.get(v.$breakpoints, $lower);
-  $max: map.get(v.$breakpoints, $upper);
+  $lower-key: if(type-of($lower) == string, string.unquote($lower), $lower);
+  $upper-key: if(type-of($upper) == string, string.unquote($upper), $upper);
+
+  $min: map.get(v.$breakpoints, $lower-key);
+  $max: map.get(v.$breakpoints, $upper-key);
 
   @if $min and $max {
     @media (min-width: $min) and (max-width: $max) {
