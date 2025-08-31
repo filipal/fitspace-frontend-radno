@@ -1,0 +1,181 @@
+.container {
+  width: 430px;
+  height: 60px;
+  display: flex;
+  background: #ececec;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+/* Expanded mode: right side takes the whole accordion, left is hidden */
+.expandedRight {
+  .left {
+    display: none;
+  }
+  .right {
+    width: 430px;
+  }
+  .rightContent {
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+  }
+  .toneBarGroup {
+    width: 350px; /* nova širina samo u expandedRight */
+    height: 25px;
+  }
+
+  .toneBar {
+    width: 350px; /* usklađeno s toneBarGroup */
+    height: 10px;
+  }
+
+  .frames {
+    width: 363px; /* prilagodi: toneBarGroup + eventualni okviri (13px) */
+    grid-template-columns: 13px 1fr 13px;
+  }  
+}
+
+.left {
+  width: 240px;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-right: 1.5px solid #000; /* divider between color (left) and slider (right) */
+  background: transparent;
+  cursor: pointer;
+}
+
+.right {
+  width: 180px;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: transparent;
+  border: none; /* ensure no extra borders on the right side */
+  cursor: pointer;
+}
+
+
+
+/* no standalone divider; left element already has border-right */
+
+.group {
+  width: 220px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.arrow {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.iconsThree {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.iconBtn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.iconLarge {
+  width: 45px;
+  height: 45px;
+}
+
+.iconSmall {
+  width: 35px;
+  height: 35px;
+}
+
+.iconOne {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rightContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px; /* spacing between top and bottom */
+  user-select: none;
+}
+
+.toneBarGroup {
+  width: 130px; /* wraps 130x10 bar with 25x25 thumb centered vertically */
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toneBar {
+  position: relative;
+  width: 130px;
+  height: 10px;
+  background: transparent; /* transparent fill, stroke drawn inside via inset shadow */
+  border-radius: 10px; /* rounded corners = 10 */
+  box-shadow: inset 0 0 0 1.5px #000; /* 1.5px black stroke drawn inside */
+  touch-action: none; /* prevent page scroll on pointer drag */
+}
+
+.thumb {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  cursor: grab;
+  background-image: url('../../assets/skinbarbtn.svg');
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+  touch-action: none; /* prevent page scroll on touch drag */
+}
+
+.thumb:active { cursor: grabbing; }
+
+.frames {
+  width: 143px;
+  height: 13px;
+  display: grid;
+  grid-template-columns: 13px 1fr 13px;
+  align-items: center;
+}
+
+.frameB,
+.frameG,
+.frameW {
+  width: 13px;
+  height: 13px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.frameB { background-image: url('../../assets/skin-frame-b.svg'); }
+.frameG { background-image: url('../../assets/skin-frame-g.svg'); justify-self: center; }
+.frameW { background-image: url('../../assets/skin-frame-w.svg'); justify-self: end; }

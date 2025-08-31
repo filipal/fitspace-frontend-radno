@@ -1,0 +1,63 @@
+:root {
+  /* MOBILE default */
+  --page-max-width: 430px;   /* širina platna */
+  --page-height: 100dvh;     /* stabilnije od 100vh na mobitelima */
+
+  font-family: 'Outfit', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  background: #ececec;
+
+  color: #fff;
+  /* background-color: #000; */
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+/* DESKTOP/Web override */
+@media (min-width: 1280px) {
+  :root {
+    --page-max-width: 1440px; /* Figma web platno */
+    --page-height: 1024px;    /* Figma visina (po želji) */
+  }
+}
+
+/* Global reset koji pomaže dimenzijama */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+/* *, *::before, *::after { box-sizing: border-box; } */
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100svh;
+}
+
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button:focus,
+button:focus-visible,
+button:active {
+  outline: none !important;
+  box-shadow: none !important;
+}

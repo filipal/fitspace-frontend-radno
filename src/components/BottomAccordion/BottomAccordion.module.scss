@@ -1,0 +1,84 @@
+.container {
+  width: 430px;
+  height: 180px;
+  background: #ececec;
+  border-top: 1px solid #000;
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.brandBar {
+  width: 70px;
+  height: 16px;
+  margin-top: 7px;
+  font-size: 13px;
+  font-weight: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.carouselRow {
+  flex: 1;
+  width: 370px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.arrowBtn {
+  width: 24px;
+  height: 32.8px;
+  padding: 0;
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.arrowBtn img { width: 100%; height: 100%; object-fit: contain; }
+
+.carouselInner {
+  width: 275px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sideItem {
+  width: 65px;
+  height: 65px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: .7;
+}
+.centerItem {
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sideItem img, .centerItem img { width: 100%; height: 100%; object-fit: contain; }
+
+.productTitle {
+  min-width: 238px;
+  height: 22px;
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: 300;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  padding: 0 4px;
+}

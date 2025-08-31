@@ -1,0 +1,416 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #000;
+  background: #ececec;
+}
+
+.avatarButton {
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.centralWrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.dataPanelWrapper {
+  position: absolute;
+  top: 10px;
+  left: calc(50% - 205px);
+  z-index: 1;
+}
+
+.avatarSection {
+  width: 430px;
+  height: 750px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.bodySelected {
+  height: 579px;
+  justify-content: flex-end; // Pomera sadržaj uz desnu marginu
+}
+
+/* Background strip behind DataPanel when Body (measurements) is selected */
+.bodySelected::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 200px; /* 180px panel width + 10px left + 10px inner spacing */
+  background: #BAB9BA;
+  z-index: 0; /* stays behind DataPanel (which gets z-index:1) */
+  pointer-events: none; /* do not block interactions */
+}
+
+.bodySelected .avatarImage {
+  width: 274px; // Eksplicitna širina za Body mode
+  height: 579px; // Eksplicitna visina za Body mode
+}
+
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Face mode: show top-cropped/zoomed view at 430x670 */
+.faceSelected {
+  height: 670px;
+  --avatar-zoom: 2.4; /* tweakable zoom for Face mode */
+  overflow: hidden; /* clip zoomed image */
+}
+
+.faceSelected .avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center; /* focus on the top area (face) */
+  transform: scale(var(--avatar-zoom, 1)); /* zoom into the top portion */
+  transform-origin: top center;
+  will-change: transform;
+}
+
+/* Skin mode: shrink image area by accordion height; keep full body framing */
+.skinSelected {
+  height: 690px; /* 750 - skin accordion ~60 */
+  overflow: hidden;
+  --avatar-zoom: 1.0; /* adjust if you want slight zoom while skin is open */
+}
+
+.skinSelected .avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* keep full body */
+  transform: scale(var(--avatar-zoom, 1));
+  transform-origin: center bottom;
+}
+
+/* Hair mode: shrink image area by accordion height (120px), with Face-like top-crop zoom */
+.hairSelected {
+  height: 630px; /* 750 - hair accordion 120 */
+  overflow: hidden; /* clip zoomed image */
+  --avatar-zoom: 2.4; /* same default zoom as Face */
+}
+
+.hairSelected .avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* match Face behavior */
+  object-position: top center; /* focus on the top area */
+  transform: scale(var(--avatar-zoom, 1));
+  transform-origin: top center;
+  will-change: transform;
+}
+
+/* Extras mode: same as Hair/Face zoom but reserving 120px for Extras accordion */
+.extrasSelected {
+  height: 630px; /* 750 - extras accordion 120 */
+  overflow: hidden;
+  --avatar-zoom: 2.4;
+}
+
+.extrasSelected .avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  transform: scale(var(--avatar-zoom, 1));
+  transform-origin: top center;
+  will-change: transform;
+}
+/* measurement list styles moved to DataPanel.module.scss */
+
+.accordion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0 !important;
+}
+
+.controlGroup {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 410px;
+  height: 60px;
+  display: flex;
+  align-items: flex-end;
+}
+
+.controlButton {
+  position: relative;
+  border: none;
+  padding: 0;
+  background: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.2s ease;
+  color: #FFFFFF;
+}
+.controlButton svg {
+  display: block;
+}
+.controlButton svg .outerHalo {
+  transition: fill .2s ease;
+}
+
+.controlButton.selected svg .outerHalo {
+  fill: #000;
+  fill-opacity: 1; 
+}
+.controlButton svg .whiteRing {
+  shape-rendering: geometricPrecision;
+}
+.controlIcon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.controlButton .outerCircle {
+  display: none;  // ili potpuno obriši markup + ovaj blok
+}
+.controlButton.selected { color: #FFFFFF; }
+
+.controlIcon { position: relative; z-index: 2; }
+.outerCircle {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid #FFFFFF;
+  background: transparent;
+  box-sizing: border-box;
+  transition: border-color .25s ease;
+  z-index: 1;
+  pointer-events: none;
+}
+.controlButton.selected .outerCircle { border-color: #000; }
+
+.rotateleft {
+  width: 60px;
+  margin-right: 50px;
+}
+
+.upload {
+  width: 50px;
+  margin-right: 25px;
+}
+
+.fullscreen {
+  width: 40px;
+  margin-right: 25px;
+}
+
+.download {
+  width: 50px;
+  margin-right: 50px;
+}
+
+.rotateright {
+  width: 60px;
+}
+
+.bottomSection {
+  width: 100%; // Puna širina ekrana
+  max-width: 430px;
+  border-top: 1px solid #000; // Border od ruba do ruba
+  display: flex;
+  justify-content: center; // Centrira bottomNav
+  margin-bottom: 20px;
+  padding-top: 0; // Uklanja padding da border bude flush
+  background: #ececec;
+  position: relative;
+}
+
+.bottomSection::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -20px;
+  height: 20px;
+  background: #ececec;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.bottomNav {
+  width: 410px;
+  height: 60px;
+  display: flex;
+}
+
+.navButton {
+  width: 60px;
+  height: 60px;
+  padding: 0;
+  border: none;
+  background: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end; // Poravnava sadržaj po dnu
+  position: relative; // Allows absolute-positioned top indicator
+}
+
+.navButton:not(:first-child) {
+  margin-left: 10px;
+}
+
+.navIndicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  display: none;
+}
+
+.active .navIndicator {
+  background: #000;
+  display: block;
+}
+
+.navIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 35px;
+  order: 2; // Stavlja ikonu u sredinu
+  margin-bottom: 2px; // Mali razmak od labela
+}
+
+.navIcon img {
+  max-width: 42px;
+  max-height: 31px;
+  width: auto;
+  height: auto;
+}
+
+.navLabel {
+  height: 20px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  order: 3; // Stavlja label na dno
+}
+
+@media (min-width: 1440px) {
+  .page {
+    width: 100%;
+    max-width: 1440px;
+    height: 1024px;
+    align-items: flex-start;
+    position: relative;
+  }
+
+  .centralWrapper {
+    flex-direction: row;
+    align-items: flex-start;
+    width: calc(100% - 90px);
+    height: calc(100% - 70px);
+    justify-content: center;
+    padding-left: 0;
+    background: #B1B1B0;
+  }
+  .centralWrapper.withAccordion {
+    width: calc(100% - 90px - 335px);
+    justify-content: flex-start;
+  }
+  .avatarShifted {
+  margin-left: 123px;
+  }
+  .avatarSection {
+    width: 604px;
+    height: 953px;
+  }
+
+  .bodySelected {
+    height: 953px;
+    justify-content: center;
+  }
+
+  .bodySelected::before {
+    display: none;
+  }
+
+  .bodySelected .avatarImage {
+    width: 100%;
+    height: 100%;
+  }
+
+  .dataPanelWrapper {
+    position: static;
+    width: 273px;
+    height: 774px;
+    margin-left: 15px;
+    margin-right: 22px;
+    margin-top: 62px;
+  }
+
+  .accordion {
+    width: 335px;
+    height: calc(100% - 70px);
+    position: absolute;
+    top: 70px;
+    right: 90px;
+  }
+
+  .bottomSection {
+    position: absolute;
+    top: 70px;
+    right: 0;
+    width: 90px;
+    height: calc(100% - 70px);
+    border-top: none;
+    border-left: 1px solid #000;
+    margin-bottom: 0;
+    justify-content: flex-start;
+  }
+
+  .bottomSection::after {
+    display: none;
+  }
+
+  .bottomNav {
+    width: 90px;
+    height: 100%;
+    flex-direction: column;
+    margin-top: 0;
+    align-items: center;
+  }
+  .navIndicator {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: auto;
+    width: 5px;
+    height: 100%;
+  }
+  .navButton {
+    width: 90px;
+    height: 90px;
+  }
+
+  .navButton:not(:first-child) {
+    margin-left: 0;
+    margin-top: 10px;
+  }
+}
+
+@media (min-width: 1024px) {
+  
+}

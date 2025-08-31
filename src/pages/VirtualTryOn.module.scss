@@ -1,0 +1,542 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #000;
+  min-height: 100dvh;
+  box-sizing: border-box;
+}
+
+.avatarButton {
+  background: none;
+  border: none;
+  padding: 0;
+  width: 30px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.avatarButton img { width: 100%; height: 100%; object-fit: contain; }
+
+.canvasWrapper {
+  width: 430px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  height: calc(100dvh - 101px - 51px); /* header 101 + footer 51 */
+}
+.canvasWrapper.withAccordion { height: calc(100dvh - 101px - 51px - 180px); }
+.canvasWrapper.footerTopExpanded, .canvasWrapper.footerBotExpanded { height: calc(100dvh - 101px - 101px); }
+.canvasWrapper.footerTopExpanded.withAccordion, .canvasWrapper.footerBotExpanded.withAccordion { height: calc(100dvh - 101px - 101px - 180px); }
+
+.avatarImage { width: 100%; height: 100%; object-fit: cover; }
+
+/* Match UnrealMeasurements positioning: total usable width 410px; buttons anchored via margins */
+.controlGroup {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 410px;
+  height: 60px;
+  display: flex;
+  align-items: flex-end;
+}
+
+/* Floating side buttons */
+.topBotFloating, .animationFloating, .heatMapFloating {
+  position: absolute;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.topBotFloating { top: 18px; left: 15px; width: 60px; height: 44px; }
+.topBotFloating.cartVariant { width: 32px; height: 41px; left: 24px; }
+.topBotFloating.fullBodyVariant { width: 41px; height: 44px; left: 24px; }
+.animationFloating { top: 18px; right: 21px; width: 48px; height: 44px; }
+.heatMapFloating { top: 79px; right: 21px; width: 48px; height: 44px; }
+.topBotFloating img, .animationFloating img, .heatMapFloating img { width: 100%; height: 100%; object-fit: contain; }
+
+/* Category selectors (arrows + text) */
+.categoryArrows {
+  position: absolute;
+  width: 33px;
+  height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  /* Center relative to text group (left:16, text width:57, arrow width:33) => 16 + (57-33)/2 = 28 */
+  left: calc(16px + (57px - 33px)/2);
+}
+.categoryArrowsFirst { top: 230px; }
+.categoryArrowsSecond { top: 450px; }
+.categoryArrowBtn {
+  width: 32.8px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.categoryArrowBtn img { width: 100%; height: 100%; object-fit: contain; }
+
+/* Text group is a separate absolutely positioned block (57x71) centered relative to the arrow column width via left offset calc */
+.categoryTextGroup {
+  position: absolute;
+  width: 57px;
+  height: 71px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  left: 16px; /* requested left margin from canvasWrapper */
+}
+/* Vertically align centers with arrow group: place so that text group's vertical center matches arrow group's vertical center */
+.categoryTextGroupFirst { top: calc(230px + (150px/2) - (71px/2)); }
+.categoryTextGroupSecond { top: calc(450px + (150px/2) - (71px/2)); }
+
+/* Compact variant when top expanded footer active (height 138, inner 59) */
+.categoryArrowsCompact { height: 138px; }
+.categoryTextGroupCompact { height: 59px; top: calc(230px + (138px/2) - (59px/2)); }
+
+/* Size selector (right side when top expanded) */
+.sizeArrows {
+  position: absolute;
+  width: 33px; /* match arrow column width */
+  height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  right: calc(20px + 25px - 16.5px); /* align with previous imageArrows center */
+}
+.sizeArrowsFirst { top: 230px; }
+.sizeDisplay {
+  width: 24.14px;
+  height: 82.86px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+.sizeSmall {
+  width: 12.7px;
+  height: 25.86px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1;
+  opacity: 0.25;
+}
+.sizeMain {
+  width: 24.14px;
+  height: 34.48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+/* Bottom detailed (waist/length) size display */
+.sizeDisplayBottom {
+  width: 50px;
+  height: 86px; /* 26 + 34 + 26 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+.sizeSmallBottom {
+  width: 50px;
+  height: 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.05;
+  opacity: 0.25;
+  text-align: center;
+}
+.sizeMainBottom {
+  width: 50px;
+  height: 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.05;
+  text-align: center;
+}
+
+/* Full body simplified mode */
+.fullBodyCategory {
+  position: absolute;
+  top: 310px; /* specified */
+  left: 16px; /* align with earlier text group base left */
+  width: 57px;
+  height: 71px; /* match normal text group height */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+.fullBodyImageArrows {
+  position: absolute;
+  top: 310px; /* same vertical alignment */
+  right: calc(20px + 25px - 16.5px); /* reuse centering logic of first imageArrows */
+  width: 33px;
+  height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+/* Full body specific arrow & text alignment (reuse existing patterns with new top) */
+.categoryArrowsFullBody { top: 310px; }
+.categoryTextGroupFullBody { top: calc(310px + (150px/2) - (71px/2)); }
+.imageArrowsFullBody { top: 310px; }
+.imageDisplayFullBody { top: calc(310px + (150px/2) - (50px/2)); }
+
+/* Full body footer layout */
+.footerFullBody {
+  height: 51px;
+  display: flex;
+  align-items: center;
+  position: relative;
+  background: #ececec !important;
+}
+.footerFullBodyTitle {
+  position: absolute;
+  left: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 224px;
+  font-size: 13px;
+  font-weight: 300;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  height: auto;
+}
+.footerFullBodyLabel {
+  position: absolute;
+  right: 37px; /* per spec offset from right */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 108px;
+  font-size: 20px;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.categoryTextTop, .categoryTextBottom {
+  width: 57px;
+  height: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1;
+  opacity: 0.25;
+  text-align: center;
+}
+.categoryTextMain {
+  width: 57px;
+  height: 21px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1;
+  text-align: center;
+}
+
+/* Right side image selectors */
+.imageArrows {
+  position: absolute;
+  width: 33px;
+  height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  /* Center relative to image display (right:20 with display width 50) => arrow center aligns to image center.
+     Image block right:20px, width:50 => image center from right edge = 20 + 25. Arrow width 33 => need arrow left so its center matches: right offset = 20 + (50/2) - (33/2) = 20 + 25 - 16.5 = 28.5px */
+  right: calc(20px + 25px - 16.5px);
+}
+.imageArrowsFirst { top: 230px; }
+.imageArrowsSecond { top: 450px; }
+
+.imageDisplay {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  right: 20px; /* requested 20px from right margin */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.imageDisplay img { width: 100%; height: 100%; object-fit: contain; }
+.imageDisplayFirst { top: calc(230px + (150px/2) - (50px/2)); }
+.imageDisplaySecond { top: calc(450px + (150px/2) - (50px/2)); }
+
+.controlButton {
+  position: relative;
+  border: none;
+  padding: 0;
+  background: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.controlButton.selected {
+  color: #000;
+}
+
+/* controlIcon final z-index layered above circles */
+/* Vanjski krug samo obrub: bijeli default, crni kad je selektiran */
+/* Generic outer circle (rotate buttons keep old behavior) */
+.outerCircle {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid #FFFFFF;
+  background: transparent;
+  box-sizing: border-box;
+  transition: border-color .25s ease;
+  z-index: 1;
+  pointer-events: none;
+}
+/* outerCircle remains white always (rotate buttons). */
+
+/* New two-layer structure for top/bottom zoom buttons */
+.selectionRing {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid transparent; /* transparent ring until selected */
+  box-sizing: border-box;
+  z-index: 2; /* sits above ring space but below inner white circle */
+  pointer-events: none;
+}
+.controlButton.selected .selectionRing { border-color: #000; }
+
+.innerCircle {
+  position: absolute;
+  inset: 4px; /* creates visible outer ring gap */
+  border-radius: 50%;
+  background: #FFFFFF; /* always white, regardless of selection */
+  z-index: 3;
+  pointer-events: none;
+}.fillCircle {
+  position: absolute;
+  inset: 4px; /* same inset gap as zoom buttons for visual consistency */
+  border-radius: 50%;
+  background: #FFFFFF;
+  z-index: 0; /* under outer border */
+  pointer-events: none;
+}
+.controlIcon { width: 100%; height: 100%; object-fit: contain; position: relative; z-index: 4; }
+/* Ikone ostaju crne (ako koriste currentColor) */
+.controlButton, .controlButton.selected { color: #000; }
+
+.footer {
+  width: 430px;
+  height: 51px;
+  display: flex;
+  margin: 0;
+  border-top: 1px solid #000;
+  padding: 0;
+}
+.footer.expandedTop, .footer.expandedBot {
+  height: 101px;
+  flex-direction: row;
+  align-items: flex-start;
+  position: relative;
+  background: #ececec;
+}
+.footer.expandedTop::before, .footer.expandedBot::before {
+  content: '';
+}
+.accordionArea { width: 430px; height: 180px; flex: 0 0 auto; }
+.footerLeft, .footerRight {
+  width: 215px;
+  height: 51px;
+  position: relative;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+}
+.footer.expandedTop .footerLeft,
+.footer.expandedTop .footerRight,
+.footer.expandedBot .footerLeft,
+.footer.expandedBot .footerRight {
+  height: 101px;
+  background: #ececec;
+}
+.footerLeft { border-right: 1px solid #000; }
+
+/* Ako imaš header koji treba biti svijetao kad je expanded, dodaj ovo: */
+.appHeader {
+  background: #ececec !important;
+}
+.titleBox, .infoBox {
+  position: absolute;
+  width: 131px;
+  height: 19px;
+  top: 16px; /* vertically centered: (51-19)/2 = 16 */
+  font-size: 13px;
+  font-weight: 300;
+  text-transform: uppercase;
+  line-height: 1.05;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  color: #000;
+}
+.titleBox { left: 9px; text-align: left; }
+.infoBox { right: 9px; text-align: right; }
+.footerButton {
+  position: absolute;
+  width: 50px;
+  height: 19px;
+  top: 16px;
+  font-size: 20px;
+  font-weight: 400;
+  background: none;
+  border: none;
+  cursor: pointer;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.topButton { right: 15px; }
+.botButton { left: 15px; }
+
+/* ========== Expanded TOP footer layout (option selector + color selector) ========== */
+.topExpandedLeft {
+  position: absolute;
+  top: 0;
+  left: 30px; /* requested left offset */
+  height: 101px;
+  display: flex;
+  align-items: center; /* vertically center the block */
+}
+.topExpandedLeftInner {
+  width: 120px;
+  height: 31px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.topExpandedArrowsBtn {
+  width: 22px;
+  height: 30px;
+  border: none;
+  background: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.topExpandedTextBlock {
+  flex: 1;
+  height: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.topExpandedMain { font-size: 16px; font-weight: 400; }
+.topExpandedSub { font-size: 10px; font-weight: 300; }
+
+/* Right side color circles */
+.topExpandedRight {
+  position: absolute;
+  top: 0;
+  right: 30px; /* requested right offset */
+  height: 101px;
+  display: flex;
+  align-items: center;
+}
+.topExpandedColorsInner {
+  width: 190px; /* widened from 190 to accommodate 13 + 10 + 10 + 13 spacing with element sizes */
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* center the colorCircles block */
+}
+.colorArrowBtn { @extend .topExpandedArrowsBtn; }
+.colorCircles { width:119px; display: flex; align-items: center; justify-content: space-between; margin:0 13px; }
+.colorCircleBtnWrapper { background: none; border: none; padding: 0; cursor: pointer; display: flex; }
+
+
+/* Canvas zoom states for top/bottom accordions */
+.canvasWrapper.topZoom .avatarImage {
+  object-fit: cover;
+  object-position: top center;
+  transform: scale(1.2);
+  transform-origin: top center;
+}
+.canvasWrapper.bottomZoom .avatarImage {
+  object-fit: cover;
+  object-position: bottom center;
+  transform: scale(1.23);
+  transform-origin: bottom center;
+}
+/* Full body detailed (accordion open, show full avatar) */
+.canvasWrapper.fullBodyDetail .avatarImage {
+  object-fit: contain;
+  transform: none;
+}
+
+/* Control group layout when accordion open */
+/* Expanded state handled inline; no extra class needed */
+
+.homeButtonCircle {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}

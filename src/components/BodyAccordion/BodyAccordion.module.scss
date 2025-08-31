@@ -1,0 +1,381 @@
+.container {
+  width: 430px;
+  height: 171px;
+  background: #ececec;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: stretch;
+}
+
+.leftSection {
+  width: 80px;
+  display: flex;
+  align-items: center;
+}
+
+.left {
+  width: 42px;
+  height: 150px;
+  margin-left: 19px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 11px;
+  padding-bottom: 11px;
+}
+
+.arrowBtn {
+  width: 30px;
+  height: 25px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.arrowUp img {
+  transform: rotate(-90deg);
+}
+.arrowDown img {
+  transform: rotate(90deg);
+}
+
+.stack {
+  width: 42px; /* cap width per spec */
+  flex: 1;
+  display: grid;
+  grid-template-rows: 14px 16px 20px 16px 14px;
+  align-items: center;
+  justify-items: center;
+  justify-content: center;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.item {
+  max-width: 42px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #000;
+}
+
+.topSmall {
+  font-size: 11px;
+  opacity: 0.2;
+}
+
+.upper {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.selected {
+  font-size: 16px;
+  font-weight: regular;
+  opacity: 1;
+}
+
+.lower {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.bottomSmall {
+  font-size: 11px;
+  opacity: 0.2;
+}
+
+.right {
+  width: 350px;
+  height: 171px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.rightInner {
+  width: 330px; /* leave space for vertical bar on the far right */
+  height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 8px;
+  position: relative;
+}
+
+.rightTitle {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.rows {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+.row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 170px 50px; /* label | slider | percent with more space */
+  align-items: center;
+  gap: 10px;
+}
+
+.rowLabel {
+  font-size: 10px;
+}
+
+.sliderGroup {
+  width: 170px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sliderBar {
+  position: relative;
+  width: 170px;
+  height: 10px;
+  background: transparent;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1.5px #000;
+  touch-action: none; /* smooth drag; prevent scroll on touch */
+}
+
+.sliderThumb {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 25px;
+  height: 25px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: grab;
+  background-image: url('../../assets/skinbarbtn.svg');
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+  touch-action: none; /* smooth drag; prevent scroll on touch */
+}
+
+.rowPct {
+  text-align: right;
+  font-size: 10px;
+  padding-right: 4px; /* avoid touching the right track */
+  margin-right: 10px;
+}
+
+/* Vertical indicator 130x3, 10px from right edge */
+.vTrack {
+  position: absolute;
+  top: 10px;
+  right: 10px; /* 10px inset from the accordion's right edge */
+  width: 3px;
+  height: 130px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.vBar {
+  position: absolute;
+  width: 3px;
+  height: 130px;
+  background: #000;
+  opacity: 0.2;
+}
+
+.vFill {
+  position: absolute;
+  left: 0;
+  width: 3px;
+  background: #000;
+  border-radius: 2px;
+}
+
+@media (min-width: 1440px) {
+  .container {
+    width: 335px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .leftSection {
+    width: 100%;
+    flex: 0 0 130px;           /* fiksno 130px */
+    height: 130px;
+    display: flex;
+    align-items: center;
+  }
+
+  .left {
+    width: 100%;
+    height: 100%;              /* preuzima 130px od .leftSection */
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0 35px;
+    margin: 0;
+    gap: 8px;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  .arrowBtn {
+    width: 24px;
+    height: 18px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+  }
+
+  .arrowUp img { transform: rotate(180deg); }
+  .arrowDown img { transform: rotate(0deg); }
+  .arrowBtn img {
+    width: 24px;
+    height: 18px;
+    display: block;
+  }
+
+  .stack {
+    display: inline-flex;
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;          /* razmak između itema */
+    margin: 0;
+    width: auto;
+  }
+
+  .stack > * {
+    flex: 0 0 auto;
+  }
+  .item { max-width: none; }
+
+  .topSmall { font-size: 9px; opacity: 0.2; }
+  .upper { font-size: 15px; opacity: 0.7; }
+  .selected { font-size: 26px; font-weight: 400; opacity: 1; }
+  .lower { font-size: 15px; opacity: 0.7; }
+  .bottomSmall { font-size: 9px; opacity: 0.2; }
+
+  .right {
+    width: 100%;
+    flex: 1 1 auto;
+    height: auto;              /* poništava height:171 iz base */
+    min-height: 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: 0;                /* nema dodatnog vertikalnog offset-a ovdje */
+    box-sizing: border-box;
+  }
+
+  .rightInner {
+    width: 100%;
+    flex: 1 1 auto;
+    height: auto;              /* poništava fiksnih 140px iz base */
+    min-height: 0;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 20px;
+    overflow: hidden;
+  }
+
+  .rows {
+    margin: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    margin-top: 20px;
+    gap: 20px;
+    flex: 1 1 auto;
+    overflow-y: auto;
+  }
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    height: 49px;
+  }
+
+  .rowLabel {
+    flex: 0 0 100%;
+    margin: 0 0 6px 35px;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 14px;
+    max-width: calc(100% - 35px - 35px);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .sliderGroup {
+    margin-left: 35px;
+    width: 236px;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    position: relative;
+  }
+
+  .sliderBar {
+    width: 236px;
+    height: 10px;
+  }
+
+  .sliderThumb {
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .rowPct {
+    position: relative;
+    top: 8px;              /* spušta tekst da baseline sjedne na dno sliderGroup */
+    margin-left: 10px;
+    width: 26px;
+    font-size: 10px;
+    line-height: 14px;
+    text-align: right;
+    padding: 0;
+  }
+
+  .vTrack { display: none; }
+
+  .right.scrollable .vTrack {
+    display: flex;
+    position: absolute;
+    top: 20px;
+    right: 8px;
+    height: calc(100% - 40px);
+  }
+
+  .right.scrollable .vBar,
+  .right.scrollable .vFill { height: 100%; }
+
+}

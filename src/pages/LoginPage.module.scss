@@ -1,0 +1,248 @@
+.loginPage {
+  position: relative;
+  width: min(100vw, var(--page-max-width));
+  min-height: var(--page-height);
+  margin-inline: auto;
+  font-family: 'INter', sans-serif;
+
+  /* mobilni stack */
+  display: flex;
+  flex-direction: column;
+  align-items: center;   /* sve centrirano osim backButton-a */
+  box-sizing: border-box;
+}
+
+/* 1) Back u kutu – jedina iznimka s absolute */
+.backButton {
+  position: absolute;
+  top: 61px;
+  left: 35px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.exitIcon {
+  width: 20px;
+  height: 20px;
+  display: block;
+  object-fit: contain;
+}
+
+/* 2) Logo – Figma kaže top: 90, pa page dobije padding-top 90 */
+.logo {
+  width: 156px;    /* 155.97 → zaokruženo */
+  height: 82px;
+  margin-top: 80px;
+}
+
+/* 3) Sivi blok 360×373 – centriran, razmak prema Figmi */
+.loginBg {
+  width: 360px;
+  max-width: 100%;
+  height: 373px;
+  margin-top: 20px;   /* 199 (bg top) - (90+82) (logo bottom) = 27 */
+  background: #d9d9d9;
+  border-radius: 4px;
+}
+
+/* 4) CTA: Create Your Digital Twin – 320×50 – centriran */
+.createButton {
+  width: 320px;
+  height: 50px;
+  margin-top: 18px;
+  margin-bottom: 15px;
+  background: linear-gradient(to right, #2b214d, #13536c);
+  color: #fff;
+  font-size: 18px;
+  border: none;
+}
+
+/* 5) Login sekcija – grupirana, s razmacima po Figmi */
+.loginFormSection {
+  width: 100%;
+  max-width: 330px;  /* intro tekst je 330px u Figmi */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: auto;
+  padding-bottom: 45px;
+}
+
+.introText {
+  width: 330px;
+  font-weight: 300;  /* Figma “Light” */
+  font-size: 18px;
+  line-height: 1;    /* "leading-trim: NONE" → kontroliraj liniju */
+  text-align: center;
+  color: #000;
+  margin-top: 2px;
+}
+
+/* 6) Forma – stack s točnim razmacima */
+.loginForm {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  /* 733 - (660 + 46) = 27px razmaka od intro teksta do e-maila */
+  margin-top: 25px;
+  gap: 15px;          /* ugodan unutarnji razmak između grupa */
+}
+
+/* Email / Password grupa */
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;          /* razmak između label i inputa */
+}
+
+.textInput {
+  height: 40px;                /* Figma */
+  padding: 0 12px;
+  font-size: 16px;
+  border: 2px solid #000;      /* 1.5px ≈ 2px za oštrinu */
+  background: #fff;
+  color: #000;
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(19, 83, 108, 0.2);
+  }
+}
+
+/* Login – 320×50 – razmak kao u Figmi: 849 - (733 + 40 + 16) ≈ 60px */
+.loginButton {
+  width: 320px;
+  height: 50px;
+  margin-top: 21px;
+  background: #000;
+  color: #fff;
+  border: 0;
+  font-size: 18px;
+}
+
+/* Mobile: webPanel ne radi ništa posebno – nasljeđuje flex kolonu stranice */
+.webPanel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;  /* <— ovo vraća centriranje djece */
+}
+
+
+
+@media (min-width: 1440px) {
+  .loginPage {
+    /* koristi fiksnu visinu web platna iz :root */
+    width: min(100vw, var(--page-max-width)); /* 1440px iz varijable */
+    height: var(--page-height);               /* 1024px iz varijable */
+    min-height: unset;
+    overflow-y: auto;
+  }
+  /* Desktop: backButton u kutu */
+  .backButton {
+    position: absolute;
+    top: 29px;
+    left: 30px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .exitIcon {
+    width: 30px;
+    height: 20px;
+  }
+  .logo {
+    width: 136px;    /* 155.97 → zaokruženo */
+    height: 71px;
+    margin-top: 29px;
+    margin-left: 1268px;
+  }
+  .loginBg {
+    width: 600px;
+    height: 600px;
+  }
+
+  .createButton {
+    width: 422px;
+    height: 50px;
+    background: linear-gradient(to right, #2b214d, #13536c);
+    color: #fff;
+    font-size: 18px;
+    border: none;
+  }
+
+  .loginFormSection {
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: auto;
+    padding-bottom: 33px;
+  }
+
+    .loginForm {
+    width: 100%;
+    max-width: 422px;
+    display: flex;
+    flex-direction: column;
+    margin-top: 27px;
+    gap: 15px;
+  }
+
+  .textInput {
+    height: 40px;
+    padding: 0 12px;
+    font-size: 16px;
+    border: 2px solid #000;
+    color: #000;
+
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(19, 83, 108, 0.2);
+    }
+  }
+
+  .introText {
+    width: 100%;
+    font-weight: 300;  /* Figma “Light” */
+    font-size: 18px;
+    line-height: 1;    /* "leading-trim: NONE" → kontroliraj liniju */
+    text-align: center;
+    color: #000;
+    margin-top: 0;
+  }
+
+  .loginButton {
+    width: 422px;
+    height: 50px;
+    margin-top: 21px;
+    background: #000;
+    color: #fff;
+    border: 0;
+    font-size: 18px;
+  }
+
+  .webPanel {
+    position: absolute;
+    top: 49px;
+    left: 420px;
+    width: 600px;
+    height: 928px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+  }
+}
+
+.error {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: #e5484d; 
+  text-align: center;
+}

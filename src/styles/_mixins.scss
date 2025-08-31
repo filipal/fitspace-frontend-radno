@@ -1,0 +1,10 @@
+@use 'sass:map';
+@use './variables' as *;
+
+
+@mixin respond($breakpoint) {
+  $size: map.get($breakpoints, $breakpoint);
+  @if $size {
+    @media (min-width: $size) { @content; }
+  }
+}

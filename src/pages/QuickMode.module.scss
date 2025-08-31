@@ -1,0 +1,321 @@
+.footerTopButton {
+  width: 320px;
+  height: 50px;
+  background: linear-gradient(to right, #2b214d, #13536c);
+  color: #fff;
+  font-size: 18px;
+  font-family: 'Inter', sans-serif;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 10px auto;
+}
+.footerActionsRow {
+  width: 320px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 0 auto;
+}
+.buttonBack {
+  width: 100px;
+  height: 50px;
+  background: #fff;
+  border: 2px solid #000;
+  color: #000;
+  font-size: 18px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.buttonPrimary {
+  width: 210px;
+  height: 50px;
+  background: linear-gradient(to right, #2b214d, #13536c);
+  color: #fff;
+  font-size: 18px;
+  font-family: 'Inter', sans-serif;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.buttonBlack {
+  width: 210px;
+  height: 50px;
+  background: #000;
+  color: #fff;
+  font-size: 18px;
+  font-family: 'Inter', sans-serif;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.footer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  height: 95px;
+  z-index: 100;
+  pointer-events: none;
+}
+.footerActionsRow {
+  width: 320px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 0 auto;
+  position: relative;
+  bottom: 0;
+}
+.footerActions > button {
+  pointer-events: auto;
+}
+.buttonBack {
+  width: 100px;
+  height: 50px;
+  background: #fff;
+  border: 2px solid #000;
+  color: #000;
+  font-size: 18px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.buttonPrimary {
+  width: 210px;
+  height: 50px;
+  background: linear-gradient(to right, #2b214d, #13536c);
+  color: #fff;
+  font-size: 18px;
+  font-family: 'Inter', sans-serif;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.buttonBlack {
+  width: 210px;
+  height: 50px;
+  background: #000;
+  color: #fff;
+  font-size: 18px;
+  font-family: 'Inter', sans-serif;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.quickmodePage {
+  position: relative;
+  width: var(--page-width);
+  min-height: var(--page-height);
+  margin: 0 auto;
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.quickmodeContent {
+  padding: 32px 24px 0 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+.sectionLabel {
+  font-size: 18px;
+  color: #000;
+  text-align: center;
+  margin-bottom: 16px;
+  width: 100%;
+}
+.sectionMeasurements {
+  width: 320px;
+  height: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 0 auto;
+}
+.bodyshapeRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 289.36px;
+  height: 55px;
+  margin: 0 auto 8px auto;
+  gap: 0;
+  box-sizing: content-box;
+}
+.bodyshapeBtn {
+  width: auto;
+  height: auto;
+  border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, border 0.2s;
+  padding: 0;
+  box-sizing: content-box;
+}
+.selected {
+  background: #000;
+  border: 2px solid #000 !important;
+}
+.bodyshapeIcon {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+.selectedIcon {
+  filter: brightness(0) invert(1);
+}
+.athleticSliderWrap {
+  margin: 0 auto;
+  width: 90%;
+  max-width: 320px;
+}
+.athleticSliderTrack {
+  position: relative;
+  width: 100%;
+  max-width: 257px;
+  height: 9px;
+  margin: 0 auto 8px auto;
+  cursor: pointer;
+}
+.athleticTrack {
+  width: 100%;
+  max-width: 257px;
+  height: 9px;
+  position: absolute;
+  top: 12px;
+  left: 0;
+}
+.athleticCircle {
+  position: absolute;
+  top: 3px;
+  width: 25px;
+  height: 25px;
+  transition: left 0.2s;
+  z-index: 2;
+  left: calc(var(--athletic-level, 1) * 50% - 16px);
+}
+.level0 {
+  --athletic-level: 0;
+}
+.level1 {
+  --athletic-level: 1;
+}
+.level2 {
+  --athletic-level: 2;
+}
+.athleticIcons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 22px;
+}
+
+.athleticIcon {
+  width: 32px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.measureRow {
+  display: flex;
+  align-items: center;
+  width: 320px;
+  height: 40px;
+  gap: 0;
+  margin-bottom: 0;
+  /* Precizni razmaci */
+}
+.measureLabel {
+  width: 220px;
+  height: 40px;
+  border: 2px solid #000;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  padding-left: 6.63px;
+  font-size: 16px;
+  color: #000;
+  font-family: 'Inter', sans-serif;
+  box-sizing: border-box;
+}
+.measureSelect {
+  width: 60px;
+  height: 40px;
+  border: 2px solid #000;
+  background: #fff;
+  text-align: center;
+  font-size: 16px;
+  font-family: 'Inter', sans-serif;
+  box-sizing: border-box;
+  margin-left: 10px;
+}
+.measureUnit {
+  width: 27.77px;
+  height: 40px;
+  font-size: 16px;
+  color: #000;
+  margin-left: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+}
+
+.buttonBack {
+  flex: 1;
+  height: 48px;
+  background: #fff;
+  border: 2px solid #000;
+  color: #000;
+  font-size: 18px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.buttonCreate {
+  flex: 1;
+  height: 48px;
+  background: linear-gradient(to right, #2b214d, #13536c);
+  color: #fff;
+  font-size: 18px;
+  font-family: 'Inter', sans-serif;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}

@@ -1,0 +1,67 @@
+.startPage {
+  position: relative;
+  width: var(--page-width);
+  min-height: var(--page-height);
+  margin: 0 auto;
+  font-family: 'Outfit', sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.title {
+  position: absolute;
+  margin-top: 99px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 330px;
+  height: 76px; 
+  font-size: 32px;
+  text-align: center;
+  color: #000;
+}
+
+.startButton {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 50%; 
+  width: 320px; 
+  height: 50px;
+  background: #000;
+  color: #fff;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@media (min-width: 1280px) {
+  .startPage {
+    width: min(100vw, var(--page-max-width));
+    height: var(--page-height);
+    min-height: unset;
+    overflow-y: auto;
+  }
+
+  /* Naslov: i dalje 99px od vrha, ali centriran vodoravno */
+  .title {
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 99px;
+    width: 600px;
+    text-align: center;
+  }
+
+  /* Gumb: točno u vertikalnom centru i centriran vodoravno */
+  .startButton {
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 420px;
+    height: 56px;
+    font-size: 20px;
+  }
+}

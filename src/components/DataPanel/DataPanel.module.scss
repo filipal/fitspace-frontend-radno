@@ -1,0 +1,174 @@
+.dataPanel {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 180px;
+  z-index: 1; /* above background strip injected on bodySelected */
+}
+
+.dataPanelHeader {
+  width: 100%;
+  height: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(236, 236, 236, 0.5);
+  border-radius: 6px 6px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dataPanelHeader p {
+  font-size: 14px;
+  font-weight: bold;
+  margin: 0;
+  color: #000;
+}
+
+.dataPanelContent {
+  width: 100%;
+  height: 468px;
+  margin-top: 1px;
+  padding-top: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(236, 236, 236, 0.5);
+  border-radius: 0 0 6px 6px;
+  overflow-y: auto;
+}
+
+/* Measurements list styles */
+.measurementsList {
+  padding: 10px 0 0 0; // Prvi red na 8px od gornje margine
+}
+
+.measurementItem {
+  display: flex;
+  align-items: center;
+  height: 9px;
+  margin-bottom: 10.5px; // Razmak između redova
+  padding: 0 10px;
+}
+
+.measurementIcon {
+  width: 20px;
+  height: 10px; // Maksimalna visina
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-right: 10px; // 10px razmak između ikone i teksta
+}
+
+.measurementIcon img {
+  max-width: 20px;
+  max-height: 10px;
+  object-fit: contain;
+  display: block;
+}
+
+.measurementName {
+  flex: 1;
+  height: 9px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #000;
+  line-height: 9px;
+  margin-right: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.measurementValue {
+  height: 9px;
+  font-size: 12.5px;
+  font-weight: 400;
+  color: #000;
+  line-height: 9px;
+  text-align: right;
+  margin-left: auto;          // gura do desnog ruba (unutar paddinga measurementItem)
+  font-variant-numeric: tabular-nums; // jednaka širina znamenki
+  min-width: 3ch;
+}
+
+.dataPanel,
+.dataPanelHeader,
+.dataPanelContent {
+  box-sizing: border-box;
+}
+
+@media (min-width: 1440px) {
+  .dataPanel {
+    position: static;
+    width: 273px;
+    height: 750.75px;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+  }
+  .dataPanelHeader {
+    flex: 1 1 auto;
+    width: 100%;
+    height: auto;
+    margin-top: 0;
+    box-sizing: border-box;
+  }
+  .dataPanelContent {
+    width: 273px;
+    height: 750px;
+  }
+  .dataPanelHeader p {
+    font-size: 20px;
+    font-weight: 400;
+    margin: 0;
+    color: #000;
+  }
+  .measurementItem {
+    display: flex;
+    align-items: center;
+    height: 13.65px;
+    margin-bottom: 16.68px; // Razmak između redova
+    padding: 0 15.17px;
+  }
+
+  .measurementIcon {
+    width: 30.42px;
+    height: 15.35px; // Maksimalna visina
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    margin-right: 15.17px; // 15px razmak između ikone i teksta
+  }
+
+  .measurementIcon img {
+    max-width: 30.42px;
+    max-height: 15.35px;
+    object-fit: contain;
+  }
+  .measurementName {
+    flex: 1;
+    height: 15.35px;
+    font-size: 18px;
+    font-weight: 500;
+    color: #000;
+    line-height: 15.35px;
+    margin-right: 10px; // 10px razmak između teksta i broja
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .measurementValue {
+    height: 15.35px;
+    font-size: 18px;
+    font-weight: 400;
+    color: #000;
+    line-height: 15.35px;
+    text-align: right;
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+    min-width: 3.5ch;
+  }
+  .measurementsList {
+    padding: 16.68px 0 0 0; // Prvi red na 16.68px od gornje margine
+  }
+
+}
+

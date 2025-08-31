@@ -1,0 +1,93 @@
+.loadingScreenPage {
+  position: relative;
+  width: 100%;
+  max-width: 430px;
+  height: 100vh;
+  background: #f0f0f0; /* Svijetlo siva pozadina kao na slici */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+}
+
+.exitButton {
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #000;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  
+  &:hover {
+    opacity: 0.7;
+  }
+}
+
+.loadingContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 400px;
+  padding: 0 20px;
+}
+
+.progressContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+}
+
+.progressBar {
+  width: 100%;
+  max-width: 300px;
+  height: 8px;
+  background: #fff;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid #ddd;
+}
+
+.progressFill {
+  height: 100%;
+  background: #000;
+  border-radius: 4px;
+  transition: width 0.1s ease-out;
+}
+
+.loadingText {
+  font-size: 18px;
+  font-weight: 400;
+  color: #000;
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* Desktop styles */
+@media (min-width: 1280px) {
+  .exitButton {
+    top: 60px;
+    left: 60px;
+  }
+  
+  .progressBar {
+    max-width: 400px;
+    height: 10px;
+  }
+  
+  .loadingText {
+    font-size: 20px;
+  }
+}

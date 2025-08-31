@@ -1,0 +1,158 @@
+.footerActions, .footerActionsRow {
+  width: 320px;
+  /* height: 50px; */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 0 auto;
+}
+.footerTopButton {
+  width: 320px;
+  height: 50px;
+  background: linear-gradient(to right, #2b214d, #13536c);
+  color: #fff;
+  font-size: 18px;
+  font-family: 'Outfit', sans-serif;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 10px auto; /* existing margin */
+  margin-bottom: 10px; /* added margin-bottom */
+}
+.footer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  justify-content: flex-end;
+  height: 155px;
+  pointer-events: auto;
+  position: static;
+  left: unset;
+  bottom: unset;
+  margin-bottom: 45px;
+  height: auto;
+}
+.footerActions {
+  width: 320px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 0 auto;
+  position: relative;
+  bottom: 0;
+}
+.footerActions > button {
+  pointer-events: auto;
+}
+.buttonBack {
+  width: 100px;
+  height: 50px;
+  background: #fff;
+  border: 2px solid #000;
+  color: #000;
+  font-size: 18px;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.buttonSingle {
+  width: 320px;
+  height: 50px;
+  background: #fff;
+  border: 2px solid #000;
+  color: #000;
+  font-size: 18px;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.buttonPrimary {
+  width: 210px;
+  height: 50px;
+  background: linear-gradient(to right, #2b214d, #13536c);
+  color: #fff;
+  font-size: 18px;
+  font-family: 'Outfit', sans-serif;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.buttonBlack {
+  width: 210px;
+  height: 50px;
+  background: #000;
+  color: #fff;
+  font-size: 18px;
+  font-family: 'Outfit', sans-serif;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.footerTopButton:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+  background: linear-gradient(to right, #372C53, #1F5167);
+  color: #fff;
+}
+
+
+
+@media (min-width: 1440px) {
+  .footerTopButton {
+    width: 100px;
+    width: 422px;
+  }
+  .footerActions, .footerActionsRow {
+    width: 100px;
+    width: 422px;
+  }
+  .buttonBack {
+    width: 100px;
+    width: 132px;
+  }
+  .buttonSingle {
+    width: 422px;
+  }
+  .buttonPrimary {
+    width: 100px;
+    width: 278px;
+  }
+  .buttonBlack {
+    width: 100px;
+    width: 278px;
+
+  }
+}
+
+
+@media (min-width: 1280px) {
+  .footerTopButton {
+    width: 422px;
+  }
+  .footerActions, .footerActionsRow {
+    width: 422px;
+  }
+  .buttonSingle {
+    width: 422px;
+  }
+}

@@ -1,0 +1,89 @@
+.container {
+  width: 430px;
+  height: 120px;
+  display: flex;
+  background: #ececec;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+.left {
+  width: 350px;
+  height: 120px;
+  display: grid;
+  grid-template-columns: 24px 232px 24px; /* arrow | icons strip | arrow */
+  column-gap: 20px; /* 20px behind left arrow and in front of right arrow */
+  justify-content: center;
+  align-items: center;
+  border-right: 1px solid #000;
+}
+
+.right {
+  width: 80px;
+  height: 120px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.hArrow {
+  width: 24px;
+  height: 32.8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  
+  img { width: 100%; height: 100%; object-fit: contain; }
+}
+
+.iconStrip {
+  width: 232px;
+  height: 100px;
+  display: grid;
+  grid-template-columns: 60px 1fr 60px; /* 60 | center | 60 */
+  align-items: center;
+  justify-items: center;
+}
+
+.iconSmall {
+  width: 60px;
+  height: 60px;
+}
+
+.iconBig {
+  width: 100px;
+  height: 100px;
+}
+
+.colorPicker {
+  width: 60px;
+  height: 100px; /* explicitly 100px tall, centered inside right */
+  display: grid;
+  grid-template-rows: 30px 40px 30px; /* arrows 30x22 (we'll size img), preview 40x40 */
+  align-items: center;
+  justify-items: center;
+}
+
+.vArrow {
+  width: 30px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  
+  img { width: 100%; height: 100%; object-fit: contain; }
+}
+
+.previewIcon {
+  width: 40px;
+  height: 40px;
+}
