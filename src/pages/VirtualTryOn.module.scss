@@ -3,8 +3,10 @@
   flex-direction: column;
   align-items: center;
   color: #000;
-  min-height: 100dvh;
+  min-height: var(--page-height);
+  width: var(--page-width);
   box-sizing: border-box;
+  margin: 0 auto;
 }
 
 .avatarButton {
@@ -20,7 +22,7 @@
 .avatarButton img { width: 100%; height: 100%; object-fit: contain; }
 
 .canvasWrapper {
-  width: 430px;
+  width: var(--page-width);
   position: relative;
   display: flex;
   justify-content: center;
@@ -371,7 +373,7 @@
 .controlButton, .controlButton.selected { color: #000; }
 
 .footer {
-  width: 430px;
+  width: var(--page-width);
   height: 51px;
   display: flex;
   margin: 0;
@@ -388,7 +390,7 @@
 .footer.expandedTop::before, .footer.expandedBot::before {
   content: '';
 }
-.accordionArea { width: 430px; height: 180px; flex: 0 0 auto; }
+.accordionArea { width: var(--page-width); height: 180px; flex: 0 0 auto; }
 .footerLeft, .footerRight {
   width: 215px;
   height: 51px;

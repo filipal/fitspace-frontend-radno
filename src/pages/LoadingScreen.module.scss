@@ -1,7 +1,7 @@
 .loadingScreenPage {
   position: relative;
-  width: 100%;
-  max-width: 430px;
+  width: var(--page-width);
+  max-width: var(--page-max-width);
   height: 100vh;
   background: #f0f0f0; /* Svijetlo siva pozadina kao na slici */
   display: flex;

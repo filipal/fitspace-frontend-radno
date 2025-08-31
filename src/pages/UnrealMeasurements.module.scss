@@ -4,6 +4,9 @@
   align-items: center;
   color: #000;
   background: #ececec;
+  width: var(--page-width);
+  min-height: var(--page-height);
+  margin: 0 auto;  
 }
 
 .avatarButton {
@@ -223,7 +226,7 @@
 }
 
 .bottomSection {
-  width: 100%; // Puna širina ekrana
+  max-width: var(--page-max-width);
   max-width: 430px;
   border-top: 1px solid #000; // Border od ruba do ruba
   display: flex;
@@ -310,9 +313,9 @@
 
 @media (min-width: 1440px) {
   .page {
-    width: 100%;
-    max-width: 1440px;
-    height: 1024px;
+    width: var(--page-width);
+    max-width: var(--page-max-width);
+    height: var(--page-height);
     align-items: flex-start;
     position: relative;
   }

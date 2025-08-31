@@ -40,7 +40,7 @@
 
 @media (min-width: 1280px) {
   .startPage {
-    width: min(100vw, var(--page-max-width));
+    width: var(--page-width);
     height: var(--page-height);
     min-height: unset;
     overflow-y: auto;

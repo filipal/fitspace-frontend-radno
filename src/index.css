@@ -1,8 +1,8 @@
 :root {
   /* MOBILE default */
   /* 360px – smallest mobile layout */
-  --page-width: 360px;
   --page-max-width: 360px;
+  --page-width: min(100vw, var(--page-max-width));
   --page-height: 800px;
 
   font-family: 'Outfit', system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -22,8 +22,8 @@
 /* 430px – large phones */
 @media (min-width: 430px) {
   :root {
-    --page-width: 430px;
     --page-max-width: 430px;
+    --page-width: min(100vw, var(--page-max-width));
     --page-height: 932px;
   }
 }
@@ -31,8 +31,8 @@
 /* 768px – tablets (portrait) */
 @media (min-width: 768px) {
   :root {
-    --page-width: 768px;
     --page-max-width: 768px;
+    --page-width: min(100vw, var(--page-max-width));
     --page-height: 1024px;
   }
 }
@@ -40,8 +40,8 @@
 /* 1024px – tablets (landscape) / small desktops */
 @media (min-width: 1024px) {
   :root {
-    --page-width: 1024px;
     --page-max-width: 1024px;
+    --page-width: min(100vw, var(--page-max-width));
     --page-height: 768px;
   }
 }
@@ -49,8 +49,8 @@
 /* 1280px – laptops */
 @media (min-width: 1280px) {
   :root {
-    --page-width: 1280px;
     --page-max-width: 1280px;
+    --page-width: min(100vw, var(--page-max-width));
     --page-height: 800px;
   }
 }
@@ -58,8 +58,8 @@
 /* 1440px – large desktops */
 @media (min-width: 1440px) {
   :root {
-    --page-width: 1440px;
     --page-max-width: 1440px; /* Figma web platno */
+    --page-width: min(100vw, var(--page-max-width));
     --page-height: 1024px;    /* Figma visina (po želji) */
   }
 }

@@ -1,7 +1,7 @@
 .faceScanInfoPage {
   position: relative;
-  width: 430px;
-  min-height: 932px;
+  width: var(--page-width);
+  min-height: var(--page-height);
   margin: 0 auto;
   font-family: 'Outfit', sans-serif;
   display: flex;
@@ -10,7 +10,7 @@
 }
 
 .faceScanContent {
-  width: 430px;
+  width: var(--page-width);
   height: 736px;
   display: flex;
   flex-direction: column;

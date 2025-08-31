@@ -1,6 +1,7 @@
 .scanQRPage {
-  width: 1440px;
-  min-height: 100vh;
+  width: var(--page-width);
+  max-width: var(--page-max-width);
+  min-height: var(--page-height);
   margin: 0 auto;
   font-family: 'Outfit', sans-serif;
 }

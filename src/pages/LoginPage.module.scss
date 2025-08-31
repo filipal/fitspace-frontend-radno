@@ -133,10 +133,10 @@
 
 
 
-@media (min-width: 1440px) {
+  @media (min-width: 1440px) {
   .loginPage {
     /* koristi fiksnu visinu web platna iz :root */
-    width: min(100vw, var(--page-max-width)); /* 1440px iz varijable */
+    width: var(--page-width); /* 1440px iz varijable */
     height: var(--page-height);               /* 1024px iz varijable */
     min-height: unset;
     overflow-y: auto;
