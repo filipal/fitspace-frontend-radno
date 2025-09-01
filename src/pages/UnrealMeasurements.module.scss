@@ -7,7 +7,7 @@
   color: #000;
   background: #ececec;
   width: var(--page-width);
-  min-height: var(--page-height);
+  min-height: 100svh;
   margin: 0 auto;  
 }
 
@@ -317,7 +317,7 @@
   .page {
     width: var(--page-width);
     max-width: var(--page-max-width);
-    height: var(--page-height);
+    height: 100svh;
     align-items: flex-start;
     position: relative;
   }

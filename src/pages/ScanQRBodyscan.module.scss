@@ -3,7 +3,7 @@
 .scanQRPage {
   width: var(--page-width);
   max-width: var(--page-max-width);
-  min-height: var(--page-height);
+  min-height: 100svh;
   margin: 0 auto;
   font-family: 'Outfit', sans-serif;
 }

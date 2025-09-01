@@ -4,7 +4,7 @@
   position: relative;
   width: 100%;
   max-width: var(--page-max-width);
-  min-height: var(--page-height);
+  min-height: 100svh;
   margin-inline: auto;
   font-family: 'INter', sans-serif;
 
@@ -140,7 +140,7 @@
   .loginPage {
     /* koristi fiksnu visinu web platna iz :root */
     width: var(--page-width); /* 1440px iz varijable */
-    height: var(--page-height);               /* 1024px iz varijable */
+    height: 100svh;
     min-height: unset;
     overflow-y: auto;
   }

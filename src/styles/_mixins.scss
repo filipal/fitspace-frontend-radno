@@ -1,10 +1,11 @@
 @use 'sass:map';
+@use 'sass:meta';
 @use 'sass:string';
 @use './variables' as v;
 
 
 @mixin respond($breakpoint) {
-  $key: if(type-of($breakpoint) == string, string.unquote($breakpoint), $breakpoint);
+  $key: if(meta.type-of($breakpoint) == string, string.unquote($breakpoint), $breakpoint);
   $size: map.get(v.$breakpoints, $key);
   @if $size {
     @media (min-width: $size) {
@@ -16,8 +17,8 @@
 }
 
 @mixin respond-between($lower, $upper) {
-  $lower-key: if(type-of($lower) == string, string.unquote($lower), $lower);
-  $upper-key: if(type-of($upper) == string, string.unquote($upper), $upper);
+  $lower-key: if(meta.type-of($lower) == string, string.unquote($lower), $lower);
+  $upper-key: if(meta.type-of($upper) == string, string.unquote($upper), $upper);
 
   $min: map.get(v.$breakpoints, $lower-key);
   $max: map.get(v.$breakpoints, $upper-key);

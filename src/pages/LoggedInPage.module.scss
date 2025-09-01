@@ -42,7 +42,7 @@
 }
 .loggedInPage {
   width: var(--page-width);
-  min-height: var(--page-height);
+  min-height: 100svh;
   margin: 0 auto;
   background: rgb(236, 236, 236);
   display: flex;
