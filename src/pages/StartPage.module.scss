@@ -26,8 +26,9 @@
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  top: 50%; 
-  width: 320px; 
+  margin-inline: 0 auto;
+  top: 50%;
+  width: clamp(200px, 80%, 320px);
   height: 50px;
   background: #000;
   color: #fff;
