@@ -25,7 +25,9 @@
 }
 
 .tipsList {
-  width: 320px;
+  width: 100%;
+  max-width: 320px;
+  margin-inline: auto;
   height: 500px;
   display: flex;
   flex-direction: column;
@@ -37,7 +39,9 @@
 }
 
 .tipBox {
-  width: 320px;
+  width: 100%;
+  max-width: 320px;
+  margin-inline: auto;
   background: #fff;
   border: 2px solid #000;
   font-size: 18px;

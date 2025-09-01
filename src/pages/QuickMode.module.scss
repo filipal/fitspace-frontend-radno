@@ -1,7 +1,8 @@
 @use '../styles' as s;
 
 .footerTopButton {
-  width: 320px;
+  width: 100%;
+  max-width: 320px;
   height: 50px;
   background: linear-gradient(to right, #2b214d, #13536c);
   color: #fff;
@@ -16,7 +17,8 @@
   margin: 0 auto 10px auto;
 }
 .footerActionsRow {
-  width: 320px;
+  width: 100%;
+  max-width: 320px;
   height: 50px;
   display: flex;
   justify-content: center;
@@ -39,7 +41,8 @@
   justify-content: center;
 }
 .buttonPrimary {
-  width: 210px;
+  width: min(210px, 100%);
+  margin-inline: auto;
   height: 50px;
   background: linear-gradient(to right, #2b214d, #13536c);
   color: #fff;
@@ -53,7 +56,8 @@
   justify-content: center;
 }
 .buttonBlack {
-  width: 210px;
+  width: min(210px, 100%);
+  margin-inline: auto;
   height: 50px;
   background: #000;
   color: #fff;
@@ -79,7 +83,8 @@
   pointer-events: none;
 }
 .footerActionsRow {
-  width: 320px;
+  width: 100%;
+  max-width: 320px;
   height: 50px;
   display: flex;
   justify-content: center;
@@ -107,7 +112,8 @@
   justify-content: center;
 }
 .buttonPrimary {
-  width: 210px;
+  width: min(210px, 100%);
+  margin-inline: auto;
   height: 50px;
   background: linear-gradient(to right, #2b214d, #13536c);
   color: #fff;
@@ -121,7 +127,8 @@
   justify-content: center;
 }
 .buttonBlack {
-  width: 210px;
+  width: min(210px, 100%);
+  margin-inline: auto;
   height: 50px;
   background: #000;
   color: #fff;
@@ -159,7 +166,8 @@
   width: 100%;
 }
 .sectionMeasurements {
-  width: 320px;
+  width: 100%;
+  max-width: 320px;
   height: 140px;
   display: flex;
   flex-direction: column;
