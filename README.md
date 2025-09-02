@@ -49,3 +49,5 @@ The application includes a debug mode for development and testing purposes.
 - **Close**: Click the ✕ button or press `Ctrl+Shift+D` again
 
 The debug overlay displays pixel streaming debug information and can be extended with additional debugging tools as needed.
+
+npm install react-oidc-context  
