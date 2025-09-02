@@ -5,11 +5,27 @@ $font-size-base: 16px;
 
 /* Mobile-first breakpoints (min-width thresholds) */
 $breakpoints: (
-  xs: 360px,      // compact phones
-  sm: 392px,      // small phones
-  lg-mobile: 430px, // large mobile
-  md: 768px,      // tablet
-  lg: 1024px,     // small desktop
-  xl: 1280px,     // desktop
-  xxl: 1440px     // large desktop
+  xs: 320px,        // iPhone SE, najmanji telefoni
+  sm: 360px,        // Android Small/Large
+  md: 375px,        // iPhone 8, 11 Pro/X
+  mdplus: 390px,    // iPhone 13/14
+  lg: 414px,        // iPhone 8 Plus, 11 Pro Max, Pixel XL
+  xl: 428px,        // iPhone 14 Plus
+  xxl: 440px,       // iPhone 16 Pro Max
+  pixel: 411px,     // Google Pixel 2/XL
+  compact: 412px,   // Android Compact
+  large-mobile: 430px, // iPhone 16 Plus
+  mac128k: 512px,   // Macintosh 128k
+  tablet-sm: 700px,   // Android Medium
+  tablet: 744px,      // iPad mini 8.3
+  tablet-md: 768px,   // iPad mini 5
+  tablet-lg: 834px,   // iPad Pro 11"
+  tablet-xl: 1024px,  // iPad Pro 12.9"
+  laptop-sm: 1152px,  // MacBook
+  laptop: 1280px,     // iMac, Android Expanded, MacBook Air
+  laptop-md: 1368px,  // Surface Pro 4
+  laptop-lg: 1440px,  // MacBook Pro, Surface Pro 8, Desktop
+  laptop-xl: 1500px,  // Surface Book
+  laptop-xxl: 1512px, // MacBook Pro 14"
+  desktop: 1728px     // MacBook Pro 16"
 );

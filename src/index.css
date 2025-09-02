@@ -24,6 +24,17 @@ img, video, canvas, svg { max-width: 100%; height: auto; }
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* 393px – large phones */
+@media (min-width: 393px) {
+  :root {
+    --page-max-width: 393px;
+    --page-width: min(100vw, var(--page-max-width));
+    --page-max-height: 852px;
+    /* Height must be based on viewport height, not width */
+    --page-height: min(100svh, var(--page-max-height));
+  }
+}
+
 /* 430px – large phones */
 @media (min-width: 430px) {
   :root {

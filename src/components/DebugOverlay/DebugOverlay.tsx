@@ -46,7 +46,7 @@ export default function DebugOverlay() {
         <div className={styles.debugSection}>
           <h4>Pixel Streaming Debug</h4>
           <div style={{ 
-            height: 'calc(100vh - 120px)', 
+            height: 'calc(100dvh - 120px)', 
             border: '1px solid #444',
             borderRadius: '4px',
             overflow: 'hidden'

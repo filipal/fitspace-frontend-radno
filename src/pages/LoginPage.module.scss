@@ -2,14 +2,16 @@
 
 .loginPage {
   position: relative;
-  width: 100%;
-  max-width: var(--page-max-width);
-  min-height: 100svh;
+  width: var(--page-width);
+  /* Use configured page height to avoid scroll on mobile */
+  height: var(--page-height);
   margin-inline: auto;
+  /* mobilni stack */
   display: flex;
   flex-direction: column;
   align-items: center;   /* sve centrirano osim backButton-a */
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* 1) Back u kutu – jedina iznimka s absolute */
@@ -39,9 +41,8 @@
 
 /* 3) Sivi blok 360×373 – centriran, razmak prema Figmi */
 .loginBg {
-  margin-inline: 0 auto;
   width: 100%;
-  max-width: 320px;
+  max-width: 360px;
   height: 373px;
   margin-top: 20px;   /* 199 (bg top) - (90+82) (logo bottom) = 27 */
   background: #d9d9d9;
@@ -50,7 +51,6 @@
 
 /* 4) CTA: Create Your Digital Twin – 320×50 – centriran */
 .createButton {
-  margin-inline: 0 auto;
   width: 100%;
   max-width: 320px;
   height: 50px;
@@ -60,6 +60,7 @@
   color: #fff;
   font-size: 18px;
   border: none;
+  display: block;
 }
 
 /* 5) Login sekcija – grupirana, s razmacima po Figmi */
@@ -74,7 +75,6 @@
 }
 
 .introText {
-  margin-inline: 0 auto;
   width: 100%;
   max-width: 330px;
   font-weight: 300;  /* Figma “Light” */
@@ -87,14 +87,13 @@
 
 /* 6) Forma – stack s točnim razmacima */
 .loginForm {
-  margin-inline: 0 auto;
   width: 100%;
   max-width: 320px;
   display: flex;
   flex-direction: column;
-  /* 733 - (660 + 46) = 27px razmaka od intro teksta do e-maila */
   margin-top: 25px;
-  gap: 15px;          /* ugodan unutarnji razmak između grupa */
+  gap: 15px; /* 15px between first and second, second and third; third gets extra bottom spacing via last class */
+  align-items: center;
 }
 
 /* Email / Password grupa */
@@ -124,12 +123,32 @@
   max-width: 320px;
   height: 50px;
   margin-top: 21px;
-  margin-inline: auto;
   background: #000;
   color: #fff;
   border: 0;
   font-size: 18px;
+  display: block;
 }
+
+/* New social login buttons replacing old inputs */
+.socialButton {
+  width: 320px;
+  height: 50px;
+  background: #000;
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  font-size: 17px;
+  font-weight: 400;
+  cursor: pointer;
+}
+.socialIcon { width: 32px; height: 32px; object-fit: contain; }
+.socialIconApple { width: 26px; height: 31px; object-fit: contain; }
+.socialLabel { line-height: 1; }
+.socialButtonLast { margin-bottom: 45px; }
 
 /* Mobile: webPanel ne radi ništa posebno – nasljeđuje flex kolonu stranice */
 .webPanel {
@@ -139,9 +158,82 @@
   align-items: center;  /* <— ovo vraća centriranje djece */
 }
 
+// Mobilni override za iPhone 15 i slične (393px)
+@media (max-width: 400px) {
+  .loginPage {
+    position: relative;
+    width: var(--page-width);
+    /* Use configured page height to avoid scroll on mobile */
+    height: var(--page-height);
+    margin-inline: auto;
+    /* mobilni stack */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+    overflow: hidden;
+    height: auto;
+    padding: 0;
+    gap: 0;
+  }
+  .exitIcon {
+    width: 14px;
+    height: 14px;
+  }
+  .logo {
+    width: 142.5px;
+    height: 74.9px;
+    margin-top: 15px;
 
+  }
+  .loginBg {
+    max-width: 242px;
+    height: 220px;
+    margin-top: 4px;
+    padding: 4px 0;
+  }
+  .createButton {
+    max-width: 74vw;
+    height: 32px;
+    font-size: 14px;
+    margin-top: 6px;
+    margin-bottom: 6px;
+  }
+  .loginFormSection {
+    max-width: 74vw;
+    padding-bottom: 6px;
+    margin-top: 4px;
+  }
+  .loginForm {
+    max-width: 74vw;
+    margin-top: 4px;
+    gap: 6px;
+  }
+  .introText {
+    max-width: 74vw;
+    font-size: 13px;
+    margin-top: 0;
+  }
+  .loginButton {
+    max-width: 74vw;
+    height: 32px;
+    font-size: 14px;
+    margin-top: 6px;
+  }
+  .socialButton {
+    max-width: 74vw;
+    height: 32px;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  .backButton {
+    left: 16px;
+    top: 16px;
+  }
+}
 
-  @include s.respond(xxl) {
+@include s.respond(xxl) {
   .loginPage {
     /* koristi fiksnu visinu web platna iz :root */
     width: var(--page-width); /* 1440px iz varijable */
@@ -176,9 +268,8 @@
 
   .createButton {
     width: 100%;
-    max-width: 320px;
+    max-width: 422px;
     height: 50px;
-    margin-inline: auto;
     background: linear-gradient(to right, #2b214d, #13536c);
     color: #fff;
     font-size: 18px;
@@ -202,6 +293,7 @@
     flex-direction: column;
     margin-top: 27px;
     gap: 15px;
+    align-items: center;
   }
 
   .textInput {
@@ -229,15 +321,16 @@
 
   .loginButton {
     width: 100%;
-    max-width: 320px;
+    max-width: 422px;
     height: 50px;
     margin-top: 21px;
-    margin-inline: auto;
     background: #000;
     color: #fff;
     border: 0;
     font-size: 18px;
   }
+
+  .socialButton { width: 422px; }
 
   .webPanel {
     position: absolute;
