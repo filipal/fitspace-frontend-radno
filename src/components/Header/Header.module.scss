@@ -10,7 +10,7 @@
   margin: 0 auto;
   border-bottom: 1px solid #000;
   padding-inline: 30px;
-  padding-top: 60px;
+  padding-top: 63px;
   display: grid;
   grid-template-columns: auto 1fr auto; /* [exit] [title] [right] */
   align-items: start;
@@ -94,6 +94,16 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+@media (max-width: 400px) {
+  .appHeader {
+    width: 100%;
+    height: 92.3px;
+    padding-top: 57.5px;
+    padding-inline: 27.4px;
+  }
+}
+
 
 /* ——————————————————————————— */
 /* DESKTOP (≥ 1440px): header 1440 x 70                              */
