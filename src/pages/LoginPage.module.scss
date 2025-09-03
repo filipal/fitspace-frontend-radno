@@ -1,9 +1,9 @@
 @use '../styles' as s;
 
-/* Design dimenzije za iPhone 15 (portret): 390×844 CSS px */
+/* Design dimenzije: iPhone 15 Pro (portret): 393×852 CSS px */
 :root {
-  --design-w: 390px;
-  --design-h: 844px;
+  --design-w: 393px;
+  --design-h: 852px;
 }
 
 .loginPage {
@@ -24,7 +24,7 @@
   /* scale-to-fit */
   --scale-x: calc(100vw / var(--design-w));
   --scale-y: calc(100dvh / var(--design-h));
-  --scale: min(var(--scale-x), var(--scale-y));
+  --scale: min(var(--scale-x), var(--scale-y), 1);
   transform-origin: top center;
   transform: translateX(-50%) scale(var(--scale));
 

@@ -118,81 +118,83 @@ export default function AvatarInfoPage() {
   // --- PAGE ---
   return (
     <div className={styles.avatarInfoPage}>
-      <Header
-        title="Create your Avatar"
-        variant="dark"
-        onExit={() => navigate('/')}
-        onInfo={() => navigate('/use-of-data')}
-      />
-      {/* Ime + spol */}
-      <div className={styles.formSection}>
-        <input
-          className={styles.avatarNameInput}
-          type="text"
-          placeholder="Avatar’s Name"
-          value={name}
-          onChange={e => setName(e.target.value)}
+      <div className={styles.canvas}>
+        <Header
+          title="Create your Avatar"
+          variant="dark"
+          onExit={() => navigate('/')}
+          onInfo={() => navigate('/use-of-data')}
         />
-        <div className={styles.genderChoice}>
-          <button
-            className={cn(styles.genderButton, { [styles.genderButtonSelected]: gender === 'male' })}
-            onClick={() => setGender('male')}
-            type="button"
-          >
-            Male
-          </button>
-          <button
-            className={cn(styles.genderButton, { [styles.genderButtonSelected]: gender === 'female' })}
-            onClick={() => setGender('female')}
-            type="button"
-          >
-            Female
-          </button>
-        </div>
-      </div>
-
-      {/* PANEL – mob: stack; web: uokvireni panel */}
-      <div className={styles.webPanel}>
-        {/* Pickers */}
-        <div className={styles.pickersGroup}>
-          {renderPicker('Your Age Range:', age, ages, 'age')}
-          {renderPicker('Your Height:',   height, heights, 'number')}
-          {renderPicker('Your Weight:',   weight, weights, 'number')}
-        </div>
-        <div className={styles.howText}>How would you like to create your avatar?</div>
-
-        <div className={styles.actionsGrid}>
-          <div className={styles.action}>     
-            <button className={styles.scanButton} 
-              onClick={() => {
-                if (window.innerWidth >= 1440) {
-                  navigate('/scan-qr-bodyscan')
-                } else {
-                  navigate('/body-scan-info')
-                }
-              }}>
-              <img src={cameraIcon} alt="" className={styles.buttonIcon1} />
-              Scan Body
+        {/* Ime + spol */}
+        <div className={styles.formSection}>
+          <input
+            className={styles.avatarNameInput}
+            type="text"
+            placeholder="Avatar’s Name"
+            value={name}
+            onChange={e => setName(e.target.value)}
+          />
+          <div className={styles.genderChoice}>
+            <button
+              className={cn(styles.genderButton, { [styles.genderButtonSelected]: gender === 'male' })}
+              onClick={() => setGender('male')}
+              type="button"
+            >
+              Male
             </button>
-            <div className={styles.scanDesc}>
-              Highly accurate. Scan your body & face<br />
-              with a phone in 3 minutes.
+            <button
+              className={cn(styles.genderButton, { [styles.genderButtonSelected]: gender === 'female' })}
+              onClick={() => setGender('female')}
+              type="button"
+            >
+              Female
+            </button>
+          </div>
+        </div>
+
+        {/* PANEL – mob: stack; web: uokvireni panel */}
+        <div className={styles.webPanel}>
+          {/* Pickers */}
+          <div className={styles.pickersGroup}>
+            {renderPicker('Your Age Range:', age, ages, 'age')}
+            {renderPicker('Your Height:',   height, heights, 'number')}
+            {renderPicker('Your Weight:',   weight, weights, 'number')}
+          </div>
+          <div className={styles.howText}>How would you like to create your avatar?</div>
+
+          <div className={styles.actionsGrid}>
+            <div className={styles.action}>     
+              <button className={styles.scanButton} 
+                onClick={() => {
+                  if (window.innerWidth >= 1440) {
+                    navigate('/scan-qr-bodyscan')
+                  } else {
+                    navigate('/body-scan-info')
+                  }
+                }}>
+                <img src={cameraIcon} alt="" className={styles.buttonIcon1} />
+                Scan Body
+              </button>
+              <div className={styles.scanDesc}>
+                Highly accurate. Scan your body & face<br />
+                with a phone in 3 minutes.
+              </div>
+            </div>
+            <div className={styles.action}>
+            <button className={styles.quickButton} onClick={() => navigate('/quickmode')}>
+              <img src={quickIcon} alt="" className={styles.buttonIcon} />
+              Quick Mode
+            </button>
+            <div className={styles.quickDesc}>
+              Fastest, but may not be as accurate.<br />
+              Enter main body measurements and choose your body type.
+            </div>
             </div>
           </div>
-          <div className={styles.action}>
-          <button className={styles.quickButton} onClick={() => navigate('/quickmode')}>
-            <img src={quickIcon} alt="" className={styles.buttonIcon} />
-            Quick Mode
+          <button className={styles.backButtonAvatarinfo} onClick={() => navigate(-1)}>
+            Back
           </button>
-          <div className={styles.quickDesc}>
-            Fastest, but may not be as accurate.<br />
-            Enter main body measurements and choose your body type.
-          </div>
-          </div>
         </div>
-        <button className={styles.backButtonAvatarinfo} onClick={() => navigate(-1)}>
-          Back
-        </button>
       </div>
     </div>
   )

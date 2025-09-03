@@ -1,14 +1,37 @@
 @use '../styles' as s;
 
+/* Design dimenzije: iPhone 15 Pro (portret): 393×852 CSS px */
+:root {
+  --design-w: 393px;
+  --design-h: 852px;
+}
+
 .avatarInfoPage {
   position: relative;
-  width: var(--page-width);
-  min-height: 100svh;
-  margin: 0 auto;
+  width: 100vw;
+  height: 100dvh;
+  margin: 0;
+  overflow: hidden; /* bez scrolla – sadržaj se skalira */
   font-family: 'Inter', sans-serif;
+}
+
+/* Unutarnje "platno" koje se skalira da stane na ekran */
+.canvas {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: var(--design-w);
+  height: var(--design-h);
+
+  /* scale-to-fit */
+  --scale-x: calc(100vw / var(--design-w));
+  --scale-y: calc(100dvh / var(--design-h));
+  --scale: min(var(--scale-x), var(--scale-y), 1);
+  transform-origin: top center;
+  transform: translateX(-50%) scale(var(--scale));
+
   display: flex;
   flex-direction: column;
-  align-items: stretch;
 }
 
 /* ——— Form: name + gender ——— */
@@ -286,16 +309,8 @@
 }
 
 @media (max-width: 400px) {
-  .avatarInfoPage {
-    display: flex;
-    flex-direction: column;
-    height: 100dvh; // koristi dinamičku visinu viewporta
-    min-height: 0;  // sprječava overflow
-  }
+  .avatarInfoPage { }
   .webPanel {
-    flex: 1 1 auto;
-    min-height: 0; // sprječava overflow
-    overflow-y: auto; // ako želiš da se samo webPanel skrola
     display: flex;
     flex-direction: column;
     align-items: center;

@@ -1,13 +1,33 @@
 @use '../styles' as s;
+
+/* Design dimenzije: iPhone 15 Pro (portret): 393×852 CSS px */
+:root {
+  --design-w: 393px;
+  --design-h: 852px;
+}
 .startPage {
   position: relative;
-  width: var(--page-width);
-  min-height: 100svh;
-  margin: 0 auto;
+  width: 100vw;
+  height: 100dvh;
+  margin: 0;
+  overflow: hidden; /* bez scrolla – sadržaj se skalira */
   font-family: 'Outfit', sans-serif;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+}
+
+/* Unutarnje "platno" koje se skalira da stane na ekran */
+.canvas {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: var(--design-w);
+  height: var(--design-h);
+
+  /* scale-to-fit */
+  --scale-x: calc(100vw / var(--design-w));
+  --scale-y: calc(100dvh / var(--design-h));
+  --scale: min(var(--scale-x), var(--scale-y), 1);
+  transform-origin: top center;
+  transform: translateX(-50%) scale(var(--scale));
 }
 
 .title {
@@ -41,12 +61,7 @@
 }
 
 @include s.respond(xl) {
-  .startPage {
-    width: var(--page-width);
-    height: 100svh;
-    min-height: unset;
-    overflow-y: auto;
-  }
+  .startPage { }
 
   /* Naslov: i dalje 99px od vrha, ali centriran vodoravno */
   .title {
