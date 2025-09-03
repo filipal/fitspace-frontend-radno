@@ -6,9 +6,21 @@ import oidcConfig from './oidcConfig'
 import './index.css'
 import App from './App.tsx'
 
-/** DEV/PROD: registriraj SW samo na sigurnom kontekstu (https ili localhost) */
+// DEV: osiguraj da nijedan postojeći SW ne ostane aktivan u dev okruženju
+if (import.meta.env.DEV && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((regs) => {
+    regs.forEach((r) => r.unregister().catch(() => {}))
+  })
+}
+
+/**
+ * Registriraj Service Worker samo u produkciji i na sigurnom kontekstu.
+ * U developmentu SW zna remetiti Vite HMR i uzrokovati zastarjele CSS/JS datoteke.
+ */
 (function registerSW() {
   if (!('serviceWorker' in navigator)) return
+  if (import.meta.env.DEV) return
+
   const isLocalhost =
     location.hostname === 'localhost' ||
     location.hostname === '127.0.0.1' ||

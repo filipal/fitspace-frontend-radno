@@ -1,17 +1,38 @@
 @use '../styles' as s;
 
+/* Design dimenzije za iPhone 15 (portret): 390×844 CSS px */
+:root {
+  --design-w: 390px;
+  --design-h: 844px;
+}
+
 .loginPage {
   position: relative;
-  width: var(--page-width);
-  /* Use configured page height to avoid scroll on mobile */
-  height: var(--page-height);
-  margin-inline: auto;
-  /* mobilni stack */
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden; /* bez scrolla – sadržaj se skalira */
+}
+
+/* Unutarnje "platno" koje se skalira da stane na ekran */
+.canvas {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: var(--design-w);
+  height: var(--design-h);
+
+  /* scale-to-fit */
+  --scale-x: calc(100vw / var(--design-w));
+  --scale-y: calc(100dvh / var(--design-h));
+  --scale: min(var(--scale-x), var(--scale-y));
+  transform-origin: top center;
+  transform: translateX(-50%) scale(var(--scale));
+
+  /* zadrži postojeći mobilni stack unutar platna */
   display: flex;
   flex-direction: column;
-  align-items: center;   /* sve centrirano osim backButton-a */
+  align-items: center;
   box-sizing: border-box;
-  overflow: hidden;
 }
 
 /* 1) Back u kutu – jedina iznimka s absolute */
@@ -121,7 +142,8 @@
 /* Mobile: webPanel ne radi ništa posebno – nasljeđuje flex kolonu stranice */
 .webPanel {
   width: 100%;
-  height: 749px;
+  /* neka visina bude prema sadržaju */
+  height: auto;
   display: flex;
   flex-direction: column;
   align-items: center;  /* <— ovo vraća centriranje djece */
@@ -149,7 +171,7 @@
   }
   .webPanel {
     width: 100%;
-    height: 685px;
+    height: auto;
   }
   .createButton {
     width: 100%;
