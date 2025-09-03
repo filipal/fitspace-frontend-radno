@@ -26,4 +26,16 @@ export default defineConfig({
       },
     },
   },
+  server: {
+    host: true,        // sluša na 0.0.0.0 → dostupno s mobitela u istoj mreži
+    port: 5177,
+    strictPort: true,  // ako je port zauzet, baci grešku (ne mijenja broj porta)
+    // Ako HMR ne “pogađa” mobitel, odkomentiraj i upiši svoj LAN IP:
+    // hmr: { host: '192.168.50.114', protocol: 'ws', port: 5177 },
+  },
+  preview: {
+    host: true,
+    port: 5177,
+    strictPort: true,
+  },
 })

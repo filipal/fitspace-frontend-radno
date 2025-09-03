@@ -1,98 +1,72 @@
-html { box-sizing: border-box; }
-*,*::before,*::after { box-sizing: inherit; }
-html, body { margin: 0; max-width: 100%; }
+html {
+  box-sizing: border-box;
+  -webkit-text-size-adjust: 100%; /* ➊ spriječi čudna povećanja teksta na iOS-u */
+}
+
+*, *::before, *::after { box-sizing: inherit; }
+html, body { 
+  max-width: 100%;
+  overflow-x: clip;     /* modernije od hidden; sprječava trak bez stvaranja scrolla */
+}
+/* Fallback ako treba (staro Safari i sl.) */
+@supports not (overflow: clip) {
+  html, body { overflow-x: hidden; }
+}
+
+html, body, #root { height: 100%; margin: 0; }
+* { min-width: 0; }
 img, video, canvas, svg { max-width: 100%; height: auto; }
+img, picture, video, canvas, svg, iframe {
+  display: block;
+  max-inline-size: 100%;
+  block-size: auto;
+}
+/* iPhone česti krivci: predulge riječi/URL-ovi -> guraju layout u stranu */
+body {
+  overflow-wrap: break-word;     /* ili: anywhere; ako imaš baš ekstremne slučajeve */
+  word-break: break-word;        /* fallback */
+  /* Ako NIKAD ne želiš horizontalni scroll, otkrij i zadrži:
+     (makni ako namjerno imaš horizontalni scroll) */
+  overflow-x: hidden;
+  /* touch-action: manipulation;  opcionalno – snappier tapovi */
+}
 
 :root {
   /* MOBILE default */
-  /* 360px – smallest mobile layout */
-  --page-max-width: 360px;
-  --page-width: min(100vw, var(--page-max-width));
-  --page-height: 100svh;
+  --page-max-width: 430px;
+  --page-width: min(100%, var(--page-max-width));
+  --page-height: 100dvh;
 
   font-family: 'Outfit', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+
   background: #ececec;
-
-  color: #fff;
-  /* background-color: #000; */
-
+  color: #111;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* 393px – large phones */
-@media (min-width: 393px) {
-  :root {
-    --page-max-width: 393px;
-    --page-width: min(100vw, var(--page-max-width));
-    --page-max-height: 852px;
-    /* Height must be based on viewport height, not width */
-    --page-height: min(100svh, var(--page-max-height));
-  }
+/* Breakpointi neka budu sadržajno-vođeni, ne “po modelima” */
+@media (min-width: 600px)  { :root { --page-max-width: 560px; } }
+@media (min-width: 768px)  { :root { --page-max-width: 720px; } }
+@media (min-width: 1024px) { :root { --page-max-width: 960px; } }
+@media (min-width: 1280px) { :root { --page-max-width: 1200px; } }
+@media (min-width: 1440px) { :root { --page-max-width: 1320px; } }
+
+
+/* Wrapper stranice – primijeni varijable ovdje */
+.page {
+  width: var(--page-width);
+  min-height: var(--page-height);
+  margin-inline: auto;
+  padding: 16px;
+  /* safe-area za iPhone notch/toolbare */
+  padding-top: calc(16px + env(safe-area-inset-top));
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }
-
-/* 430px – large phones */
-@media (min-width: 430px) {
-  :root {
-    --page-max-width: 430px;
-    --page-width: min(100vw, var(--page-max-width));
-    --page-height: 100svh;
-  }
-}
-
-/* 768px – tablets (portrait) */
-@media (min-width: 768px) {
-  :root {
-    --page-max-width: 768px;
-    --page-width: min(100vw, var(--page-max-width));
-    --page-height: 100svh;
-  }
-}
-
-/* 1024px – tablets (landscape) / small desktops */
-@media (min-width: 1024px) {
-  :root {
-    --page-max-width: 1024px;
-    --page-width: min(100vw, var(--page-max-width));
-    --page-height: 100svh;
-  }
-}
-
-/* 1280px – laptops */
-@media (min-width: 1280px) {
-  :root {
-    --page-max-width: 1280px;
-    --page-width: min(100vw, var(--page-max-width));
-    --page-height: 100svh;
-  }
-}
-
-/* 1440px – large desktops */
-@media (min-width: 1440px) {
-  :root {
-    --page-max-width: 1440px; /* Figma web platno */
-    --page-width: min(100vw, var(--page-max-width));
-    --page-height: 100svh;
-  }
-}
-
-/* Global reset koji pomaže dimenzijama */
-html, body, #root {
-  height: 100%;
-/*   margin: 0; */
-}
-
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100svh;
-}
-
-
 a {
   font-weight: 500;
   color: #646cff;
@@ -113,3 +87,5 @@ button:active {
   outline: none !important;
   box-shadow: none !important;
 }
+/* iOS “zoom-on-focus” izbjegavanje: drži 16px+ */
+input, select, textarea, button { font-size: 16px; }

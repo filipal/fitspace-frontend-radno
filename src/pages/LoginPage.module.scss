@@ -164,16 +164,14 @@
     position: relative;
     width: var(--page-width);
     /* Use configured page height to avoid scroll on mobile */
-    height: var(--page-height);
+    height: 100dvh;
     margin-inline: auto;
     /* mobilni stack */
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-between;
     box-sizing: border-box;
-    overflow: hidden;
-    height: auto;
+    overflow-y: auto;
     padding: 0;
     gap: 0;
   }

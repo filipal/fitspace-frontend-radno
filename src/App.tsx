@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import StartPage from './pages/StartPage.tsx'
 import LoginPage from './pages/LoginPage'
 import LoggedInPage from './pages/LoggedInPage.tsx'
@@ -21,6 +22,33 @@ import './App.module.scss'
 
 
 export default function App() {
+  const location = useLocation()
+
+  // DEV: istakni elemente koji probijaju širinu viewporta (nema importa za import.meta.env)
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+
+    const root: Element = document.querySelector('.page') ?? document.body
+
+    const highlightOverflow = () => {
+      const vw = document.documentElement.clientWidth
+      ;(Array.from(root.querySelectorAll('*')) as HTMLElement[]).forEach(el => {
+        el.style.outline = '' // reset
+        const w = el.getBoundingClientRect().width
+        if (w - vw > 1) el.style.outline = '2px dashed red'
+      })
+    }
+
+    const onResize = () => requestAnimationFrame(highlightOverflow)
+    window.addEventListener('resize', onResize, { passive: true })
+    requestAnimationFrame(highlightOverflow)
+
+    return () => {
+      window.removeEventListener('resize', onResize)
+      ;(Array.from(root.querySelectorAll('*')) as HTMLElement[]).forEach(el => (el.style.outline = ''))
+    }
+  }, [location.pathname])
+
   return (
     <PixelStreamingProvider>
       <Routes>

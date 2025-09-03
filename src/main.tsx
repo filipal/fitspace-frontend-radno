@@ -6,6 +6,26 @@ import oidcConfig from './oidcConfig'
 import './index.css'
 import App from './App.tsx'
 
+/** DEV/PROD: registriraj SW samo na sigurnom kontekstu (https ili localhost) */
+(function registerSW() {
+  if (!('serviceWorker' in navigator)) return
+  const isLocalhost =
+    location.hostname === 'localhost' ||
+    location.hostname === '127.0.0.1' ||
+    location.hostname === '[::1]'
+  const isSecure = location.protocol === 'https:' || isLocalhost
+  if (!isSecure) return // npr. LAN IP preko http:// neće raditi na Androidu
+
+  const swUrl = `${import.meta.env.BASE_URL}sw.js` // radi i za subpath deploy
+  // Pričekaj load da se sve datoteke posluže
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register(swUrl).catch(err => {
+      console.error('Service Worker registration failed:', err)
+    })
+  })
+})()
+
+
 const onSigninCallback = () => {
   window.history.replaceState({}, document.title, window.location.pathname)
   window.location.replace('/logged-in')
