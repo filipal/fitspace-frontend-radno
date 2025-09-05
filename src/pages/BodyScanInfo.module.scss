@@ -1,33 +1,56 @@
 @use '../styles' as s;
 
+/* Design dimenzije: iPhone 15 Pro (portret): 393×852 CSS px */
+:root {
+  --design-w: 393px;
+  --design-h: 852px;
+}
+
 .bodyScanInfoPage {
   position: relative;
-  width: var(--page-width);
-  max-width: var(--page-max-width);
-  min-height: 100svh;
-  margin: 0 auto;
+  width: 100vw;
+  height: 100dvh;
+  margin: 0;
+  overflow: hidden; /* bez scrolla – sadržaj se skalira */
   font-family: 'Inter', sans-serif;
+}
+
+/* Unutarnje "platno" koje se skalira da stane na ekran */
+.canvas {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: var(--design-w);
+  height: var(--design-h);
+
+  /* scale-to-fit */
+  --scale-x: calc(100vw / var(--design-w));
+  --scale-y: calc(100dvh / var(--design-h));
+  --scale: min(var(--scale-x), var(--scale-y), 1);
+  transform-origin: top center;
+  transform: translateX(-50%) scale(var(--scale));
+
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
 .bodyScanContent {
-  padding: 55px 24px 0 24px;
+  padding: 48px 20px 0 20px; /* malo manji odmaci na nižim visinama */
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 24px; /* smanji vertikalni gap na manjim visinama */
   align-items: center;
 }
 
 .bodyScanInfoPage .tipsList {
   width: 100%;
   max-width: 320px;
-  height: 453px;
+  height: auto; /* dopusti da sadržaj diktira visinu */
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px; /* malo manji razmak među boxovima */
 }
 
 .bodyScanInfoPage .tipBox {
@@ -35,8 +58,8 @@
   box-sizing: border-box;
   background: #fff;
   border: 2px solid #000;
-  padding: 16px 20px;
-  font-size: 18px;
+  padding: 12px 16px;
+  font-size: 17px;
   color: #222;
   font-weight: 400;
   line-height: 1.4;
@@ -55,9 +78,15 @@
 }
 
 .bodyScanInfoPage .scanIllustration img {
-  max-width: 220px;
-  width: 100%;
-  width: 250px;
-  height: 122.11px;
+  width: 220px;
+  height: auto;
   display: block;
+}
+
+/* Veće visine (npr. 932 – iPhone Pro Max): vrati “prostranije” razmake i veličine */
+@media (min-height: 900px) {
+  .bodyScanContent { padding: 55px 24px 0 24px; gap: 32px; }
+  .bodyScanInfoPage .tipsList { gap: 20px; }
+  .bodyScanInfoPage .tipBox { padding: 16px 20px; font-size: 18px; }
+  .bodyScanInfoPage .scanIllustration img { width: 250px; height: 122.11px; }
 }

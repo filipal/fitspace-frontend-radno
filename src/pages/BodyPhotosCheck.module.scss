@@ -1,12 +1,35 @@
 @use '../styles' as s;
 
+/* Design dimenzije: iPhone 15 Pro (portret): 393×852 CSS px */
+:root {
+  --design-w: 393px;
+  --design-h: 852px;
+}
+
 .bodyPhotosCheckPage {
   position: relative;
-  width: var(--page-width);
-  max-width: var(--page-max-width);
-  min-height: 100svh;
-  margin: 0 auto;
+  width: 100vw;
+  height: 100dvh;
+  margin: 0;
+  overflow: hidden; /* bez scrolla – sadržaj se skalira */
   font-family: 'Inter', sans-serif;
+}
+
+/* Unutarnje "platno" koje se skalira da stane na ekran */
+.canvas {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: var(--design-w);
+  height: var(--design-h);
+
+  /* scale-to-fit */
+  --scale-x: calc(100vw / var(--design-w));
+  --scale-y: calc(100dvh / var(--design-h));
+  --scale: min(var(--scale-x), var(--scale-y), 1);
+  transform-origin: top center;
+  transform: translateX(-50%) scale(var(--scale));
+
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -19,12 +42,12 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 24px;
+  gap: 16px; /* malo kompaktnije da stane u 852px */
   text-align: center;
 }
 
 .prompt {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 300;
   color: #000;
 }
@@ -36,7 +59,7 @@
 
 .photos img {
   width: 192px;
-  height: 474px;
+  height: 456px; /* smanji visinu radi ukupne visine ekrana */
   object-fit: cover;
 }
 
@@ -45,7 +68,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-bottom: 45px;
+  padding-bottom: 20px; /* manje dna za niže ekrane */
 }
 
 .row1 {
@@ -57,13 +80,13 @@
 .row2 {
   display: flex;
   justify-content: center;
-  margin-top: 20px;
+  margin-top: 12px;
 }
 
 .row3 {
   display: flex;
   justify-content: center;
-  margin-top: 23px;
+  margin-top: 12px;
 }
 
 .smallWhiteButton {

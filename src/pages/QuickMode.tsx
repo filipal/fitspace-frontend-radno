@@ -89,6 +89,7 @@ export default function QuickMode() {
 
   return (
       <div className={styles.quickmodePage}>
+      <div className={styles.canvas}>
       {/* Header */}
       <Header
         title="Body Shape & Fitness"
@@ -214,6 +215,7 @@ export default function QuickMode() {
         }
         actionType="primary"
       />
+    </div>
     </div>
   )
 }

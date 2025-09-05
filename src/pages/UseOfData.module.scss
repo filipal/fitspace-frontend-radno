@@ -13,9 +13,9 @@
 }
 
 .content {
-  margin-left: 55px;
-  margin-right: 54px;
-  padding: 25px 0 0 0;
+  /* Šire područje za tekst na mobitelu: smanji bočne margine */
+  margin: 0 auto;
+  padding: 25px 25px 0 25px;
   font-size: 15px;
   font-weight: 300;
   color: #222;
@@ -30,9 +30,12 @@
   font-size: 17px;
 }
 
-ul.dataList {
-  list-style-position: outside;
+/* Ukloni ::marker brojke jer su brojevi već u sadržaju (<b>1. ...</b>) */
+ul.dataList,
+ol.dataList {
+  list-style: none !important;
   padding-left: 0;
+  margin-left: 0;
 }
 ul.dotList {
   list-style-type: disc;
@@ -61,12 +64,7 @@ ul.privacyList li {
   line-height: 1.4;
 }
 
-ol.dataList {
-  list-style-type: decimal !important;
-  list-style-position: outside;
-  padding-left: 0 !important;
-  margin-left: 0 !important;
-}
+/* (namjerno prazno – marker je isključen gore) */
 
 .dataList li {
   margin-bottom: 10px;
@@ -86,29 +84,42 @@ ol.dataList {
 }
 
 .backButtonUseofdata {
-  width: min(100%, 320px);
-  max-width: 320px;
+  /* Poravnaj širinu s .content (16px sa svake strane) + safe-area rubovi */
+  width: min(320px, calc(100% - (32px + env(safe-area-inset-left) + env(safe-area-inset-right))));
   height: 50px;
+  box-sizing: border-box; /* 320x50 uključuje border */
   border: 2px solid #000;
   background: #fff;
   color: #000;
   font-size: 18px;
   font-family: 'Outfit', sans-serif;
-  margin-top: 15px;
-  margin-bottom: 45px;
-  align-self: center;
+  display: inline-flex; /* spriječi rastezanje preko cijele širine u flex koloni */
+  justify-content: center;
+  align-items: center;
+  margin: 15px auto 45px auto; /* centriraj pouzdano */
+  align-self: center; /* dodatni osigurač za flex roditelja */
+  flex: 0 0 auto; /* ne rasteži gumb na iOS-u */
   cursor: pointer;
+}
+
+@media (max-width: 400px) {
+  .backButtonUseofdata {
+    /* Ostavi isti vizualni rub kao .content + safe-area */
+    width: calc(100% - (32px + env(safe-area-inset-left) + env(safe-area-inset-right)));
+    max-width: 292.5px;
+    height: 46px;
+  }
 }
 
 @include s.respond(xxl) {
   .content {
-    margin-left: 84px;
-    margin-right: 89px;
+    /* Na širim ekranima povećaj unutarnji odmak umjesto vanjskih margina */
+    padding-left: 84px;
+    padding-right: 89px;
     margin-top: 30px;
   }
   .backButtonUseofdata {
-    width: min(100%, 421px);
-    max-width: 421px;
+    width: 320px; /* zadrži 320px i na širim ekranima */
     margin-top: 30px;
   }
   .dataList li {
@@ -116,3 +127,4 @@ ol.dataList {
     max-width: 1280px;
   }
 }
+

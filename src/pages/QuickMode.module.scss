@@ -1,5 +1,11 @@
 @use '../styles' as s;
 
+/* Design dimenzije: iPhone 15 Pro (portret): 393×852 CSS px */
+:root {
+  --design-w: 393px;
+  --design-h: 852px;
+}
+
 .footerTopButton {
   width: 100%;
   max-width: 320px;
@@ -143,13 +149,30 @@
 }
 .quickmodePage {
   position: relative;
-  width: var(--page-width);
-  min-height: 100svh;
-  margin: 0 auto;
+  width: 100vw;
+  height: 100dvh;
+  margin: 0;
+  overflow: hidden; /* bez scrolla – sadržaj se skalira */
   font-family: 'Inter', sans-serif;
+}
+
+/* Unutarnje "platno" koje se skalira da stane na ekran */
+.canvas {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: var(--design-w);
+  height: var(--design-h);
+
+  /* scale-to-fit */
+  --scale-x: calc(100vw / var(--design-w));
+  --scale-y: calc(100dvh / var(--design-h));
+  --scale: min(var(--scale-x), var(--scale-y), 1);
+  transform-origin: top center;
+  transform: translateX(-50%) scale(var(--scale));
+
   display: flex;
   flex-direction: column;
-  align-items: stretch;
 }
 .quickmodeContent {
   padding: 32px 24px 0 24px;

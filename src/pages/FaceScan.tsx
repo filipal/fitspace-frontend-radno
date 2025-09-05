@@ -139,6 +139,12 @@ export default function FaceScan({ onClose }: { onClose?: () => void }) {
     oldTracks?.forEach(track => track.stop())
     setScanPhase('scanning')
     try {
+      // Preflight: traži siguran kontekst (HTTPS ili localhost)
+      const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+      if (!window.isSecureContext && !isLocalhost) {
+        throw Object.assign(new Error('InsecureContext'), { name: 'SecurityError' })
+      }
+
       const devices = await navigator.mediaDevices.enumerateDevices()
       const frontCamera = devices.find(
         d => d.kind === 'videoinput' && d.label.toLowerCase().includes('front')
@@ -160,7 +166,26 @@ export default function FaceScan({ onClose }: { onClose?: () => void }) {
       setScanPhase('countdown')
     } catch (err) {
       console.error('Error starting video stream:', err)
-      setCameraError('Unable to access camera. Please check permissions and try again.')
+      const e = err as DOMException & { message?: string }
+      let msg = 'Unable to access camera. Please check permissions and try again.'
+      switch (e?.name) {
+        case 'NotAllowedError':
+          msg = 'Camera access was blocked. In Safari settings allow camera for this site, then reload.'
+          break
+        case 'NotFoundError':
+          msg = 'No camera device found. Check camera availability and try again.'
+          break
+        case 'NotReadableError':
+          msg = 'Camera is in use by another app. Close other apps and retry.'
+          break
+        case 'OverconstrainedError':
+          msg = 'Requested camera is unavailable. Remove device constraints and retry.'
+          break
+        case 'SecurityError':
+          msg = 'Camera requires a secure context. Open the app via HTTPS (e.g. CloudFront) or localhost.'
+          break
+      }
+      setCameraError(msg)
       setScanPhase('initial')
     }
   }
@@ -225,7 +250,7 @@ export default function FaceScan({ onClose }: { onClose?: () => void }) {
           : undefined
       }
     >
-      <video ref={videoRef} className={styles.video} autoPlay playsInline />
+      <video ref={videoRef} className={styles.video} autoPlay playsInline muted />
       {scanPhase !== 'initial' && (
         <div className={styles.overlay}>
           <img

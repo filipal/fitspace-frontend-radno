@@ -3,6 +3,10 @@ import react from '@vitejs/plugin-react'
 import svgr from 'vite-plugin-svgr'
 import { fileURLToPath, URL } from 'node:url'
 
+// LAN HMR pomoc: postavi VITE_DEV_HOST=192.168.x.x prije pokretanja `npm run dev`
+// kako bi mobitel mogao stabilno uspostaviti HMR websocket.
+const DEV_HOST = process.env.VITE_DEV_HOST
+
 export default defineConfig({
   plugins: [react(), svgr()],
   resolve: {
@@ -30,8 +34,9 @@ export default defineConfig({
     host: true,        // sluša na 0.0.0.0 → dostupno s mobitela u istoj mreži
     port: 5177,
     strictPort: true,  // ako je port zauzet, baci grešku (ne mijenja broj porta)
-    // Ako HMR ne “pogađa” mobitel, odkomentiraj i upiši svoj LAN IP:
-    // hmr: { host: '192.168.50.114', protocol: 'ws', port: 5177 },
+    hmr: DEV_HOST
+      ? { host: DEV_HOST, protocol: 'ws', port: 5177 }
+      : undefined,
   },
   preview: {
     host: true,
