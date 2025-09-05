@@ -36,10 +36,10 @@ export default function FaceScan({ onClose }: { onClose?: () => void }) {
   // ovisi o promjenama `soundEnabled`, nego koristi početnu vrijednost
   // spremljenu u referenci kako bi izbjegao zastarjele vrijednosti.
   useEffect(() => {
-    const audio = audioRef.current
-    if (audio && initialSoundEnabled.current) {
-      audio.currentTime = 0
-      const playPromise = audio.play()
+    const audioEl = audioRef.current
+    if (audioEl && initialSoundEnabled.current) {
+      audioEl.currentTime = 0
+      const playPromise = audioEl.play()
       playPromiseRef.current = playPromise
       if (playPromise !== undefined) {
         playPromise.catch(err => {
@@ -51,8 +51,7 @@ export default function FaceScan({ onClose }: { onClose?: () => void }) {
       }
     }
     return () => {
-
-      const audio = audioRef.current
+      const audio = audioEl
       if (audio) {
         // Bezbjedno zaustavi audio tek kad se završi play promise
         if (playPromiseRef.current) {

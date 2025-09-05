@@ -1,6 +1,7 @@
 import { useState, useEffect, type ComponentType, type SVGProps } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import Header from '../components/Header/Header'
+import { usePixelStreaming } from '../context/PixelStreamingContext'
 
 import avatarsButton from '../assets/avatars-button.png'
 import RLeft from '../assets/r-left.svg?react'
@@ -51,6 +52,7 @@ export default function UnrealMeasurements() {
 
   const navigate = useNavigate()
   const location = useLocation()
+  const { sendFittingRoomCommand, connectionState } = usePixelStreaming()
 
   const [selectedControl, setSelectedControl] = useState<string | null>(null)
   const [selectedNav, setSelectedNav] = useState<NavKey | null>(null)
@@ -116,6 +118,29 @@ export default function UnrealMeasurements() {
     console.log('updateMorph', { morphId, morphName, value })
   }
 
+  const handleControlClick = (controlKey: string) => {
+    // Update selected control state
+    setSelectedControl(prev => (prev === controlKey ? null : controlKey))
+    
+    // Send pixel streaming commands for rotate buttons
+    if (connectionState === 'connected') {
+      switch (controlKey) {
+        case 'rotate-left':
+          sendFittingRoomCommand('rotateCamera', { direction: 'left', speed: 1 })
+          console.log('Sent rotate left command')
+          break
+        case 'rotate-right':
+          sendFittingRoomCommand('rotateCamera', { direction: 'right', speed: 1 })
+          console.log('Sent rotate right command')
+          break
+        default:
+          console.log(`Control ${controlKey} clicked - no streaming command defined`)
+      }
+    } else {
+      console.log(`Cannot send command - connection state: ${connectionState}`)
+    }
+  }
+
   return (
     <div className={styles.page}>
       <Header
@@ -143,9 +168,7 @@ export default function UnrealMeasurements() {
                 key={control.key}
                 className={`${styles.controlButton} ${styles[control.key.replace('-', '')]} ${selectedControl === control.key ? styles.selected : ''}`}
                 style={{ width: control.width, marginRight: control.marginRight, height: control.width }}
-                onClick={() =>
-                  setSelectedControl(prev => (prev === control.key ? null : control.key))
-                }
+                onClick={() => handleControlClick(control.key)}
                 type="button"
               >
                 <div className={styles.outerCircle} />

@@ -20,4 +20,11 @@ export default tseslint.config([
       globals: globals.browser,
     },
   },
+  // Override: allow context file to export non-components alongside Provider
+  {
+    files: ['src/context/PixelStreamingContext.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])

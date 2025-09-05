@@ -4,7 +4,7 @@ import type { AllSettings } from '@epicgames-ps/lib-pixelstreamingfrontend-ue5.6
 export const pixelStreamingConfig: Partial<AllSettings> = {
   AutoPlayVideo: true,
   AutoConnect: true, 
-  ss: import.meta.env.VITE_PIXEL_STREAMING_URL || 'ws://localhost:8888', 
+  ss: import.meta.env.VITE_PIXEL_STREAMING_URL || 'ws://localhost:80', 
   StartVideoMuted: true,
   HoveringMouse: true,
   SuppressBrowserKeys: false, 

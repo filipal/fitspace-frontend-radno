@@ -61,8 +61,6 @@
 }
 
 @include s.respond(xl) {
-  .startPage { }
-
   /* Naslov: i dalje 99px od vrha, ali centriran vodoravno */
   .title {
     left: 50%;

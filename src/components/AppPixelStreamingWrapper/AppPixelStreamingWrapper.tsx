@@ -1,23 +1,26 @@
-import { usePixelStreamingSettings } from '../../hooks/usePixelStreamingSettings';
-import { PixelStreamingWrapper as BasePixelStreamingWrapper } from '../PixelStreamingDebugWrapper/PixelStreamingDebugWrapper';
+import { PixelStreamingView } from '../PixelStreamingView/PixelStreamingView';
 
 interface AppPixelStreamingWrapperProps {
   style?: React.CSSProperties;
   className?: string;
+  autoConnect?: boolean;
 }
 
-export const AppPixelStreamingWrapper: React.FC<AppPixelStreamingWrapperProps> = ({ 
+/**
+ * App-specific wrapper for pixel streaming that uses the centralized context.
+ * This is the component that should be used in the main application pages
+ * like UnrealMeasurements and VirtualTryOn.
+ */
+export const AppPixelStreamingWrapper: React.FC<AppPixelStreamingWrapperProps> = ({
   style,
-  className 
+  className,
+  autoConnect = true
 }) => {
-  const { settings } = usePixelStreamingSettings();
-
   return (
-    <div style={style} className={className}>
-      <BasePixelStreamingWrapper 
-        useUrlParams={true}
-        initialSettings={settings}
-      />
-    </div>
+    <PixelStreamingView 
+      style={style} 
+      className={className}
+      autoConnect={autoConnect}
+    />
   );
 };

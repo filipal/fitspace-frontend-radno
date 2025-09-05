@@ -52,9 +52,8 @@ export default function DebugOverlay() {
             overflow: 'hidden'
           }}>
             <PixelStreamingWrapper 
-              useUrlParams={true}
-              initialSettings={settings}
-              onSettingsChange={updateSettings}
+              initialDebugSettings={settings}
+              onDebugSettingsChange={updateSettings}
             />
           </div>
         </div>

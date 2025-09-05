@@ -16,6 +16,7 @@ import LoadingScreen from './pages/LoadingScreen.tsx'
 import FaceScanInfo from './pages/FaceScanInfo.tsx'
 import FaceScan from './pages/FaceScan.tsx'
 import FacePhotosCheck from './pages/FacePhotosCheck.tsx'
+import PixelStreamingDemo from './pages/PixelStreamingDemo.tsx'
 import DebugOverlay from './components/DebugOverlay/DebugOverlay.tsx'
 import { PixelStreamingProvider } from './context/PixelStreamingContext'
 import './App.module.scss'
@@ -68,6 +69,7 @@ export default function App() {
         <Route path="/body-photos-check" element={<BodyPhotosCheck />} />
         <Route path="/face-photos-check" element={<FacePhotosCheck />} />
         <Route path="/loading" element={<LoadingScreen />} />
+        <Route path="/pixel-streaming-demo" element={<PixelStreamingDemo />} />
 
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
