@@ -1,53 +1,94 @@
-.container {
-  width: 430px;
-  height: 80px;
+/* — helpers vezani uz širinu stranice — */
+$design-w: 430;
+@function cw($px, $base: $design-w) {
+  @return calc((#{$px} / #{$base}) * var(--page-w-px));
+}
+@function fsz($n, $minFactor: .85) {
+  @return clamp(#{$n * $minFactor}px, cw(#{$n}), #{$n}px);
+}
+
+/* ROOT: uvijek točno širina stranice (ne ovisi o cqw) */
+.container{
+  inline-size: var(--page-w-px);
+  block-size: cw(80);
   display: flex;
   background: #ececec;
-  backdrop-filter: blur(4px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+
+  /* blur skaliran prema —page-w-px (kompatibilno s iOS) */
+  -webkit-backdrop-filter: blur(cw(4));
+  backdrop-filter: blur(cw(4));
+
+  box-shadow: 0 cw(4) cw(10) rgba(0,0,0,.25);
+
+  /* iOS: ne auto-zoomaj fontove u ovom bloku */
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
 }
 
-.left {
-  width: 180px;
-  height: 80px;
+/* Lijevi blok = 180 @430; desni uzme ostatak do pune širine */
+.left{
+  inline-size: cw(180);
+  block-size: 100%;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   border-right: 1px solid #000;
+  padding-inline: cw(10); /* malo zraka da tekst ljepše lomi */
+  text-align: center;
 }
 
-.left p {
-  width: 149px;
-  height: 68px;
-  font-size: 13px;
-  color: #000;
+.left p{
+  /* dizajn: 149×68 @430; centriraj vertikalno i lomi u 4 linije */
+  inline-size: cw(149);
+  block-size: cw(68);
   margin: 0;
-  line-height: 13px;
+
+  font-size: fsz(13,.85);   /* 13px @430, blago ↓ ispod */
+  line-height: cw(17);      /* 68/4 = 17 → točno 4 reda */
+  color: #000;
+  white-space: normal;      /* dozvoli prelamanje */
+  overflow: hidden;         /* zaštita od prelijevanja */
+  text-overflow: clip;
+  text-align: center;
+
+  /* opcionalno: pomogni ljepšem prijelomu */
+  text-wrap: balance;       /* Safari 17+/iOS 17+ */
 }
 
-.right {
-  width: 250px;
-  height: 80px;
+.right{
+  flex: 1 1 auto;           /* uzmi ostatak širine do var(--page-w-px) */
+  min-inline-size: 0;       /* spriječi širenje zbog sadržaja */
+  block-size: 100%;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
 }
 
-.scanButton {
-  width: 149px;
-  height: 30px;
+/* Gumb “Scan” 149×30 @430 */
+.scanButton{
+  inline-size: cw(149);
+  block-size: cw(30);
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  gap: cw(5);
   border: none;
   background: none;
   cursor: pointer;
-  font-size: 13px;
+  font-size: fsz(13,.85);
   color: #000;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.scanButton img {
-  height: 30px;
-  width: auto;
+.scanButton img{
+  inline-size: cw(29.1);
+  block-size:  cw(29.1);
+  aspect-ratio: 1;
+  object-fit: contain;
+
+  /* spriječi da je flex stisne ispod zadane širine */
+  flex: 0 0 cw(29.1);
+  display: block;
 }

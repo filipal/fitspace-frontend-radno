@@ -1,34 +1,50 @@
-.container {
-  width: 430px;
-  height: 171px;
-  background: #ececec;
-  backdrop-filter: blur(4px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
-  display: flex;
-  align-items: stretch;
+$design-w: 430;
+@function cqw($px, $base: $design-w) { @return calc((#{$px} / #{$base}) * 100cqw); }
+
+@function fsz($n, $minFactor: .85) {
+  @return clamp(#{$n * $minFactor}px, cqw(#{$n}), #{$n}px);
 }
 
-.leftSection {
-  width: 80px;
-  display: flex;
-  align-items: center;
+:root {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.withAccordion { --acc-h: cqw(171); }
+
+.container {
+  inline-size: 100%;
+  block-size: #{cqw(171)};
+  background: #ececec;
+  backdrop-filter: blur(#{cqw(4)});
+  box-shadow: 0 #{cqw(4)} #{cqw(10)} rgba(0,0,0,.25);
+  display: flex; 
+  align-items: stretch;
+  font-family: 'Outfit', sans-serif;
+}
+
+.leftSection { 
+  inline-size: #{cqw(80)}; 
+  display:flex; 
+  align-items:center;
+  justify-content: center;
 }
 
 .left {
-  width: 42px;
-  height: 150px;
-  margin-left: 19px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: 11px;
-  padding-bottom: 11px;
+  inline-size: #{cqw(42)};
+  block-size: #{cqw(150)};
+  /* margin-left: #{cqw(19)}; */
+  display: grid;
+  grid-template-rows: #{cqw(25)} 1fr #{cqw(25)};
+  align-items:center;
+  justify-items: center;
+  padding-block: #{cqw(11)}; 
+  box-sizing: border-box;
 }
 
 .arrowBtn {
-  width: 30px;
-  height: 25px;
+  inline-size: #{cqw(30)};
+  block-size: #{cqw(25)};
   padding: 0;
   border: none;
   background: transparent;
@@ -37,7 +53,12 @@
   justify-content: center;
   cursor: pointer;
 }
-
+.arrowBtn img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
 .arrowUp img {
   transform: rotate(-90deg);
 }
@@ -46,69 +67,47 @@
 }
 
 .stack {
-  width: 42px; /* cap width per spec */
-  flex: 1;
+  inline-size: #{cqw(42)};
   display: grid;
-  grid-template-rows: 14px 16px 20px 16px 14px;
-  align-items: center;
-  justify-items: center;
-  justify-content: center;
-  text-align: center;
-  margin-top: 10px;
+  grid-template-rows: #{cqw(14)} #{cqw(16)} #{cqw(20)} #{cqw(16)} #{cqw(14)};
+  align-items: center; 
+  justify-items: center; 
+  justify-content: center; 
+  text-align:center;
 }
 
 .item {
-  max-width: 42px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: #{cqw(42)}; 
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+  white-space: nowrap; 
   color: #000;
 }
 
-.topSmall {
-  font-size: 11px;
-  opacity: 0.2;
-}
-
-.upper {
-  font-size: 13px;
-  opacity: 0.7;
-}
-
-.selected {
-  font-size: 16px;
-  font-weight: regular;
-  opacity: 1;
-}
-
-.lower {
-  font-size: 13px;
-  opacity: 0.7;
-}
-
-.bottomSmall {
-  font-size: 11px;
-  opacity: 0.2;
-}
+.topSmall { font-size: fsz(11); opacity: .2; }
+.upper { font-size: fsz(13); opacity: .7; }
+.selected { font-size: fsz(16); font-weight: 400; opacity: 1; }
+.lower { font-size: fsz(13); opacity: .7; }
+.bottomSmall { font-size: fsz(11); opacity: .2; }
 
 .right {
-  width: 350px;
-  height: 171px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
+  inline-size: #{cqw(350)};
+  block-size: #{cqw(171)};
+  display:flex; 
+  align-items:center; 
+  justify-content:center; 
+  position:relative;
 }
 
 .rightInner {
-  width: 330px; /* leave space for vertical bar on the far right */
-  height: 140px;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: flex-start;
-  gap: 8px;
-  position: relative;
+  inline-size: #{cqw(330)};
+  block-size: #{cqw(140)};
+  display:flex; 
+  flex-direction:column; 
+  align-items:stretch; 
+  justify-content:flex-start;
+  gap: #{cqw(8)}; 
+  position:relative;
 }
 
 .rightTitle {
@@ -117,94 +116,96 @@
 }
 
 .rows {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1 1 auto;
-  overflow-y: auto;
+  inline-size: 100%;
+  display:flex; 
+  flex-direction:column; 
+  gap: #{cqw(8)};
+  flex: 1 1 auto; 
+  overflow-y:auto;
 }
 
 .row {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 170px 50px; /* label | slider | percent with more space */
+  inline-size: 100%;
+  display:grid;
+  grid-template-columns: 1fr #{cqw(170)} #{cqw(50)}; /* label | slider | % */
   align-items: center;
-  gap: 10px;
+  gap: #{cqw(10)};
 }
 
-.rowLabel {
-  font-size: 10px;
+.rowLabel { 
+  font-size: fsz(10, .8);   /* dopusti do 80% ako baš treba */
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sliderGroup {
-  width: 170px;
-  height: 25px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  inline-size: #{cqw(170)}; 
+  block-size: #{cqw(25)}; 
+  display:flex; 
+  align-items:center; 
+  justify-content:center;
 }
 
 .sliderBar {
   position: relative;
-  width: 170px;
-  height: 10px;
+  inline-size: #{cqw(170)};
+  block-size: #{cqw(10)};
   background: transparent;
-  border-radius: 10px;
-  box-shadow: inset 0 0 0 1.5px #000;
-  touch-action: none; /* smooth drag; prevent scroll on touch */
+  border-radius: #{cqw(10)};
+  box-shadow: inset 0 0 0 #{cqw(1.5)} #000;
+  touch-action: none;
 }
 
 .sliderThumb {
-  position: absolute;
-  top: 50%;
+  position: absolute; top: 50%; 
   transform: translate(-50%, -50%);
-  width: 25px;
-  height: 25px;
-  background: transparent;
-  border: none;
-  border-radius: 50%;
+  inline-size: #{cqw(25)}; 
+  block-size: #{cqw(25)};
+  background: transparent; 
+  border: none; 
+  border-radius: 50%; 
   cursor: grab;
   background-image: url('../../assets/skinbarbtn.svg');
-  background-repeat: no-repeat;
-  background-size: contain;
+  background-repeat: no-repeat; 
+  background-size: contain; 
   background-position: center;
-  touch-action: none; /* smooth drag; prevent scroll on touch */
+  touch-action: none;
 }
 
 .rowPct {
   text-align: right;
-  font-size: 10px;
-  padding-right: 4px; /* avoid touching the right track */
-  margin-right: 10px;
+  font-size: clamp(9px, #{cqw(10)}, 14px);
+  padding-right: #{cqw(4)};
+  margin-right: #{cqw(10)};
 }
 
 /* Vertical indicator 130x3, 10px from right edge */
 .vTrack {
   position: absolute;
-  top: 10px;
-  right: 10px; /* 10px inset from the accordion's right edge */
-  width: 3px;
-  height: 130px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  top: #{cqw(10)}; 
+  right: #{cqw(10)};
+  inline-size: #{cqw(3)}; 
+  block-size: #{cqw(130)};
+  display:flex; 
+  align-items:flex-start; 
+  justify-content:center;
 }
 
-.vBar {
-  position: absolute;
-  width: 3px;
-  height: 130px;
-  background: #000;
-  opacity: 0.2;
+.vBar  { 
+  position:absolute; 
+  inline-size: #{cqw(3)}; 
+  block-size: #{cqw(130)}; 
+  background:#000; 
+  opacity:.2; 
 }
-
-.vFill {
-  position: absolute;
-  left: 0;
-  width: 3px;
-  background: #000;
-  border-radius: 2px;
+.vFill { 
+  position:absolute; 
+  left:0; 
+  inline-size: #{cqw(3)}; 
+  background:#000; 
+  border-radius: #{cqw(2)}; 
 }
 
 @media (min-width: 1440px) {

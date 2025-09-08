@@ -1,28 +1,37 @@
+/* ExtrasAccordion.module.scss */
+$design-w: 430;
+@function cqw($px, $base: $design-w) {
+  @return calc((#{$px} / #{$base}) * 100cqw);
+}
+
+/* 430 × 120 */
 .container {
-  width: 430px;
-  height: 120px;
+  inline-size: 100%;
+  block-size: cqw(120);
   display: grid;
-  grid-template-columns: 80px 270px 80px; /* left | center | right */
+  grid-template-columns: cqw(80) cqw(270) cqw(80); /* left | center | right */
   background: #ececec;
-  backdrop-filter: blur(4px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(cqw(4));
+  box-shadow: 0 cqw(4) cqw(10) rgba(0,0,0,.25);
   overflow: hidden;
 }
 
-/* Left panel: 80x120 with vertical arrows and a 51x47 stack */
+/* LEFT: 80 × 120, strelice gore/dolje + 51×47 stack */
 .left {
-  width: 80px;
-  height: 120px;
+  inline-size: 100%;
+  block-size: 100%;
   display: grid;
-  grid-template-rows: 25px 1fr 25px; /* approximate to fit 30x22 arrows visually */
+  grid-template-rows: cqw(25) 1fr cqw(25); /* aproksimacija za 30×22 strelice */
   align-items: center;
   justify-items: center;
-  border-right: 1px solid #000;
+  border-right: 1px solid #000; /* 1px radi oštrine */
+  box-sizing: border-box;
+  padding-block: cqw(6);
 }
 
 .vArrow {
-  width: 30px;
-  height: 22px;
+  inline-size: cqw(30);
+  block-size: cqw(22);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -31,56 +40,139 @@
   padding: 0;
   cursor: pointer;
 
-  img { width: 100%; height: 100%; object-fit: contain; }
+  img {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: contain;
+    display: block;
+  }
 }
 
 .stack {
-  width: 51px;
-  height: 47px;
+  inline-size: cqw(51);
+  block-size: cqw(47);
   display: grid;
   grid-template-rows: 1fr 1fr 1fr;
   align-items: center;
   justify-items: center;
-  row-gap: 4px;
+  row-gap: cqw(4);
 }
 
-.stackItem { width: 100%; text-align: center; color: #000; }
-.stackItem.small { font-size: 10px; line-height: 13px; }
-.stackItem.big { font-size: 15px; line-height: 19px; }
+.stackItem { inline-size: 100%; text-align: center; color: #000; }
+.stackItem.small { font-size: cqw(10); line-height: cqw(13); }
+.stackItem.big   { font-size: cqw(15); line-height: cqw(19); }
 
-/* Center panel: 270x120 with inner 230x32.8 strip and three icons */
-.center { width: 270px; height: 120px; display: flex; align-items: center; justify-content: center; }
-.centerInner {
-  width: 230px;
-  height: 120px; /* center content vertically inside 270x120 area */
-  display: grid;
-  grid-template-columns: 24px 1fr 24px; /* arrows 24x32.8 each side */
+/* CENTER: 270 × 120, unutra 230 širina: [24 | strip | 24] s razmakom 10 */
+.center {
+  inline-size: 100%;
+  block-size: 100%;
+  display: flex;
   align-items: center;
-  column-gap: 10px; /* 10px between arrows and content strip */
+  justify-content: center;
 }
-
-.hArrow { width: 24px; height: 32.8px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; padding: 0; cursor: pointer; 
-  img { width: 100%; height: 100%; object-fit: contain; }
-}
-
-.centerStrip { display: grid; grid-template-columns: 46.8px 78px 46.8px; align-items: center; justify-items: center; }
-.thumbSmall { width: 46.8px; height: 46.8px; display: flex; align-items: center; justify-content: center; }
-.thumbSmall img { width: 40.88px; height: 14px; object-fit: contain; opacity: 0.35; }
-.glassesSmallIcon { width: 40.88px; height: 14px; opacity: 0.35; }
-
-.thumbBig { width: 78px; height: 78px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
-.glassesBigIcon { width: 67px; height: 23px; }
-.glassesIndex { font-size: 17px; color: #000; line-height: 1; }
-
-/* Right panel: like Hair color picker */
-.right { width: 80px; height: 120px; display: flex; align-items: center; justify-content: center; }
-.colorPicker {
-  width: 60px;
-  height: 100px;
+.centerInner {
+  inline-size: cqw(230);
+  block-size: 100%;
   display: grid;
-  grid-template-rows: 30px 40px 30px;
+  grid-template-columns: cqw(24) 1fr cqw(24);
+  align-items: center;
+  column-gap: cqw(10);
+}
+
+.hArrow {
+  inline-size: cqw(24);
+  block-size: cqw(32.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+
+  img {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: contain;
+    display: block;
+  }
+}
+
+/* Strip s ikonama: 46.8 | 78 | 46.8 (centar je “thumbBig”) */
+.centerStrip {
+  display: grid;
+  grid-template-columns: cqw(46.8) cqw(78) cqw(46.8);
   align-items: center;
   justify-items: center;
 }
-.colorPreview { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.2); }
-.previewIcon { width: 40px; height: 40px; }
+
+.thumbSmall {
+  inline-size: cqw(46.8);
+  block-size: cqw(46.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    inline-size: cqw(40.88);
+    block-size: cqw(14);
+    object-fit: contain;
+    opacity: .35;
+    display: block;
+  }
+}
+.glassesSmallIcon {
+  inline-size: cqw(40.88);
+  block-size: cqw(14);
+  opacity: .35;
+  display: block;
+}
+
+/* “ThumbBig”: ikona + broj ispod */
+.thumbBig {
+  inline-size: cqw(78);
+  block-size: cqw(78);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: cqw(10);
+}
+.glassesBigIcon {
+  inline-size: cqw(67);
+  block-size: cqw(23);
+  display: block;
+}
+.glassesIndex {
+  font-size: cqw(17);
+  line-height: 1;
+  color: #000;
+}
+
+/* RIGHT: 80 × 120; “color picker” 60 × 100 s rasporedom 30 | 40 | 30 */
+.right {
+  inline-size: 100%;
+  block-size: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.colorPicker {
+  inline-size: cqw(60);
+  block-size: cqw(100);
+  display: grid;
+  grid-template-rows: cqw(30) cqw(40) cqw(30);
+  align-items: center;
+  justify-items: center;
+}
+.colorPreview {
+  inline-size: cqw(40);
+  block-size: cqw(40);
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,.2);
+}
+.previewIcon {
+  inline-size: cqw(40);
+  block-size: cqw(40);
+  display: block;
+}

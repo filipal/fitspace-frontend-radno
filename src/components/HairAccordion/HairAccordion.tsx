@@ -32,9 +32,15 @@ export default function HairAccordion() {
   const prevColor = () => setColorIndex((i) => (i + HAIR_COLORS.length - 1) % HAIR_COLORS.length)
   const nextColor = () => setColorIndex((i) => (i + 1) % HAIR_COLORS.length)
 
-  // Left arrow carousel handlers (could be wired later to change styles)
-  const prevStyle = () => {/* placeholder for cycling hair style left */}
-  const nextStyle = () => {/* placeholder for cycling hair style right */}
+  // Carousel indeks: 0 = light, 1 = base, 2 = dark
+  const [focusedIndex, setFocusedIndex] = useState(1)
+  const colors = [light, base, dark]
+  const center = colors[focusedIndex]
+  const left = colors[(focusedIndex + colors.length - 1) % colors.length]
+  const right = colors[(focusedIndex + 1) % colors.length]
+
+  const prevStyle = () => setFocusedIndex((i) => (i + colors.length - 1) % colors.length)
+  const nextStyle = () => setFocusedIndex((i) => (i + 1) % colors.length)
 
   return (
     <div className={styles.container}>
@@ -44,10 +50,10 @@ export default function HairAccordion() {
         </button>
 
         <div className={styles.iconStrip}>
-      {/* Use the big, colorizable SVG at 60x60 for the side thumbnails to ensure hair fill color changes */}
-      <HairBig className={styles.iconSmall} style={{ color: light }} />
-      <HairBig className={styles.iconBig} style={{ color: base }} />
-      <HairBig className={styles.iconSmall} style={{ color: dark }} />
+          {/* Lijevo malo, centar veliko, desno malo – prema focusedIndex */}
+          <HairBig className={styles.iconSmall} style={{ color: left }} />
+          <HairBig className={styles.iconBig} style={{ color: center }} />
+          <HairBig className={styles.iconSmall} style={{ color: right }} />
         </div>
 
         <button type="button" className={styles.hArrow} onClick={nextStyle} aria-label="Next style">

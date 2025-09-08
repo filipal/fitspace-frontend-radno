@@ -6,33 +6,32 @@
   --design-h: 852px;
 }
 
+/* TEMP: disable full-screen canvas → allow natural flow+scroll */
 .loginPage {
   position: relative;
-  width: 100vw;
-  height: 100dvh;
-  overflow: hidden; /* bez scrolla – sadržaj se skalira */
+  width: var(--page-width);
+  min-height: auto;
+  margin: 0 auto;
+  overflow: visible;
 }
 
 /* Unutarnje "platno" koje se skalira da stane na ekran */
+/* TEMP: neutralize canvas scaling */
 .canvas {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: var(--design-w);
-  height: var(--design-h);
+  position: static;
+  width: 100%;
+  height: auto;
+  transform: none;
 
-  /* scale-to-fit */
-  --scale-x: calc(100vw / var(--design-w));
-  --scale-y: calc(100dvh / var(--design-h));
-  --scale: min(var(--scale-x), var(--scale-y), 1);
-  transform-origin: top center;
-  transform: translateX(-50%) scale(var(--scale));
-
-  /* zadrži postojeći mobilni stack unutar platna */
   display: flex;
   flex-direction: column;
   align-items: center;
   box-sizing: border-box;
+  /* TEMP gutters: osiguraj lijevu/desnu marginu na mobitelu */
+  padding-left: calc(16px + env(safe-area-inset-left));
+  padding-right: calc(16px + env(safe-area-inset-right));
+  /* dodaj dno kao na BodyScanInfo, s safe-area */
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
 }
 
 /* 1) Back u kutu – jedina iznimka s absolute */
@@ -91,7 +90,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: auto;
+  margin-top: 28px;
 /*   padding-bottom: 45px; */
 }
 
@@ -137,7 +136,7 @@
 .socialIcon { width: 32px; height: 32px; object-fit: contain; }
 .socialIconApple { width: 26px; height: 31px; object-fit: contain; }
 .socialLabel { line-height: 1; }
-/* .socialButtonLast { margin-bottom: 45px; } */
+.socialButtonLast { margin-bottom: calc(24px + env(safe-area-inset-bottom)); }
 
 /* Mobile: webPanel ne radi ništa posebno – nasljeđuje flex kolonu stranice */
 .webPanel {

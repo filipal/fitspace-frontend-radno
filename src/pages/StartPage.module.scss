@@ -1,82 +1,104 @@
 @use '../styles' as s;
 
-/* Design dimenzije: iPhone 15 Pro (portret): 393×852 CSS px */
+$design-w: 430;
+
+/* 1cqw = 1% od širine .startPage (container) */
+@function cqw($px, $base: $design-w) {
+  @return calc((#{$px} / #{$base}) * 100cqw);
+}
+
+/* font-size skala: 100% @430, mekano ↓ ispod 430 */
+@function fsz($n, $minFactor: .85) {
+  @return clamp(#{$n * $minFactor}px, cqw(#{$n}), #{$n}px);
+}
+
+/* Cap širine stranice na 430 */
 :root {
-  --design-w: 393px;
-  --design-h: 852px;
+  --page-max-width: 430px;
+  --page-width: min(100%, var(--page-max-width));
 }
+
+/* KORIJEN: centriraj i omogući container queries */
 .startPage {
-  position: relative;
-  width: 100vw;
-  height: 100dvh;
-  margin: 0;
-  overflow: hidden; /* bez scrolla – sadržaj se skalira */
+  container-type: inline-size;       /* ključ za cqw */
+  width: 100%;
+  max-width: var(--page-max-width);
+  height: 100dvh;                    /* precizna visina za 50% pozicioniranje */
+  margin: 0 auto;
+  display: block;                    /* koristit ćemo flex unutar .canvas */
+  padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
   font-family: 'Outfit', sans-serif;
+
+  /* postavi 100lvh override na kraj bloka kako bi izbjegli mixed-decls upozorenje */
+  @supports (height: 100lvh) {
+    height: 100lvh;                  /* mobiteli: koristi large viewport height */
+  }
 }
 
-/* Unutarnje "platno" koje se skalira da stane na ekran */
+/* Unutarnji raspored: 100px top offset, centrirano, bez oslanjanja na cqw */
 .canvas {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: var(--design-w);
-  height: var(--design-h);
-
-  /* scale-to-fit */
-  --scale-x: calc(100vw / var(--design-w));
-  --scale-y: calc(100dvh / var(--design-h));
-  --scale: min(var(--scale-x), var(--scale-y), 1);
-  transform-origin: top center;
-  transform: translateX(-50%) scale(var(--scale));
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;                /* omogući apsolutno pozicioniranje gumba */
+  padding-top: 100px; /* točno 100px od vrha @430 */
 }
 
+/* Title — 100px ispod vrha; na 430 se lomi u 2 reda jer je širina limitirana */
 .title {
-  position: absolute;
-  margin-top: 99px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 330px;
-  height: 76px; 
-  font-size: 32px;
-  text-align: center;
+  margin: 0 0 24px 0;                /* razmak do gumba */
+  display: grid; place-items: center;
+  font-size: fsz(32);
+  line-height: 1.05;
   color: #000;
+  text-align: center;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
+/* Start gumb — točno centar vodoravno, dimenzije 320×50 @430 */
 .startButton {
-  position: absolute;
+  position: absolute;                /* točno na sredinu stranice */
   left: 50%;
-  transform: translateX(-50%);
-  margin-inline: 0 auto;
   top: 50%;
-  width: clamp(200px, 80%, 320px);
+  transform: translate(-50%, -50%);
+  width: calc(100% - 110px);         /* 55px lijevo/desno → 320px @430 */
+  max-width: 320px;                  /* ne preko 320 na većim širinama */
   height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
   background: #000;
   color: #fff;
-  border: none;
-  font-size: 18px;
   cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  font-size: fsz(18);
+  line-height: 1;
 }
 
+/* ——————————————————— */
+/* WEB / DESKTOP: jedan red */
+/* ——————————————————— */
 @include s.respond(xl) {
-  /* Naslov: i dalje 99px od vrha, ali centriran vodoravno */
+  /* po želji možeš malo povećati cap */
+  :root { --page-max-width: 600px; }
+
   .title {
-    left: 50%;
-    transform: translateX(-50%);
-    margin-top: 99px;
-    width: 600px;
-    text-align: center;
+    inline-size: max-content;        /* pusti da ide u jedan red */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: clamp(20px, cqw(32), 32px);
+    block-size: auto;
   }
 
-  /* Gumb: točno u vertikalnom centru i centriran vodoravno */
   .startButton {
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: 420px;
+    width: 420px;                    /* desktop širina */
     height: 56px;
-    font-size: 20px;
+    font-size: clamp(18px, cqw(20), 20px);
   }
 }

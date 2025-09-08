@@ -1,66 +1,130 @@
 @use '../styles' as s;
+$design-w: 430; // jedan izvor istine
 
+@function cqw($px, $base: $design-w) {
+  @return calc((#{$px} / #{$base}) * 100cqw); 
+}
+
+@function fsz($n, $minFactor: .85) {
+  @return clamp(#{$n * $minFactor}px, cqw(#{$n}), #{$n}px);
+}
+
+:root {
+  --design-w: #{$design-w};
+  --design-h: 932;   /* visina dizajna (broj, bez px) */
+  --header-h: 101;   /* visina headera (broj, bez px); stavi 0 ako ga nema */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 .page {
+  /* omogućuje cqw mjere u odnosu na širinu ove stranice */
+  container-type: inline-size;
+  position: relative;   /* ⟵ referenca za apsolutno pozicioniranje */
+  width: 100%;
+  max-width: calc(var(--design-w) * 1px);
+  min-height: 100dvh;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   color: #000;
   background: #ececec;
-  width: var(--page-width);
-  min-height: 100svh;
-  margin: 0 auto;  
-}
-
-.avatarButton {
-  background: none;
-  border: none;
-  padding: 0;
+  --page-w-px: 100cqw;
+  container-name: page;
+  /* nasljeđivanje fonta i na form-kontrole */
+  button, input, select, textarea { font: inherit; }
 }
 
 .centralWrapper {
-  position: relative;
+  /* var za visinu accordeona (0 dok je zatvoren) */
+  --acc-h: 0;
+  position: static;
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
 }
 
-.dataPanelWrapper {
-  position: absolute;
-  top: 10px;
-  left: calc(50% - 205px);
-  z-index: 1;
-}
+.withAccordion { --acc-h: cqw(171); }
 
 .avatarSection {
-  width: var(--page-width);
-  height: 750px;
+  width: 100%;
+  height: calc(#{cqw(750)} - var(--acc-h, 0));
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-.bodySelected {
-  height: 579px;
-  justify-content: flex-end; // Pomera sadržaj uz desnu marginu
+.avatarButton {
+  inline-size: calc((32 / 430) * var(--page-w-px)); /* 32px @430 */
+  block-size:  calc((32 / 430) * var(--page-w-px));
+  padding: 0;
+  border: 0;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto; /* ne rasteži u header flexu */
+}
+.avatarButton img{
+  inline-size: 100%;
+  block-size:  100%;
+  object-fit: contain;
+  display: block;
 }
 
-/* Background strip behind DataPanel when Body (measurements) is selected */
+/* osiguraj minimalni tap-target na manjim širinama */
+@container page (max-width: 400px){
+  .avatarButton{
+    min-inline-size: 28px;
+    min-block-size:  28px;
+  }
+}
+
+/* —— DATA PANEL POZICIJA I DIMENZIJE —— */
+/* Wrapper određuje točnu kutiju 180×495 i poziciju 10/10 od stranice */
+.dataPanelWrapper {
+  position: absolute;
+  /* 10px ispod headera (realna visina), skalirano po širini stranice */
+  top: calc(
+    var(--header-real-h, calc(var(--header-h, 0) * 1px))
+    + (10 / 430) * var(--page-w-px)
+  );
+  left: calc((10 / 430) * var(--page-w-px));
+  inline-size: calc((180 / 430) * var(--page-w-px));
+  block-size:  calc((495 / 430) * var(--page-w-px));
+  z-index: 2;
+}
+
+.bodySelected {
+  height: cqw(579);
+  justify-content: flex-end;
+}
+@container page (max-width: 400px){
+  .dataPanelWrapper{
+    /* umjesto +10px (skalirano), koristi +6px (skalirano) */
+    top: calc(var(--header-h, 0) * 1px + (-3 / 430) * var(--page-w-px));
+    /* po želji: i lijevi odmak mrvu manji */
+    /* left: calc((8 / 430) * var(--page-w-px)); */
+  }
+}
+
+/* Background strip behind DataPanel when Body is selected */
 .bodySelected::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   bottom: 0;
-  width: 200px; /* 180px panel width + 10px left + 10px inner spacing */
+  width: cqw(156);
   background: #BAB9BA;
-  z-index: 0; /* stays behind DataPanel (which gets z-index:1) */
-  pointer-events: none; /* do not block interactions */
+  z-index: 0;
+  pointer-events: none;
 }
 
 .bodySelected .avatarImage {
-  width: 274px; // Eksplicitna širina za Body mode
-  height: 579px; // Eksplicitna visina za Body mode
+  width: cqw(274);
+  height: cqw(579);
 }
 
 .avatarImage {
@@ -71,60 +135,57 @@
 
 /* Face mode: show top-cropped/zoomed view at 430x670 */
 .faceSelected {
-  height: 670px;
-  --avatar-zoom: 2.4; /* tweakable zoom for Face mode */
-  overflow: hidden; /* clip zoomed image */
+  height: cqw(670);
+  --avatar-zoom: 2.4;
+  overflow: hidden;
 }
-
 .faceSelected .avatarImage {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: top center; /* focus on the top area (face) */
-  transform: scale(var(--avatar-zoom, 1)); /* zoom into the top portion */
+  object-position: top center;
+  transform: scale(var(--avatar-zoom, 1));
   transform-origin: top center;
   will-change: transform;
 }
 
-/* Skin mode: shrink image area by accordion height; keep full body framing */
+/* Skin mode */
 .skinSelected {
-  height: 690px; /* 750 - skin accordion ~60 */
+  height: cqw(690);
   overflow: hidden;
-  --avatar-zoom: 1.0; /* adjust if you want slight zoom while skin is open */
+  --avatar-zoom: 1.0;
+  background: #BAB9BA;
 }
-
 .skinSelected .avatarImage {
   width: 100%;
   height: 100%;
-  object-fit: contain; /* keep full body */
+  object-fit: contain;
   transform: scale(var(--avatar-zoom, 1));
   transform-origin: center bottom;
 }
 
-/* Hair mode: shrink image area by accordion height (120px), with Face-like top-crop zoom */
+/* Hair mode */
 .hairSelected {
-  height: 630px; /* 750 - hair accordion 120 */
-  overflow: hidden; /* clip zoomed image */
-  --avatar-zoom: 2.4; /* same default zoom as Face */
+  height: cqw(630);
+  overflow: hidden;
+  --avatar-zoom: 2.4;
 }
-
 .hairSelected .avatarImage {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* match Face behavior */
-  object-position: top center; /* focus on the top area */
+  object-fit: cover;
+  object-position: top center;
   transform: scale(var(--avatar-zoom, 1));
   transform-origin: top center;
   will-change: transform;
 }
 
-/* Extras mode: same as Hair/Face zoom but reserving 120px for Extras accordion */
+/* Extras mode */
 .extrasSelected {
-  height: 630px; /* 750 - extras accordion 120 */
+  height: cqw(630);
   overflow: hidden;
   --avatar-zoom: 2.4;
 }
-
 .extrasSelected .avatarImage {
   width: 100%;
   height: 100%;
@@ -134,24 +195,27 @@
   transform-origin: top center;
   will-change: transform;
 }
-/* measurement list styles moved to DataPanel.module.scss */
 
 .accordion {
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 0 !important;
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
 }
 
+/* Kontrole ispod avatara */
 .controlGroup {
   position: absolute;
-  bottom: 10px;
+  bottom: cqw(10);
   left: 50%;
   transform: translateX(-50%);
-  width: 410px;
-  height: 60px;
+  width: cqw(410);
+  height: cqw(60);
   display: flex;
   align-items: flex-end;
+  z-index: 3;
 }
 
 .controlButton {
@@ -165,28 +229,13 @@
   transition: all 0.2s ease;
   color: #FFFFFF;
 }
-.controlButton svg {
-  display: block;
-}
-.controlButton svg .outerHalo {
-  transition: fill .2s ease;
-}
+.controlButton svg { display: block; }
+.controlButton svg .outerHalo { transition: fill .2s ease; }
+.controlButton.selected svg .outerHalo { fill: #000; fill-opacity: 1; }
+.controlButton svg .whiteRing { shape-rendering: geometricPrecision; }
 
-.controlButton.selected svg .outerHalo {
-  fill: #000;
-  fill-opacity: 1; 
-}
-.controlButton svg .whiteRing {
-  shape-rendering: geometricPrecision;
-}
-.controlIcon {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-.controlButton .outerCircle {
-  display: none;  // ili potpuno obriši markup + ovaj blok
-}
+.controlIcon { width: 100%; height: 100%; object-fit: contain; }
+.controlButton .outerCircle { display: none; }
 .controlButton.selected { color: #FFFFFF; }
 
 .controlIcon { position: relative; z-index: 2; }
@@ -194,7 +243,7 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 2px solid #FFFFFF;
+  border: cqw(2) solid #FFFFFF;
   background: transparent;
   box-sizing: border-box;
   transition: border-color .25s ease;
@@ -203,116 +252,100 @@
 }
 .controlButton.selected .outerCircle { border-color: #000; }
 
-.rotateleft {
-  width: 60px;
-  margin-right: 50px;
-}
+/* pojedinačne širine/razmaci ikona */
+.rotateleft  { width: cqw(60); margin-right: cqw(50); }
+.upload      { width: cqw(50); margin-right: cqw(25); }
+.fullscreen  { width: cqw(40); margin-right: cqw(25); }
+.download    { width: cqw(50); margin-right: cqw(50); }
+.rotateright { width: cqw(60); }
 
-.upload {
-  width: 50px;
-  margin-right: 25px;
-}
-
-.fullscreen {
-  width: 40px;
-  margin-right: 25px;
-}
-
-.download {
-  width: 50px;
-  margin-right: 50px;
-}
-
-.rotateright {
-  width: 60px;
-}
-
+/* Bottom nav sekcija */
 .bottomSection {
-  max-width: var(--page-max-width);
+  width: 100%;
   max-width: 430px;
-  border-top: 1px solid #000; // Border od ruba do ruba
+  border-top: 1px solid #000; /* border ostavi 1px zbog oštrine */
   display: flex;
-  justify-content: center; // Centrira bottomNav
-  margin-bottom: 20px;
-  padding-top: 0; // Uklanja padding da border bude flush
+  justify-content: center;
+  /* margin-bottom: cqw(20); */
+  padding-top: 0;
   background: #ececec;
   position: relative;
 }
-
 .bottomSection::after {
   content: '';
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -20px;
-  height: 20px;
+  left: 0; right: 0;
+  bottom: calc(-1 * cqw(20));
+  height: cqw(20);
   background: #ececec;
   z-index: 0;
   pointer-events: none;
 }
 
 .bottomNav {
-  width: 410px;
-  height: 60px;
+  width: 100%;
+  max-width: cqw(410);
+  height: cqw(60);
   display: flex;
 }
 
 .navButton {
-  width: 60px;
-  height: 60px;
+  width: cqw(60);
+  height: cqw(60);
   padding: 0;
   border: none;
   background: none;
+  /* -webkit-appearance: none;  iOS: ne bojaj tekst kao link/gumb */
+  color: #000;              /* fiksiraj boju teksta na iOS-u */
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end; // Poravnava sadržaj po dnu
-  position: relative; // Allows absolute-positioned top indicator
+  justify-content: flex-end;
+  position: relative;
 }
 
 .navButton:not(:first-child) {
-  margin-left: 10px;
+  margin-left: cqw(10);
 }
 
 .navIndicator {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 5px;
+  top: 0; left: 0; right: 0;
+  height: cqw(5);
   display: none;
 }
-
-.active .navIndicator {
-  background: #000;
-  display: block;
-}
+.active .navIndicator { background: #000; display: block; }
 
 .navIcon {
   display: flex;
   align-items: center;
   justify-content: center;
-  max-height: 35px;
-  order: 2; // Stavlja ikonu u sredinu
-  margin-bottom: 2px; // Mali razmak od labela
+  max-height: cqw(35);
+  order: 2;
+  margin-bottom: cqw(2);
 }
-
 .navIcon img {
-  max-width: 42px;
-  max-height: 31px;
+  max-width: cqw(42);
+  max-height: cqw(31);
   width: auto;
   height: auto;
 }
 
 .navLabel {
-  height: 20px;
-  font-size: 14px;
+  height: cqw(20);
+  font-size: clamp(12px, cqw(14), 16px);
+  color: inherit;           /* naslijedi crnu iz .navButton */
+  white-space: nowrap;      /* izbjegni lom teksta u širinu */
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;  /* zaštita od prelijevanja (crveni outline) */
   display: flex;
   align-items: center;
   justify-content: center;
-  order: 3; // Stavlja label na dno
+  order: 3;
 }
 
+/* —— desktop layout ostaje kako je —— */
 @include s.respond(xxl) {
   .page {
     width: var(--page-width);
@@ -321,7 +354,6 @@
     align-items: flex-start;
     position: relative;
   }
-
   .centralWrapper {
     flex-direction: row;
     align-items: flex-start;
@@ -329,93 +361,26 @@
     height: calc(100% - 70px);
     justify-content: center;
     padding-left: 0;
+    margin-bottom: cqw(9);
     background: #B1B1B0;
   }
-  .centralWrapper.withAccordion {
-    width: calc(100% - 90px - 335px);
-    justify-content: flex-start;
-  }
-  .avatarShifted {
-  margin-left: 123px;
-  }
-  .avatarSection {
-    width: 604px;
-    height: 953px;
-  }
-
-  .bodySelected {
-    height: 953px;
-    justify-content: center;
-  }
-
-  .bodySelected::before {
-    display: none;
-  }
-
-  .bodySelected .avatarImage {
-    width: 100%;
-    height: 100%;
-  }
-
-  .dataPanelWrapper {
-    position: static;
-    width: 273px;
-    height: 774px;
-    margin-left: 15px;
-    margin-right: 22px;
-    margin-top: 62px;
-  }
-
-  .accordion {
-    width: 335px;
-    height: calc(100% - 70px);
-    position: absolute;
-    top: 70px;
-    right: 90px;
-  }
-
+  .centralWrapper.withAccordion { width: calc(100% - 90px - 335px); justify-content: flex-start; }
+  .avatarShifted { margin-left: 123px; }
+  .avatarSection { width: 604px; height: 953px; }
+  .bodySelected { height: 953px; justify-content: center; }
+  .bodySelected::before { display: none; }
+  .bodySelected .avatarImage { width: 100%; height: 100%; }
+  .dataPanelWrapper { position: static; width: 273px; height: 774px; margin-left: 15px; margin-right: 22px; margin-top: 62px; }
+  .accordion { width: 335px; height: calc(100% - 70px); position: absolute; top: 70px; right: 90px; }
   .bottomSection {
-    position: absolute;
-    top: 70px;
-    right: 0;
-    width: 90px;
-    height: calc(100% - 70px);
-    border-top: none;
-    border-left: 1px solid #000;
-    margin-bottom: 0;
-    justify-content: flex-start;
+    position: absolute; top: 70px; right: 0; width: 90px; height: calc(100% - 70px);
+    border-top: none; border-left: 1px solid #000; margin-bottom: 0; justify-content: flex-start;
   }
-
-  .bottomSection::after {
-    display: none;
-  }
-
-  .bottomNav {
-    width: 90px;
-    height: 100%;
-    flex-direction: column;
-    margin-top: 0;
-    align-items: center;
-  }
-  .navIndicator {
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: auto;
-    width: 5px;
-    height: 100%;
-  }
-  .navButton {
-    width: 90px;
-    height: 90px;
-  }
-
-  .navButton:not(:first-child) {
-    margin-left: 0;
-    margin-top: 10px;
-  }
+  .bottomSection::after { display: none; }
+  .bottomNav { width: 90px; height: 100%; flex-direction: column; margin-top: 0; align-items: center; }
+  .navIndicator { top: 0; bottom: 0; left: 0; right: auto; width: 5px; height: 100%; }
+  .navButton { width: 90px; height: 90px; }
+  .navButton:not(:first-child) { margin-left: 0; margin-top: 10px; }
 }
 
-@include s.respond(lg) {
-  
-}
+@include s.respond(lg) { /* (po potrebi) */ }

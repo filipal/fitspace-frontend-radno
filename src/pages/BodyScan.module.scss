@@ -6,37 +6,34 @@
   --design-h: 852px;
 }
 
+/* TEMP: disable full-screen canvas → allow natural flow+scroll */
 .bodyScanPage {
   position: relative;
-  width: 100vw;
-  height: 100dvh;
-  margin: 0;
-  overflow: hidden; /* bez scrolla – sadržaj se skalira */
-  background: #000; /* spriječi bijeli obrub izvan platna */
+  width: var(--page-width);
+  min-height: 100dvh; /* pokrij cijeli viewport – nema svijetlog “slivera” ispod */
+  margin: 0 auto;
+  overflow: visible;
+  background: #000;
   --header-height: 101px;
   --footer-height: 50px;
 }
 
 /* Unutarnje "platno" koje se skalira da stane na ekran */
 .canvas {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: var(--design-w);
-  height: var(--design-h);
-
-  /* scale-to-fit */
-  --scale-x: calc(100vw / var(--design-w));
-  --scale-y: calc(100dvh / var(--design-h));
-  --scale: min(var(--scale-x), var(--scale-y), 1);
-  transform-origin: top center;
-  transform: translateX(-50%) scale(var(--scale));
+  position: static;
+  width: 100%;
+  height: auto;
+  transform: none;
 
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  /* Drži UI (header/footer) iznad full-bleed slike/videa */
   z-index: 5;
+  /* Guteri i prostor pri dnu kao na ostalim stranicama */
+  box-sizing: border-box;
+  padding-left: calc(16px + env(safe-area-inset-left));
+  padding-right: calc(16px + env(safe-area-inset-right));
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
 }
 
 .scanArea {
@@ -84,15 +81,13 @@
 }
 
 .scanFooter {
-  position: absolute;
-  bottom: 45px;
-  left: 50%;
-  transform: translateX(-50%);
+  position: static; /* slijedi flow – bez apsolutnog pozicioniranja */
   width: 100%;
-  margin: 0 auto;
+  margin: 16px auto 0 auto;
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: center;
   gap: 16px;
   z-index: 5;
 }

@@ -37,7 +37,7 @@ body {
   --page-width: min(100%, var(--page-max-width));
   --page-height: 100dvh;
 
-  font-family: 'Outfit', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Outfit', sans-serif;
   line-height: 1.5;
   font-weight: 400;
 

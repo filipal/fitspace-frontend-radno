@@ -1,132 +1,233 @@
-@use '../styles' as s;
-
-/* Design dimenzije: iPhone 15 Pro (portret): 393×852 CSS px */
+/* Polazni dizajn 430×932 (px -> pretvaramo u % širine kontejnera = cqw) */
 :root {
-  --design-w: 393px;
-  --design-h: 852px;
+  --design-w: 430; /* info-only */
+  --design-h: 932; /* info-only */
+  --header-h: 101;
 }
 
+/* Tvoj header (CSS Modules) – ne mora mijenjati ime klase */
+.Header-module__appHeader {
+  height: 101px;
+  /* opcionalno: koristi varijablu i ovdje, da je jedan izvor istine */
+  /* height: calc(var(--header-h) * 1px); */
+}
+
+/* Stranica je query-container pa cqw radi; širinu limitiramo na 430px */
 .bodyPhotosCheckPage {
-  position: relative;
-  width: 100vw;
-  height: 100dvh;
-  margin: 0;
-  overflow: hidden; /* bez scrolla – sadržaj se skalira */
-  font-family: 'Inter', sans-serif;
+  container-type: inline-size;
+  width: 100%;
+  max-width: 430px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  overflow: visible;
+  --pb: calc(((932 - var(--header-h, 0) - 556 - 39 - 194) / 430) * 100cqw);
 }
 
-/* Unutarnje "platno" koje se skalira da stane na ekran */
+/* "Platno": bez paddinga da matematika ostane egzaktna */
 .canvas {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: var(--design-w);
-  height: var(--design-h);
-
-  /* scale-to-fit */
-  --scale-x: calc(100vw / var(--design-w));
-  --scale-y: calc(100dvh / var(--design-h));
-  --scale: min(var(--scale-x), var(--scale-y), 1);
-  transform-origin: top center;
-  transform: translateX(-50%) scale(var(--scale));
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  position: static;
+  width: 100%;
+  height: auto;
+  transform: none;
+  padding-bottom: max(0px, calc(var(--pb, 0px) - env(safe-area-inset-bottom)));
+  display: block;       /* pojednostavljeno */
+  box-sizing: border-box;
 }
 
+/* === CONTENT: 388 × 554 (skalirano) =============================== */
 .content {
-  flex: 1;
-  padding-top: 0;
+  inline-size: 90.2326cqw;    /* 388 / 430 * 100 */
+  block-size: 129.3023cqw;    /* 554 / 430 * 100 */
+  margin-inline: auto;
+
+  /* Grid s eksplicitnim redovima:
+     [31] [25.5] [auto-ostatak] [474]  => ukupno 554 */
+  display: grid;
+  grid-template-rows:
+    7.2093cqw         /* 31 / 430 * 100  → margin-top za prompt */
+    5.9302cqw         /* 25.5 / 430 * 100 → visina prompta   */
+    1fr               /* automatski razmak između prompt i photos */
+    110.2326cqw;      /* 474 / 430 * 100 → visina photos bloka */
+
+  justify-items: center;
+  align-items: stretch;
+  box-sizing: border-box;
+}
+
+/* PROMPT: visina 25.5, gornji odmak 31 (riješen gornjim grid redom) */
+.prompt {
+  grid-row: 2;
+  inline-size: 100%;
+  block-size: 100%;
+  margin: 0; /* nema potrebe, grid drži 31 gore i 25.5 za sam prompt */
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px; /* malo kompaktnije da stane u 852px */
+
+  /* font ostaje čitljiv: skalar + zaštita clampom */
+  font-size: clamp(14px, 3.9535cqw, 17px); /* 17/430*100 = 3.9535 */
+  font-weight: 300;
+  color: #000;
   text-align: center;
 }
 
-.prompt {
-  font-size: 17px;
-  font-weight: 300;
-  color: #000;
-}
-
+/* PHOTOS: 388 × 474; dvije slike 192 × 474; razmak = ostatak (4px) */
 .photos {
+  grid-row: 4;
+  inline-size: 100%;          /* = 388 skalirano */
+  block-size: 100%;           /* = 474 skalirano */
   display: flex;
-  gap: 6px;
+  align-items: stretch;
+  justify-content: space-between; /* ostatak (≈4*s) ide kao razmak */
 }
 
 .photos img {
-  width: 192px;
-  height: 456px; /* smanji visinu radi ukupne visine ekrana */
+  inline-size: 44.6512cqw;    /* 192 / 430 * 100 */
+  block-size: 100%;           /* 474 skalirano */
   object-fit: cover;
+  display: block;
 }
 
+/* === FOOTER: 320 × 194, padding-top 39 ============================ */
 .footer {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-bottom: 20px; /* manje dna za niže ekrane */
-}
+  inline-size: 74.4186cqw;     /* 320 / 430 * 100 */
+  block-size: 45.1163cqw;      /* 194 / 430 * 100 */
+  margin: 9.0698cqw auto 0;    /* 39 / 430 * 100  → odmak od .content; centriraj */
+  padding: 0;                  /* važno: bez unutarnjeg paddings-a */
+  box-sizing: border-box;
 
+  /* 50 + 22 + 50 + 22 + 50 = 194 (sve skalirano) */
+  display: grid;
+  grid-template-rows:
+    11.6279cqw   /* 50 */
+    5.1163cqw    /* 22 */
+    11.6279cqw   /* 50 */
+    5.1163cqw    /* 22 */
+    11.6279cqw;  /* 50 */
+  justify-items: center;
+}
+/* Redovi zauzimaju cijelu širinu footera (320) */
+.row1, .row2, .row3 { inline-size: 100%; display: flex; justify-content: center; }
+
+/* Redoslijed u gridu i jednaki vertikalni razmaci */
+.row1 { grid-row: 1; }
+.row2 { grid-row: 3; }
+.row3 { grid-row: 5; }
+
+/* ROW1: dva gumba po 140, razmak = 40 (ostatak do 320) */
 .row1 {
-  display: flex;
-  justify-content: center;
-  gap: 40px;
+  gap: 9.0698cqw;              /* 39 / 430 * 100 */
 }
 
-.row2 {
-  display: flex;
-  justify-content: center;
-  margin-top: 12px;
-}
-
-.row3 {
-  display: flex;
-  justify-content: center;
-  margin-top: 12px;
-}
-
+/* (320 - 39)/2 = 140.5 */
 .smallWhiteButton {
-  width: 140px;
-  height: 50px;
+  inline-size: 32.5581cqw;     /* 140 / 430 * 100 */
+  block-size: 11.6279cqw;      /* 50 / 430 * 100 */
   background: #fff;
-  border: 2px solid #000;
+  border: 0.4651cqw solid #000;/* 2 / 430 * 100 */
   color: #000;
-  font-size: 18px;
-  font-family: 'Inter', sans-serif;
+  font-size: clamp(14px, 4.1860cqw, 18px);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
+  box-sizing: border-box;
+  font-family: "Outfit", sans-serif;
 }
 
-.largeWhiteButton {
-  width: 320px;
-  height: 50px;
-  background: #fff;
-  border: 2px solid #000;
-  color: #000;
-  font-size: 18px;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
+.largeWhiteButton,
 .blackButton {
-  width: 320px;
-  height: 50px;
-  background: #000;
-  color: #fff;
-  border: none;
-  font-size: 18px;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  inline-size: 100%;           /* = 320 */
+  block-size: 11.6279cqw;      /* = 50 */
+  font-size: clamp(14px, 4.1860cqw, 18px);
+  display: flex; align-items: center; justify-content: center;
+  box-sizing: border-box;
+  background: #fff;
+  color: #000;  
+  border: 0.4651cqw solid #000;
+  font-family: "Outfit", sans-serif;
+}
+
+.blackButton { background: #000; color: #fff; border: none; }
+
+/* Donji “prazni” prostor do 932: 184px ( = 932-554-194 ) */
+.canvas::after {
+  content: "";
+  display: block;
+  /* block-size: calc((932px - var(--header-h)*1px - 554px - 39px - 194px) / 430 * 100cqw); */
+}
+
+/* --------------------------------------------------------------
+   Fallback za preglednike bez container queries (cqw/cqh)
+   (Sass parseru smeta "or" u @supports, zato koristimo jednu provjeru)
+   -------------------------------------------------------------- */
+@supports not (container-type: inline-size) {
+  .bodyPhotosCheckPage { width: 100%; max-width: 430px; margin: 0 auto; }
+  .canvas { padding: 0; }
+
+  /* CONTENT 388×554 */
+  .content {
+    width: 388px;
+    height: 554px;
+    margin-inline: auto;
+    display: grid;
+    grid-template-rows:
+      31px  /* gornji odmak za prompt */
+      25.5px/* visina prompta */
+      1fr   /* auto prostor */
+      474px;/* visina photos bloka */
+    justify-items: center;
+    align-items: stretch;
+    box-sizing: border-box;
+  }
+
+  .prompt {
+    grid-row: 2;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px;
+  }
+
+  .photos {
+    grid-row: 4;
+    width: 388px;
+    height: 474px;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+  }
+  .photos img { width: 192px; height: 474px; object-fit: cover; display: block; }
+
+  /* FOOTER 320×194 (tri reda: 50 + 22 + 50 + 22 + 50) */
+  .footer {
+    width: 320px;
+    height: 194px;
+    margin: 39px auto 0;
+    padding: 0;
+    display: grid;
+    grid-template-rows: 50px 22px 50px 22px 50px;
+    justify-items: center;
+    box-sizing: border-box;
+  }
+  .row1, .row2, .row3 { width: 100%; display: flex; justify-content: center; }
+  .row1 { gap: 39px; }
+
+  .smallWhiteButton {
+    width: 140.5px;
+    height: 50px;
+    background: #fff;
+    border: 2px solid #000;
+    font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    box-sizing: border-box;
+  }
+
+  .largeWhiteButton,
+  .blackButton {
+    width: 320px;
+    height: 50px;
+    display: flex; align-items: center; justify-content: center;
+    box-sizing: border-box;
+  }
 }

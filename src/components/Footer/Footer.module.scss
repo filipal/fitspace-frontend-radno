@@ -162,3 +162,35 @@
     width: 422px;
   }
 }
+
+/* Container-query skala (radi na stranicama s container-type: inline-size) */
+@supports (container-type: inline-size) and (width: 1cqw) {
+  .footerTopButton,
+  .buttonSingle,
+  .buttonPrimary,
+  .buttonBlack,
+  .buttonBack {
+    /* 18 / 430 * 100 = 4.1860cqw → skaliraj, ali ne ispod 14px */
+    font-size: clamp(14px, 4.1860cqw, 18px);
+  }
+
+  /* Širine/max-širine koje prate design 430 → cqw */
+  .footerActions,
+  .footerActionsRow,
+  .footerTopButton,
+  .buttonSingle {
+    /* 320 / 430 * 100 */
+    max-width: 74.4186cqw;
+  }
+
+  .buttonPrimary,
+  .buttonBlack {
+    /* 210 / 430 * 100 */
+    width: 48.8372cqw;
+  }
+
+  .buttonBack {
+    /* 100 / 430 * 100 */
+    width: 23.2558cqw;
+  }
+}

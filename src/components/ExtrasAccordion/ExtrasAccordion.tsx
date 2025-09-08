@@ -4,7 +4,6 @@ import ArrowDown from '../../assets/arrow-down.svg'
 import ArrowLeft from '../../assets/arrow-left.svg'
 import ArrowRight from '../../assets/arrow-right.svg'
 import GlassesBig from '../../assets/glasses-b.svg?react'
-import { darkenHex, lightenHex } from '../../utils/color'
 import Skin1Icon from '../../assets/skin1.svg?react'
 import styles from './ExtrasAccordion.module.scss'
 
@@ -27,8 +26,15 @@ export default function ExtrasAccordion() {
   // Right color state (tints the glasses icons in center panel)
   const [colorIndex, setColorIndex] = useState(0)
   const base = useMemo(() => GLASSES_COLORS[colorIndex], [colorIndex])
-  const light = useMemo(() => lightenHex(base), [base])
-  const dark = useMemo(() => darkenHex(base), [base])
+  // Umjesto light/dark izvedenica, lijeva i desna ikona imaju vlastite, susjedne boje iz palete
+  const leftColor = useMemo(
+    () => GLASSES_COLORS[(colorIndex + GLASSES_COLORS.length - 1) % GLASSES_COLORS.length],
+    [colorIndex]
+  )
+  const rightColor = useMemo(
+    () => GLASSES_COLORS[(colorIndex + 1) % GLASSES_COLORS.length],
+    [colorIndex]
+  )
   const prevColor = () => {
     setColorIndex((i) => (i + GLASSES_COLORS.length - 1) % GLASSES_COLORS.length)
     setGlassesIndex((n) => (n - 1 + TOTAL_GLASSES) % TOTAL_GLASSES)
@@ -71,7 +77,7 @@ export default function ExtrasAccordion() {
           <div className={styles.centerStrip}>
             {/* Side thumbnails 46.8 x 46.8 use the big colorizable SVG scaled down; center is 78x78 with big svg icon + index */}
             <div className={styles.thumbSmall}>
-              <GlassesBig className={styles.glassesSmallIcon} style={{ color: light }} />
+              <GlassesBig className={styles.glassesSmallIcon} style={{ color: leftColor }} />
             </div>
 
             <div className={styles.thumbBig}>
@@ -80,7 +86,7 @@ export default function ExtrasAccordion() {
             </div>
 
             <div className={styles.thumbSmall}>
-              <GlassesBig className={styles.glassesSmallIcon} style={{ color: dark }} />
+              <GlassesBig className={styles.glassesSmallIcon} style={{ color: rightColor }} />
             </div>
           </div>
 

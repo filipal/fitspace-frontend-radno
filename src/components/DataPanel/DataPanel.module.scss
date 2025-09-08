@@ -1,99 +1,111 @@
+$design-w: 430;
+@function cqw($px, $base: $design-w) { @return calc((#{$px} / #{$base}) * 100cqw); }
+
+@function fsz($n, $minFactor: .85) {
+  @return clamp(#{$n * $minFactor}px, cqw(#{$n}), #{$n}px);
+}
+
 .dataPanel {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  width: 180px;
-  z-index: 1; /* above background strip injected on bodySelected */
+  position: relative;
+  inline-size: 100%;
+  block-size: 100%;                   /* ← preuzmi 495px od wrappera */
+  display: grid;
+  grid-template-rows: #{cqw(24)} 1fr; /* 24 + (ostatak) */
+  row-gap: #{cqw(1)};                 /* +1px razmak = ukupno 495 */
+  box-sizing: border-box;
 }
 
 .dataPanelHeader {
-  width: 100%;
-  height: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  background: rgba(236, 236, 236, 0.5);
-  border-radius: 6px 6px 0 0;
-  display: flex;
+  -webkit-text-size-adjust: none; /* spriječi iOS autosize samo ovdje */
+  text-size-adjust: none;
+
+  inline-size: 100%;
+  block-size: #{cqw(24)};
+  border: 1px solid rgba(255,255,255,.5); /* ili #{cqw(1)} ako želiš skalirati debljinu */
+  background: rgba(236,236,236,.5);
+  border-radius: #{cqw(6)} #{cqw(6)} 0 0;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
   align-items: center;
-  justify-content: center;
+  padding-inline: #{cqw(4)};
+  box-sizing: border-box;
 }
 
 .dataPanelHeader p {
-  font-size: 14px;
-  font-weight: bold;
+  grid-column: 1;
+  justify-self: center;      /* vizualno centriran u 1fr */
+  min-width: 0;              /* KLJUČ: bez ovoga Safari zna “čuvati” širinu */
+  max-width: 100%;
+
+  font-size: fsz(14);        /* 14px na 430, blago ↓ ispod 430 */
+  font-weight: 700;
+  line-height: 1;
   margin: 0;
   color: #000;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
+@container (max-width: 400px) {
+  .dataPanelHeader p {
+    font-size: fsz(14, .68); /* smije do ~68% */
+    letter-spacing: -0.01em; /* suptilno kondenziranje */
+    font-family: 'Outfit', sans-serif;
+  }
+}
 .dataPanelContent {
-  width: 100%;
-  height: 468px;
-  margin-top: 1px;
-  padding-top: 5px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  background: rgba(236, 236, 236, 0.5);
-  border-radius: 0 0 6px 6px;
+  inline-size: 100%;
+  min-block-size: 0;                  /* VAŽNO: da 1fr smije stati točno */
   overflow-y: auto;
+  /* padding-top: #{cqw(5)}; */
+  border: 1px solid rgba(255,255,255,.5);
+  background: rgba(236,236,236,.5);
+  border-radius: 0 0 #{cqw(6)} #{cqw(6)};
+  box-sizing: border-box;
+  padding: 0;
+  overflow: hidden;    /* bez scrolla */
 }
 
-/* Measurements list styles */
 .measurementsList {
-  padding: 10px 0 0 0; // Prvi red na 8px od gornje margine
+  /* koristi punu visinu contenta (470px) */
+  block-size: 100%;
+  /* 10px gore i dolje (skalirano) */
+  padding-block: #{cqw(9)};
+  margin: 0;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* ⟵ rasporedi ravnomjerno između top/bottom paddinga */
 }
 
 .measurementItem {
-  display: flex;
+  margin: 0;
+  display: grid;
+  grid-template-columns:
+    #{cqw(10)}   /* lijevi unutarnji razmak */
+    #{cqw(20)}   /* ikona */
+    #{cqw(10)}   /* razmak ikona → naziv */
+    #{cqw(100)}  /* naziv */
+    1fr          /* elastični međuprostor */
+    #{cqw(30)}   /* vrijednost (ispravljeno s 33 na 30) */
+    #{cqw(10)};  /* desni unutarnji razmak */
+
   align-items: center;
-  height: 9px;
-  margin-bottom: 10.5px; // Razmak između redova
-  padding: 0 10px;
+  column-gap: 0;
+  min-block-size: #{cqw(10)}; /* ne manje od visine ikone */
 }
 
-.measurementIcon {
-  width: 20px;
-  height: 10px; // Maksimalna visina
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  margin-right: 10px; // 10px razmak između ikone i teksta
-}
-
-.measurementIcon img {
-  max-width: 20px;
-  max-height: 10px;
+.measurementIcon  { grid-column: 2; inline-size: #{cqw(20)}; block-size: #{cqw(10)}; display:flex; align-items:center; justify-content:flex-start; }
+.measurementIcon img { 
+  max-inline-size: 100%;
+  max-block-size: 100%;
   object-fit: contain;
   display: block;
 }
 
-.measurementName {
-  flex: 1;
-  height: 9px;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: #000;
-  line-height: 9px;
-  margin-right: 10px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.measurementValue {
-  height: 9px;
-  font-size: 12.5px;
-  font-weight: 400;
-  color: #000;
-  line-height: 9px;
-  text-align: right;
-  margin-left: auto;          // gura do desnog ruba (unutar paddinga measurementItem)
-  font-variant-numeric: tabular-nums; // jednaka širina znamenki
-  min-width: 3ch;
-}
-
-.dataPanel,
-.dataPanelHeader,
-.dataPanelContent {
-  box-sizing: border-box;
-}
+.measurementName { grid-column: 4; inline-size: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: clamp(11px, #{cqw(12.5)}, 16px); line-height: 1; }
+.measurementValue { grid-column: 6; text-align: right;   font-size: clamp(11px, #{cqw(12.5)}, 16px); line-height: 1; min-width: 3ch; }
 
 @media (min-width: 1440px) {
   .dataPanel {

@@ -1,4 +1,4 @@
-import { useState, useEffect, type ComponentType, type SVGProps } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, type ComponentType, type SVGProps } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import Header from '../components/Header/Header'
 import { usePixelStreaming } from '../context/PixelStreamingContext'
@@ -49,6 +49,54 @@ interface Measurement {
 type NavKey = 'Body' | 'Face' | 'Skin' | 'Hair' | 'Extras' | 'Save'
 
 export default function UnrealMeasurements() {
+  const pageRef = useRef<HTMLDivElement | null>(null);
+
+  useLayoutEffect(() => {
+    const el = pageRef.current;
+    if (!el) return;
+
+    const update = () => {
+      // 1) najrobustnije:
+      const w = el.clientWidth;                   // stvarna širina .page
+      // 2) ili, ako baš želiš docEl, bar klampaj:
+      // const w = Math.min(document.documentElement.clientWidth, el.clientWidth);
+      el.style.setProperty('--page-w-px', `${w}px`);
+    };
+
+    update();
+    const onResize = () => update();
+    window.addEventListener('resize', onResize);
+    window.visualViewport?.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      window.visualViewport?.removeEventListener('resize', onResize);
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const page = pageRef.current;
+    const header = document.querySelector('[data-app-header]') as HTMLElement | null;
+    if (!page || !header) return;
+
+    const set = () => {
+      // uključuje sve paddinge/bordere (i safe-area) jer je to realna visina u layoutu
+      const h = Math.round(header.getBoundingClientRect().height);
+      page.style.setProperty('--header-real-h', `${h}px`);
+    };
+
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(header);
+
+    window.addEventListener('resize', set);
+    window.addEventListener('orientationchange', set);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', set);
+      window.removeEventListener('orientationchange', set);
+    };
+  }, []);
 
   const navigate = useNavigate()
   const location = useLocation()
@@ -142,9 +190,9 @@ export default function UnrealMeasurements() {
   }
 
   return (
-    <div className={styles.page}>
+    <div ref={pageRef} className={styles.page}>
       <Header
-        title="Unreal Measurements"
+        title="Your Avatar"
         variant="dark"
         onExit={() => navigate('/')}
         rightContent={(
@@ -167,7 +215,7 @@ export default function UnrealMeasurements() {
               <button
                 key={control.key}
                 className={`${styles.controlButton} ${styles[control.key.replace('-', '')]} ${selectedControl === control.key ? styles.selected : ''}`}
-                style={{ width: control.width, marginRight: control.marginRight, height: control.width }}
+                /* style={{ width: control.width, marginRight: control.marginRight, height: control.width }} */
                 onClick={() => handleControlClick(control.key)}
                 type="button"
               >

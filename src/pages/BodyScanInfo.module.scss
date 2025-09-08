@@ -8,35 +8,33 @@
 
 .bodyScanInfoPage {
   position: relative;
-  width: 100vw;
-  height: 100dvh;
-  margin: 0;
-  overflow: hidden; /* bez scrolla – sadržaj se skalira */
-  font-family: 'Inter', sans-serif;
+  width: var(--page-width);
+  min-height: 100dvh; /* pokrij cijeli viewport da ne ostane sliver ispod */
+  margin: 0 auto;
+  overflow: visible; /* omogući scroll */
 }
 
 /* Unutarnje "platno" koje se skalira da stane na ekran */
 .canvas {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: var(--design-w);
-  height: var(--design-h);
-
-  /* scale-to-fit */
-  --scale-x: calc(100vw / var(--design-w));
-  --scale-y: calc(100dvh / var(--design-h));
-  --scale: min(var(--scale-x), var(--scale-y), 1);
-  transform-origin: top center;
-  transform: translateX(-50%) scale(var(--scale));
+  position: static;
+  width: 100%;
+  height: auto;
+  transform: none;
 
   display: flex;
   flex-direction: column;
   align-items: center;
+  box-sizing: border-box;
+  /* Guteri za mobitel + notch da sadržaj ne dodiruje rubove */
+  padding-left: calc(16px + env(safe-area-inset-left));
+  padding-right: calc(16px + env(safe-area-inset-right));
 }
 
 .bodyScanContent {
   padding: 48px 20px 0 20px; /* malo manji odmaci na nižim visinama */
+  width: 100%;
+  max-width: 360px;   /* Uži stupac na mobitelu da ništa ne prelijeva */
+  margin-inline: auto;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -67,6 +65,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* prirodno lomljenje + hyphenation; izbjegni agresivno "anywhere" */
+  word-break: normal;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 .bodyScanInfoPage .scanIllustration {

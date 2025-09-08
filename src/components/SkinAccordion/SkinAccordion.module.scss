@@ -1,79 +1,65 @@
+/* SkinAccordion.module.scss */
+$design-w: 430;
+
+/* container-query width helper (na bazi stranice 430) */
+@function cqw($px, $base: $design-w) {
+  @return calc((#{$px} / #{$base}) * 100cqw);
+}
+
+/* font helper (ako zatreba kasnije) */
+@function fsz($n, $minFactor: .85) {
+  @return clamp(#{$n * $minFactor}px, cqw(#{$n}), #{$n}px);
+}
+
+/* ———————————————————
+   BASE: 430 × 60
+   ——————————————————— */
 .container {
-  width: 430px;
-  height: 60px;
+  inline-size: 100%;               /* stane u širinu stranice (max 430) */
+  block-size: cqw(60);
   display: flex;
   background: #ececec;
-  backdrop-filter: blur(4px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(cqw(4));
+  box-shadow: 0 cqw(4) cqw(10) rgba(0, 0, 0, 0.25);
   overflow: hidden;
 }
 
-/* Expanded mode: right side takes the whole accordion, left is hidden */
-.expandedRight {
-  .left {
-    display: none;
-  }
-  .right {
-    width: 430px;
-  }
-  .rightContent {
-    width: 100%;
-    align-items: center;
-    justify-content: center;
-  }
-  .toneBarGroup {
-    width: 350px; /* nova širina samo u expandedRight */
-    height: 25px;
-  }
-
-  .toneBar {
-    width: 350px; /* usklađeno s toneBarGroup */
-    height: 10px;
-  }
-
-  .frames {
-    width: 363px; /* prilagodi: toneBarGroup + eventualni okviri (13px) */
-    grid-template-columns: 13px 1fr 13px;
-  }  
-}
-
+/* Lijevi dio: 240 × 60 s dividerom */
 .left {
-  width: 240px;
-  height: 60px;
+  inline-size: cqw(240);
+  block-size: cqw(60);
   display: flex;
   justify-content: center;
   align-items: center;
-  border-right: 1.5px solid #000; /* divider between color (left) and slider (right) */
+  border-right: cqw(1.5) solid #000; /* skalirani divider */
   background: transparent;
   cursor: pointer;
 }
 
+/* Desni dio: 180 × 60 */
 .right {
-  width: 180px;
-  height: 60px;
+  inline-size: cqw(180);
+  block-size: cqw(60);
   display: flex;
   justify-content: center;
   align-items: center;
   background: transparent;
-  border: none; /* ensure no extra borders on the right side */
+  border: none;
   cursor: pointer;
 }
 
-
-
-/* no standalone divider; left element already has border-right */
-
+/* Skup s tri ikone (u lijevom dijelu) */
 .group {
-  width: 220px;
-  height: 45px;
+  inline-size: cqw(220);
+  block-size: cqw(45);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
 .arrow {
-  width: 20px;
-  height: 20px;
+  inline-size: cqw(20);
+  block-size: cqw(20);
   border: none;
   background: transparent;
   padding: 0;
@@ -82,11 +68,17 @@
   justify-content: center;
   cursor: pointer;
 }
+.arrow img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+  display: block;
+}
 
 .iconsThree {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: cqw(10);
 }
 
 .iconBtn {
@@ -96,15 +88,8 @@
   cursor: pointer;
 }
 
-.iconLarge {
-  width: 45px;
-  height: 45px;
-}
-
-.iconSmall {
-  width: 35px;
-  height: 35px;
-}
+.iconLarge { inline-size: cqw(45); block-size: cqw(45); }
+.iconSmall { inline-size: cqw(35); block-size: cqw(35); }
 
 .iconOne {
   display: flex;
@@ -112,39 +97,43 @@
   justify-content: center;
 }
 
+/* Desni sadržaj (slider + frameovi) */
 .rightContent {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px; /* spacing between top and bottom */
+  gap: cqw(2);
   user-select: none;
 }
 
+/* Tone bar grupa: 130×25 (default) */
 .toneBarGroup {
-  width: 130px; /* wraps 130x10 bar with 25x25 thumb centered vertically */
-  height: 25px;
+  inline-size: cqw(130);
+  block-size: cqw(25);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+/* Bar: 130×10, “stroke” iznutra */
 .toneBar {
   position: relative;
-  width: 130px;
-  height: 10px;
-  background: transparent; /* transparent fill, stroke drawn inside via inset shadow */
-  border-radius: 10px; /* rounded corners = 10 */
-  box-shadow: inset 0 0 0 1.5px #000; /* 1.5px black stroke drawn inside */
-  touch-action: none; /* prevent page scroll on pointer drag */
+  inline-size: cqw(130);
+  block-size: cqw(10);
+  background: transparent;
+  border-radius: cqw(10);
+  box-shadow: inset 0 0 0 cqw(1.5) #000; /* 1.5px skalirano */
+  touch-action: none;
 }
 
+/* Thumb: 25×25, centriran na baru */
 .thumb {
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 25px;
-  height: 25px;
+  inline-size: cqw(25);
+  block-size: cqw(25);
   border-radius: 50%;
   background: transparent;
   border: none;
@@ -153,29 +142,62 @@
   background-repeat: no-repeat;
   background-size: contain;
   background-position: center;
-  touch-action: none; /* prevent page scroll on touch drag */
+  touch-action: none;
 }
-
 .thumb:active { cursor: grabbing; }
 
+/* Frameovi ispod: 143×13, kolone: 13 | 1fr | 13 */
 .frames {
-  width: 143px;
-  height: 13px;
+  inline-size: cqw(143);
+  block-size: cqw(13);
   display: grid;
-  grid-template-columns: 13px 1fr 13px;
+  grid-template-columns: cqw(13) 1fr cqw(13);
   align-items: center;
 }
 
 .frameB,
 .frameG,
 .frameW {
-  width: 13px;
-  height: 13px;
+  inline-size: cqw(13);
+  block-size: cqw(13);
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
 }
-
 .frameB { background-image: url('../../assets/skin-frame-b.svg'); }
 .frameG { background-image: url('../../assets/skin-frame-g.svg'); justify-self: center; }
 .frameW { background-image: url('../../assets/skin-frame-w.svg'); justify-self: end; }
+
+
+/* ———————————————————
+   EXPANDED RIGHT: lijevi dio nestaje, desni preuzima 430×60,
+   šire klizalo (350×10) i frames (363 širine)
+   ——————————————————— */
+.expandedRight {
+  .left { display: none; }
+
+  .right {
+    inline-size: 100%; /* zauzmi cijeli akordeon */
+  }
+
+  .rightContent {
+    inline-size: 100%;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .toneBarGroup {
+    inline-size: cqw(350);
+    block-size: cqw(25);
+  }
+
+  .toneBar {
+    inline-size: cqw(350);
+    block-size: cqw(10);
+  }
+
+  .frames {
+    inline-size: cqw(363);                 /* 350 + 13 */
+    grid-template-columns: cqw(13) 1fr cqw(13);
+  }
+}

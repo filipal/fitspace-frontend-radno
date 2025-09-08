@@ -6,25 +6,39 @@
 } */
 .appHeader {
   width: 100%;
-  height: 101px;
+  max-width: var(--page-max-width);
+  height: 101px;                         /* dizajn visina */
   margin: 0 auto;
   border-bottom: 1px solid #000;
-  padding-inline: 30px;
-  padding-top: 63px;
+
+  /* bočni guteri + safe-area */
+  padding-inline: calc(16px + env(safe-area-inset-left));
+  padding-inline-start: calc(35px + env(safe-area-inset-left));
+  padding-inline-end:   calc(16px + env(safe-area-inset-right));
+
+  /* poravnaj sve na dno i daj 15px baseline */
+  padding-top: 0;
+  padding-bottom: 15px;
+
   display: grid;
-  grid-template-columns: auto 1fr auto; /* [exit] [title] [right] */
-  align-items: start;
+  grid-template-columns: auto 1fr auto;  /* [exit] [title] [right] */
+  column-gap: 16px;
+  align-items: end;                      /* dno */
   box-sizing: border-box;
-  color: #000; /* default dark color */
+
+  color: #000;
   background: transparent;
 }
-
+.appHeader > * {
+  align-self: end;                  /* spusti svaki direktni child na dno */
+}
 /* Svijetla pozadina kad je header u expandedTop ili expandedBot stanju */
 .appHeader.expandedTop,
 .appHeader.expandedBot {
   background: transparent !important;
 }
-
+.exitButton img,
+.infoButton img { width: 20px; height: 20px; display: block; }
 .light {
   color: #fff;
 
@@ -45,12 +59,24 @@
   justify-content: center;
 }
 
+.exitButton,
+.infoButton {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .exitButton { grid-column: 1; justify-self: start; }
 .rightBox   { grid-column: 3; justify-self: end; display: inline-flex; gap: 12px; }
+.rightBox > *:last-child { margin-inline-end: 14px; } /* 16 + 14 = 30px do ruba */
 
-.exitButton img,
-.infoButton img { width: 20px; height: 20px; display: block; }
-
+@supports (container-type: inline-size) and (width: 1cqw) {
+  .rightBox > *:last-child { margin-inline-end: 3.2558cqw; } /* 14px @ 430 */
+}
 /* .infoButton {
   position: absolute;
   top: 61px;
@@ -84,6 +110,7 @@
 .headerTitle {
   grid-column: 2;
   justify-self: center;
+  padding-inline: 8px;
   font-family: 'Outfit', sans-serif;
   font-weight: 400;
   font-size: 23px;
@@ -95,12 +122,40 @@
   text-overflow: ellipsis;
 }
 
-@media (max-width: 400px) {
+/* @media (max-width: 400px) {
   .appHeader {
     width: 100%;
     height: 92.3px;
     padding-top: 57.5px;
-    padding-inline: 27.4px;
+    padding-inline: calc(14px + env(safe-area-inset-left));
+    padding-inline-start: calc(35px + env(safe-area-inset-left));
+    padding-inline-end: calc(14px + env(safe-area-inset-right));
+    column-gap: 12px;
+  }
+} */
+
+/* Container-query skala (npr. stranice s container-type: inline-size) */
+@supports (container-type: inline-size) and (width: 1cqw) {
+  .appHeader {
+    /* 101 / 430 * 100 */
+    height: 23.4884cqw;
+    padding-top: 0;
+    padding-bottom: 3.4884cqw;
+    /* Skalarni bočni odmaci: 35px i 16px → cqw + safe-area */
+    padding-inline-start: calc(8.1395cqw + env(safe-area-inset-left));  /* 35/430 */
+    padding-inline-end:   calc(3.7209cqw + env(safe-area-inset-right)); /* 16/430 */
+    column-gap: 3.7209cqw; /* 16/430 */
+  }
+  .headerTitle {
+    /* 23 / 430 * 100 = 5.3488cqw, sa zaštitnim granicama */
+    font-size: clamp(16px, 5.3488cqw, 23px);
+  }
+  .exitButton img,
+  .infoButton img {
+    /* 20 / 430 * 100 = 4.6512cqw */
+    width: clamp(16px, 4.6512cqw, 20px);
+    height: clamp(16px, 4.6512cqw, 20px);
+    display: block;
   }
 }
 

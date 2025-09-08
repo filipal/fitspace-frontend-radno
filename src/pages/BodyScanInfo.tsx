@@ -34,9 +34,9 @@ export default function BodyScanInfo() {
               <div
                 className={styles.tipBox}
                 key={idx}
-                style={{ height: tipHeights[idx], whiteSpace: 'pre-line' }}
+                style={{ minHeight: tipHeights[idx] }}
               >
-                {tip}
+                {tip.replace(/\n/g, ' ')}
               </div>
             ))}
           </div>

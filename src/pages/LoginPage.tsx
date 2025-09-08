@@ -1,5 +1,5 @@
 import { useAuth } from "react-oidc-context"
-import logo from '../assets/Fitspace-logo-gradient-nobkg.svg'
+import logo from '../assets/fitspace-logo-gradient-nobkg.svg'
 import exitIcon from '../assets/exit.svg'
 import googleLogo from '../assets/google-logo.svg'
 import appleLogo from '../assets/apple-logo.svg'

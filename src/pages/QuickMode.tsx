@@ -202,6 +202,7 @@ export default function QuickMode() {
       </div>
 
       {/* Bottom Buttons */}
+      <div className={styles.footerSlot}>
       <Footer
         backText="Back"
         actionText="Generate Avatar"
@@ -215,6 +216,7 @@ export default function QuickMode() {
         }
         actionType="primary"
       />
+      </div>
     </div>
     </div>
   )

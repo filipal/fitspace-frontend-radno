@@ -8,7 +8,7 @@ export default function FaceAccordion() {
     <div className={styles.container}>
       <div className={styles.left}>
         <p>
-          To make your Avatar even more personalised, create a 3D model of your face in minutes
+          To make your Avatar<br/>even more personalised,<br/>create a 3D model of<br/>your face in minutes
         </p>
       </div>
       <div className={styles.right}>

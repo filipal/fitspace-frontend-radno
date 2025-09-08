@@ -1,35 +1,45 @@
+/* HairAccordion.module.scss */
+$design-w: 430;
+@function cqw($px, $base: $design-w) {
+  @return calc((#{$px} / #{$base}) * 100cqw);
+}
+
+/* 430×120 @ design; skala preko cqw */
 .container {
-  width: 430px;
-  height: 120px;
+  inline-size: 100%;
+  block-size: cqw(120);
   display: flex;
   background: #ececec;
-  backdrop-filter: blur(4px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(cqw(4));
+  box-shadow: 0 cqw(4) cqw(10) rgba(0, 0, 0, 0.25);
   overflow: hidden;
 }
 
+/* LEFT = 350w, grid: 24 | 232 | 24, gap 20, 1px divider ostaje “ošar” */
 .left {
-  width: 350px;
-  height: 120px;
+  inline-size: cqw(350);
+  block-size: 100%;
   display: grid;
-  grid-template-columns: 24px 232px 24px; /* arrow | icons strip | arrow */
-  column-gap: 20px; /* 20px behind left arrow and in front of right arrow */
+  grid-template-columns: cqw(24) cqw(232) cqw(24);
+  column-gap: cqw(20);
   justify-content: center;
   align-items: center;
-  border-right: 1px solid #000;
+  border-right: 1px solid #000; /* 1px zbog oštrine */
 }
 
+/* RIGHT = 80w, centrirano */
 .right {
-  width: 80px;
-  height: 120px;
+  inline-size: cqw(80);
+  block-size: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
+/* Horizontalne strelice (24 × 32.8) */
 .hArrow {
-  width: 24px;
-  height: 32.8px;
+  inline-size: cqw(24);
+  block-size: cqw(32.8);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -37,41 +47,51 @@
   border: none;
   padding: 0;
   cursor: pointer;
-  
-  img { width: 100%; height: 100%; object-fit: contain; }
+
+  img {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: contain;
+    display: block;
+  }
 }
 
+/* Ikone u srednjem stubcu: 60 | center | 60, 100px visina */
 .iconStrip {
-  width: 232px;
-  height: 100px;
+  inline-size: cqw(232);
+  block-size: cqw(100);
   display: grid;
-  grid-template-columns: 60px 1fr 60px; /* 60 | center | 60 */
+  grid-template-columns: cqw(60) 1fr cqw(60);
   align-items: center;
   justify-items: center;
 }
 
+/* Male ikone 60×60 – lijevo i desno */
 .iconSmall {
-  width: 60px;
-  height: 60px;
+  inline-size: cqw(60);
+  block-size: cqw(60);
 }
 
+/* Velika ikona 100×100 – centar */
 .iconBig {
-  width: 100px;
-  height: 100px;
+  inline-size: cqw(100);
+  block-size: cqw(100);
 }
 
+/* Desni “picker” 60×100 s vert. rasporedom 30 | 40 | 30 */
 .colorPicker {
-  width: 60px;
-  height: 100px; /* explicitly 100px tall, centered inside right */
+  inline-size: cqw(60);
+  block-size: cqw(100);
   display: grid;
-  grid-template-rows: 30px 40px 30px; /* arrows 30x22 (we'll size img), preview 40x40 */
+  grid-template-rows: cqw(30) cqw(40) cqw(30);
   align-items: center;
   justify-items: center;
 }
 
+/* Vertikalne strelice (30 × 22) */
 .vArrow {
-  width: 30px;
-  height: 22px;
+  inline-size: cqw(30);
+  block-size: cqw(22);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -79,11 +99,17 @@
   border: none;
   padding: 0;
   cursor: pointer;
-  
-  img { width: 100%; height: 100%; object-fit: contain; }
+
+  img {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: contain;
+    display: block;
+  }
 }
 
+/* Preview ikonica 40×40 */
 .previewIcon {
-  width: 40px;
-  height: 40px;
+  inline-size: cqw(40);
+  block-size: cqw(40);
 }

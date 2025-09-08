@@ -1,354 +1,219 @@
+/* QuickMode.module.scss — MOBILE FIRST (430 baseline) */
 @use '../styles' as s;
 
-/* Design dimenzije: iPhone 15 Pro (portret): 393×852 CSS px */
-:root {
-  --design-w: 393px;
-  --design-h: 852px;
+/* — helpers (430 baseline) — */
+$design-w: 430;
+@function cqw($px, $base: $design-w) { @return calc((#{$px}/#{$base}) * 100cqw); }
+@function fsz($n, $min:.85) { @return clamp(#{$n*$min}px, cqw(#{$n}), #{$n}px); }
+
+/* — page vars — */
+/* :root{
+  --page-max-width: 430px;
+  --page-width: min(100%, var(--page-max-width));
+}
+ */
+/* — PAGE WRAPPER — */
+.quickmodePage{
+  container-type: inline-size;
+  width: 100%;
+  max-width: var(--page-max-width);
+  min-height: 100dvh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+
+  /* footer metrika */
+  --footer-h: #{cqw(50)};    /* visina footera (50 @430) */
+  --footer-gap: #{cqw(45)};  /* razmak od dna (45 @430) */
 }
 
-.footerTopButton {
+/* — HEADER override na ovoj stranici — */
+.quickmodePage .appHeader{
   width: 100%;
-  max-width: 320px;
-  height: 50px;
-  background: linear-gradient(to right, #2b214d, #13536c);
-  color: #fff;
-  font-size: 18px;
-  font-family: 'Inter', sans-serif;
-  border: none;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 10px auto;
-}
-.footerActionsRow {
-  width: 100%;
-  max-width: 320px;
-  height: 50px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  margin: 0 auto;
-}
-.buttonBack {
-  width: 100px;
-  height: 50px;
-  background: #fff;
-  border: 2px solid #000;
-  color: #000;
-  font-size: 18px;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.buttonPrimary {
-  width: min(210px, 100%);
-  margin-inline: auto;
-  height: 50px;
-  background: linear-gradient(to right, #2b214d, #13536c);
-  color: #fff;
-  font-size: 18px;
-  font-family: 'Inter', sans-serif;
-  border: none;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.buttonBlack {
-  width: min(210px, 100%);
-  margin-inline: auto;
-  height: 50px;
-  background: #000;
-  color: #fff;
-  font-size: 18px;
-  font-family: 'Inter', sans-serif;
-  border: none;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.footer {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  position: fixed;
-  left: 0;
-  bottom: 0;
-  height: 95px;
-  z-index: 100;
-  pointer-events: none;
-}
-.footerActionsRow {
-  width: 100%;
-  max-width: 320px;
-  height: 50px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  margin: 0 auto;
-  position: relative;
-  bottom: 0;
-}
-.footerActions > button {
-  pointer-events: auto;
-}
-.buttonBack {
-  width: 100px;
-  height: 50px;
-  background: #fff;
-  border: 2px solid #000;
-  color: #000;
-  font-size: 18px;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.buttonPrimary {
-  width: min(210px, 100%);
-  margin-inline: auto;
-  height: 50px;
-  background: linear-gradient(to right, #2b214d, #13536c);
-  color: #fff;
-  font-size: 18px;
-  font-family: 'Inter', sans-serif;
-  border: none;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.buttonBlack {
-  width: min(210px, 100%);
-  margin-inline: auto;
-  height: 50px;
-  background: #000;
-  color: #fff;
-  font-size: 18px;
-  font-family: 'Inter', sans-serif;
-  border: none;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  max-width: var(--page-max-width);
+  height: cqw(101);              /* 101 @430 */
+  padding-top: 0;
+  padding-bottom: cqw(15);       /* baseline 15px do dna headera */
+  border-bottom: 1px solid #000;
+  box-sizing: border-box;
 }
 .quickmodePage {
-  position: relative;
-  width: 100vw;
-  height: 100dvh;
-  margin: 0;
-  overflow: hidden; /* bez scrolla – sadržaj se skalira */
-  font-family: 'Inter', sans-serif;
-}
+  container-type: inline-size;
+  width: 100%;
+  max-width: 430px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
 
-/* Unutarnje "platno" koje se skalira da stane na ekran */
+  --footer-h: #{cqw(50)};
+  --footer-gap: #{cqw(45)};
+}
+/* — CANVAS: skrolani stupac sa “rezervom” za fixed footer — */
 .canvas {
-  position: absolute;
-  top: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+
+  /* rezerviraj prostor = visina footera + razmak od dna + safe area */
+  padding-bottom: calc(
+    var(--footer-h, #{cqw(50)}) +
+    var(--footer-gap, #{cqw(45)}) +
+    env(safe-area-inset-bottom)
+  );
+}
+.footerSlot {
+  position: fixed;
   left: 50%;
-  width: var(--design-w);
-  height: var(--design-h);
+  transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom) + var(--footer-gap, #{cqw(45)}));
+  width: #{cqw(320)};            /* 55px bočno → 320px u dizajnu 430 */
+  height: var(--footer-h, #{cqw(50)});
+  display: grid;
+  place-items: center;
+  z-index: 1000;
 
-  /* scale-to-fit */
-  --scale-x: calc(100vw / var(--design-w));
-  --scale-y: calc(100dvh / var(--design-h));
-  --scale: min(var(--scale-x), var(--scale-y), 1);
-  transform-origin: top center;
-  transform: translateX(-50%) scale(var(--scale));
-
-  display: flex;
-  flex-direction: column;
+  /* spriječi da overlay blokira klikove izvan footera */
+  pointer-events: none;
 }
+.footerSlot > *{
+  pointer-events: auto;          /* ali Footer unutra je normalno klikabilan */
+  width: 100%;                   /* da prati širinu slota */
+}
+/* — SECTION LABEL — */
+.sectionLabel{
+
+  width: 100%;
+  text-align: center;
+  color: #000;
+  font-size: fsz(18);
+  margin: 0;                     /* resetiraj */
+}
+
+/* prvi label 25px ispod headera */
+.canvas > .sectionLabel:first-of-type{ margin-top: cqw(25); }
 .quickmodeContent {
-  padding: 32px 24px 0 24px;
+  margin-top: cqw(25);
+}
+/* label koji ide nakon bodyshapeRow: 30px ispod njega */
+.bodyshapeRow + .sectionLabel{ margin-top: cqw(30); }
+.quickmodeContent {
+  padding: 0; /* kontroliramo točne razmake po elementima ispod */
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 32px;
-}
-.sectionLabel {
-  font-size: 18px;
-  color: #000;
-  text-align: center;
-  margin-bottom: 16px;
-  width: 100%;
-}
-.sectionMeasurements {
-  width: 100%;
-  max-width: 320px;
-  height: 140px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  margin: 0 auto;
-}
-.bodyshapeRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 289.36px;
-  height: 55px;
-  margin: 0 auto 8px auto;
   gap: 0;
-  box-sizing: content-box;
 }
-.bodyshapeBtn {
-  width: auto;
-  height: auto;
+/* — BODY SHAPE (70px bočni odmaci → 290 širina @430) — */
+.bodyshapeRow{
+  width: cqw(290);
+  height: cqw(55);
+  margin: cqw(25) auto cqw(30);        /* 30px ispod prvog labela */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0;
+  box-sizing: border-box;
+}
+.bodyshapeBtn{
   border: 2px solid transparent;
-  display: flex;
-  align-items: center;
+  padding: 0; background: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.selected{ background:#000; border-color:#000 !important; }
+.bodyshapeIcon{ width: 100%; height: 100%; object-fit: contain; display: block; }
+.selectedIcon{ filter: brightness(0) invert(1); }
+
+/* — ATHLETIC SLIDER (68px bočno → 294 širina @430) — */
+.athleticSliderWrap{
+  width: cqw(294);
+  height: cqw(51);
+  margin: cqw(22) auto 0;        /* 22px ispod drugog labela */
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
   justify-content: center;
-  cursor: pointer;
-  transition: background 0.2s, border 0.2s;
-  padding: 0;
-  box-sizing: content-box;
 }
-.selected {
-  background: #000;
-  border: 2px solid #000 !important;
-}
-.bodyshapeIcon {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: contain;
-}
-.selectedIcon {
-  filter: brightness(0) invert(1);
-}
-.athleticSliderWrap {
-  margin: 0 auto;
-  width: 90%;
-  max-width: 320px;
-}
-.athleticSliderTrack {
+.athleticSliderTrack{
   position: relative;
-  width: 100%;
-  max-width: 257px;
-  height: 9px;
-  margin: 0 auto 8px auto;
+  width: cqw(257);
+  height: cqw(9);
+  margin: 0;
   cursor: pointer;
 }
-.athleticTrack {
-  width: 100%;
-  max-width: 257px;
-  height: 9px;
-  position: absolute;
-  top: 12px;
-  left: 0;
+.athleticTrack{
+  position: absolute; left: 0;
+  top: cqw(12); width: 100%; height: cqw(9);
 }
-.athleticCircle {
-  position: absolute;
-  top: 3px;
-  width: 25px;
-  height: 25px;
-  transition: left 0.2s;
+.athleticCircle{
+  position: absolute; top: cqw(3);
+  width: cqw(25); height: cqw(25);
+  left: calc(var(--athletic-level, 1) * 50% - #{cqw(16)}); /* centrirano prema assetu */
+  transition: left .2s;
   z-index: 2;
-  left: calc(var(--athletic-level, 1) * 50% - 16px);
 }
-.level0 {
-  --athletic-level: 0;
+.level0{ --athletic-level: 0; }
+.level1{ --athletic-level: 1; }
+.level2{ --athletic-level: 2; }
+
+.athleticIcons{
+  width: 100%;
+  margin-top: cqw(22);
+  display: flex; align-items: center; justify-content: space-between;
 }
-.level1 {
-  --athletic-level: 1;
-}
-.level2 {
-  --athletic-level: 2;
-}
-.athleticIcons {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 22px;
+.athleticIcon{ width: cqw(32); height: cqw(24); object-fit: contain; }
+
+/* — MEASUREMENTS (55px bočno → 320 širina @430) — */
+.sectionMeasurements{
+  width: cqw(320);
+  margin: cqw(30) auto 0;        /* 30px ispod slider wrap-a */
+  display: flex; flex-direction: column; align-items: center; gap: cqw(10);
 }
 
-.athleticIcon {
-  width: 32px;
-  height: 24px;
-  object-fit: contain;
+/* red mjere (label + select + unit) */
+.measureRow{ width: cqw(320); height: cqw(40); display: flex; align-items: center; gap: 0; margin: 0 auto; }
+.measureLabel{
+  width: cqw(220); height: cqw(40);
+  border: cqw(2) solid #000; background: #fff;
+  display: flex; align-items: center; padding-inline-start: cqw(6.63);
+  font-size: fsz(16); color: #000; box-sizing: border-box;
+}
+.measureSelect{
+  width: cqw(60); height: cqw(40);
+  border: cqw(2) solid #000; background: #fff;
+  text-align: center; font-size: fsz(16); box-sizing: border-box; margin-left: cqw(10);
+}
+.measureUnit{
+  width: cqw(27.77); height: cqw(40); margin-left: cqw(1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: fsz(16); color: #000; border: none;
 }
 
-.measureRow {
-  display: flex;
-  align-items: center;
-  width: 320px;
-  height: 40px;
-  gap: 0;
-  margin-bottom: 0;
-  /* Precizni razmaci */
+/* — FIXED FOOTER: 45px od dna, visina 50px, širina 320 — */
+/* .footerActionsRow{
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom) + var(--footer-gap));
+  width: cqw(320);
+  height: var(--footer-h);
+  display: flex; align-items: center; justify-content: center; gap: cqw(10);
+  z-index: 1000;
+} */
+.buttonBack{
+  width: cqw(100); height: 100%;
+  background: #fff; border: cqw(2) solid #000; color: #000;
+  font-size: fsz(18); display: flex; align-items: center; justify-content: center; cursor: pointer;
 }
-.measureLabel {
-  width: 220px;
-  height: 40px;
-  border: 2px solid #000;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  padding-left: 6.63px;
-  font-size: 16px;
-  color: #000;
-  font-family: 'Inter', sans-serif;
-  box-sizing: border-box;
+.buttonPrimary{
+  width: cqw(210); height: 100%;
+  background: linear-gradient(to right, #2b214d, #13536c); color: #fff; border: none;
+  font-size: fsz(18); display: flex; align-items: center; justify-content: center; cursor: pointer;
 }
-.measureSelect {
-  width: 60px;
-  height: 40px;
-  border: 2px solid #000;
-  background: #fff;
-  text-align: center;
-  font-size: 16px;
-  font-family: 'Inter', sans-serif;
-  box-sizing: border-box;
-  margin-left: 10px;
-}
-.measureUnit {
-  width: 27.77px;
-  height: 40px;
-  font-size: 16px;
-  color: #000;
-  margin-left: 1px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-}
-
-.buttonBack {
-  flex: 1;
-  height: 48px;
-  background: #fff;
-  border: 2px solid #000;
-  color: #000;
-  font-size: 18px;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-}
-.buttonCreate {
-  flex: 1;
-  height: 48px;
-  background: linear-gradient(to right, #2b214d, #13536c);
-  color: #fff;
-  font-size: 18px;
-  font-family: 'Inter', sans-serif;
-  border: none;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+/* alternativno crni gumb */
+.buttonBlack{
+  width: cqw(210); height: 100%;
+  background: #000; color: #fff; border: none;
+  font-size: fsz(18); display: flex; align-items: center; justify-content: center; cursor: pointer;
 }

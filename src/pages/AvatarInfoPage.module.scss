@@ -6,32 +6,29 @@
   --design-h: 852px;
 }
 
+/* TEMP: disable full-screen canvas → allow natural flow+scroll */
 .avatarInfoPage {
   position: relative;
-  width: 100vw;
-  height: 100dvh;
-  margin: 0;
-  overflow: hidden; /* bez scrolla – sadržaj se skalira */
+  width: var(--page-width);
+  min-height: auto;
+  margin: 0 auto;
+  overflow: visible;
   font-family: 'Inter', sans-serif;
 }
 
 /* Unutarnje "platno" koje se skalira da stane na ekran */
 .canvas {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: var(--design-w);
-  height: var(--design-h);
-
-  /* scale-to-fit */
-  --scale-x: calc(100vw / var(--design-w));
-  --scale-y: calc(100dvh / var(--design-h));
-  --scale: min(var(--scale-x), var(--scale-y), 1);
-  transform-origin: top center;
-  transform: translateX(-50%) scale(var(--scale));
+  position: static;
+  width: 100%;
+  height: auto;
+  transform: none;
 
   display: flex;
   flex-direction: column;
+  /* TEMP gutters: poravnaj sadržaj od ruba zaslona na mobitelu */
+  padding-left: calc(16px + env(safe-area-inset-left));
+  padding-right: calc(16px + env(safe-area-inset-right));
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
 }
 
 /* ——— Form: name + gender ——— */
@@ -284,6 +281,7 @@
   color: #000;
   font-size: 18px;
   cursor: pointer;
+  margin-bottom: calc(24px + env(safe-area-inset-bottom));
 }
 .actionsGrid {
   width: min(100%, 320px);

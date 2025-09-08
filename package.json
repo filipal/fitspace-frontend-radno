@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:tunnel": "cloudflared tunnel --url http://localhost:5177",
+    "dev:lan": "VITE_DEV_HOST=192.168.50.136 vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "preview:tunnel": "vite preview & cloudflared tunnel --url http://localhost:5177",
     "test": "echo \"No tests specified\" && exit 0"
   },
   "dependencies": {
