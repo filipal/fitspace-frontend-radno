@@ -1,12 +1,24 @@
 @use '../styles' as s;
 
+$design-w: 430; // baseline širina dizajna
+
+@function cqw($px, $base: $design-w) {
+  @return calc((#{$px} / #{$base}) * 100cqw);
+}
+@function fsz($n, $minFactor: .85) {
+  @return clamp(#{$n * $minFactor}px, cqw(#{$n}), #{$n}px);
+}
+
 .page {
+  /* Omogući container queries i skaliranje po širini stranice */
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   align-items: center;
   color: #000;
-  min-height: 100svh;
-  width: var(--page-width);
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 430px;
   box-sizing: border-box;
   margin: 0 auto;
 }
@@ -15,8 +27,8 @@
   background: none;
   border: none;
   padding: 0;
-  width: 30px;
-  height: 25px;
+  width: cqw(30);
+  height: cqw(25);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -24,28 +36,29 @@
 .avatarButton img { width: 100%; height: 100%; object-fit: contain; }
 
 .canvasWrapper {
-  width: var(--page-width);
+  width: 100%;
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
   overflow: hidden;
-  height: calc(100dvh - 101px - 51px); /* header 101 + footer 51 */
+  /* Visina platna skalirana po širini stranice: 932 - 101 - 51 = 780 */
+  height: cqw(780);
 }
-.canvasWrapper.withAccordion { height: calc(100dvh - 101px - 51px - 180px); }
-.canvasWrapper.footerTopExpanded, .canvasWrapper.footerBotExpanded { height: calc(100dvh - 101px - 101px); }
-.canvasWrapper.footerTopExpanded.withAccordion, .canvasWrapper.footerBotExpanded.withAccordion { height: calc(100dvh - 101px - 101px - 180px); }
+.canvasWrapper.withAccordion { height: cqw(600); }
+.canvasWrapper.footerTopExpanded, .canvasWrapper.footerBotExpanded { height: cqw(730); }
+.canvasWrapper.footerTopExpanded.withAccordion, .canvasWrapper.footerBotExpanded.withAccordion { height: cqw(550); }
 
 .avatarImage { width: 100%; height: 100%; object-fit: cover; }
 
 /* Match UnrealMeasurements positioning: total usable width 410px; buttons anchored via margins */
 .controlGroup {
   position: absolute;
-  bottom: 10px;
+  bottom: cqw(10);
   left: 50%;
   transform: translateX(-50%);
-  width: 410px;
-  height: 60px;
+  width: cqw(410);
+  height: cqw(60);
   display: flex;
   align-items: flex-end;
 }
@@ -61,30 +74,30 @@
   align-items: center;
   justify-content: center;
 }
-.topBotFloating { top: 18px; left: 15px; width: 60px; height: 44px; }
-.topBotFloating.cartVariant { width: 32px; height: 41px; left: 24px; }
-.topBotFloating.fullBodyVariant { width: 41px; height: 44px; left: 24px; }
-.animationFloating { top: 18px; right: 21px; width: 48px; height: 44px; }
-.heatMapFloating { top: 79px; right: 21px; width: 48px; height: 44px; }
+.topBotFloating { top: cqw(18); left: cqw(15); width: cqw(60); height: cqw(44); }
+.topBotFloating.cartVariant { width: cqw(32); height: cqw(41); left: cqw(24); }
+.topBotFloating.fullBodyVariant { width: cqw(41); height: cqw(44); left: cqw(24); }
+.animationFloating { top: cqw(18); right: cqw(21); width: cqw(48); height: cqw(44); }
+.heatMapFloating { top: cqw(79); right: cqw(21); width: cqw(48); height: cqw(44); }
 .topBotFloating img, .animationFloating img, .heatMapFloating img { width: 100%; height: 100%; object-fit: contain; }
 
 /* Category selectors (arrows + text) */
 .categoryArrows {
   position: absolute;
-  width: 33px;
-  height: 150px;
+  width: cqw(33);
+  height: cqw(150);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
   /* Center relative to text group (left:16, text width:57, arrow width:33) => 16 + (57-33)/2 = 28 */
-  left: calc(16px + (57px - 33px)/2);
+  left: calc(#{cqw(16)} + (#{cqw(57)} - #{cqw(33)}) / 2);
 }
-.categoryArrowsFirst { top: 230px; }
-.categoryArrowsSecond { top: 450px; }
+.categoryArrowsFirst { top: cqw(230); }
+.categoryArrowsSecond { top: cqw(450); }
 .categoryArrowBtn {
-  width: 32.8px;
-  height: 24px;
+  width: cqw(32.8);
+  height: cqw(24);
   padding: 0;
   border: none;
   background: none;
@@ -98,21 +111,21 @@
 /* Text group is a separate absolutely positioned block (57x71) centered relative to the arrow column width via left offset calc */
 .categoryTextGroup {
   position: absolute;
-  width: 57px;
-  height: 71px;
+  width: cqw(57);
+  height: cqw(71);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  left: 16px; /* requested left margin from canvasWrapper */
+  left: cqw(16); /* requested left margin from canvasWrapper */
 }
 /* Vertically align centers with arrow group: place so that text group's vertical center matches arrow group's vertical center */
-.categoryTextGroupFirst { top: calc(230px + (150px/2) - (71px/2)); }
-.categoryTextGroupSecond { top: calc(450px + (150px/2) - (71px/2)); }
+.categoryTextGroupFirst { top: calc(#{cqw(230)} + (#{cqw(150)} / 2) - (#{cqw(71)} / 2)); }
+.categoryTextGroupSecond { top: calc(#{cqw(450)} + (#{cqw(150)} / 2) - (#{cqw(71)} / 2)); }
 
 /* Compact variant when top expanded footer active (height 138, inner 59) */
-.categoryArrowsCompact { height: 138px; }
-.categoryTextGroupCompact { height: 59px; top: calc(230px + (138px/2) - (59px/2)); }
+.categoryArrowsCompact { height: cqw(138); }
+.categoryTextGroupCompact { height: cqw(59); top: calc(#{cqw(230)} + (#{cqw(138)} / 2) - (#{cqw(59)} / 2)); }
 
 /* Size selector (right side when top expanded) */
 .sizeArrows {
@@ -194,10 +207,10 @@
 /* Full body simplified mode */
 .fullBodyCategory {
   position: absolute;
-  top: 310px; /* specified */
-  left: 16px; /* align with earlier text group base left */
-  width: 57px;
-  height: 71px; /* match normal text group height */
+  top: cqw(310); /* specified */
+  left: cqw(16); /* align with earlier text group base left */
+  width: cqw(57);
+  height: cqw(71); /* match normal text group height */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -205,10 +218,10 @@
 }
 .fullBodyImageArrows {
   position: absolute;
-  top: 310px; /* same vertical alignment */
-  right: calc(20px + 25px - 16.5px); /* reuse centering logic of first imageArrows */
-  width: 33px;
-  height: 150px;
+  top: cqw(310); /* same vertical alignment */
+  right: calc(#{cqw(20)} + #{cqw(25)} - #{cqw(16.5)}); /* reuse centering logic of first imageArrows */
+  width: cqw(33);
+  height: cqw(150);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -243,11 +256,11 @@
 }
 .footerFullBodyLabel {
   position: absolute;
-  right: 37px; /* per spec offset from right */
+  right: cqw(37); /* per spec offset from right */
   top: 50%;
   transform: translateY(-50%);
-  width: 108px;
-  font-size: 20px;
+  width: cqw(108);
+  font-size: fsz(20);
   font-weight: 400;
   display: flex;
   align-items: center;
@@ -259,24 +272,24 @@
 }
 
 .categoryTextTop, .categoryTextBottom {
-  width: 57px;
-  height: 13px;
+  width: cqw(57);
+  height: cqw(13);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: fsz(10);
   font-weight: 400;
   line-height: 1;
   opacity: 0.25;
   text-align: center;
 }
 .categoryTextMain {
-  width: 57px;
-  height: 21px;
+  width: cqw(57);
+  height: cqw(21);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 17px;
+  font-size: fsz(17);
   font-weight: 400;
   line-height: 1;
   text-align: center;
@@ -285,31 +298,31 @@
 /* Right side image selectors */
 .imageArrows {
   position: absolute;
-  width: 33px;
-  height: 150px;
+  width: cqw(33);
+  height: cqw(150);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
   /* Center relative to image display (right:20 with display width 50) => arrow center aligns to image center.
      Image block right:20px, width:50 => image center from right edge = 20 + 25. Arrow width 33 => need arrow left so its center matches: right offset = 20 + (50/2) - (33/2) = 20 + 25 - 16.5 = 28.5px */
-  right: calc(20px + 25px - 16.5px);
+  right: calc(#{cqw(20)} + #{cqw(25)} - #{cqw(16.5)});
 }
-.imageArrowsFirst { top: 230px; }
-.imageArrowsSecond { top: 450px; }
+.imageArrowsFirst { top: cqw(230); }
+.imageArrowsSecond { top: cqw(450); }
 
 .imageDisplay {
   position: absolute;
-  width: 50px;
-  height: 50px;
-  right: 20px; /* requested 20px from right margin */
+  width: cqw(50);
+  height: cqw(50);
+  right: cqw(20); /* requested 20px from right margin */
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .imageDisplay img { width: 100%; height: 100%; object-fit: contain; }
-.imageDisplayFirst { top: calc(230px + (150px/2) - (50px/2)); }
-.imageDisplaySecond { top: calc(450px + (150px/2) - (50px/2)); }
+.imageDisplayFirst { top: calc(#{cqw(230)} + (#{cqw(150)} / 2) - (#{cqw(50)} / 2)); }
+.imageDisplaySecond { top: calc(#{cqw(450)} + (#{cqw(150)} / 2) - (#{cqw(50)} / 2)); }
 
 .controlButton {
   position: relative;
@@ -334,7 +347,7 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 2px solid #FFFFFF;
+  border: cqw(2) solid #FFFFFF;
   background: transparent;
   box-sizing: border-box;
   transition: border-color .25s ease;
@@ -375,15 +388,15 @@
 .controlButton, .controlButton.selected { color: #000; }
 
 .footer {
-  width: var(--page-width);
-  height: 51px;
+  width: 100%;
+  height: cqw(51);
   display: flex;
   margin: 0;
   border-top: 1px solid #000;
   padding: 0;
 }
 .footer.expandedTop, .footer.expandedBot {
-  height: 101px;
+  height: cqw(101);
   flex-direction: row;
   align-items: flex-start;
   position: relative;
@@ -392,10 +405,10 @@
 .footer.expandedTop::before, .footer.expandedBot::before {
   content: '';
 }
-.accordionArea { width: var(--page-width); height: 180px; flex: 0 0 auto; }
+.accordionArea { width: 100%; height: cqw(180); flex: 0 0 auto; }
 .footerLeft, .footerRight {
-  width: 215px;
-  height: 51px;
+  width: cqw(215);
+  height: cqw(51);
   position: relative;
   background: #fff;
   display: flex;
@@ -407,7 +420,7 @@
 .footer.expandedTop .footerRight,
 .footer.expandedBot .footerLeft,
 .footer.expandedBot .footerRight {
-  height: 101px;
+  height: cqw(101);
   background: #ececec;
 }
 .footerLeft { border-right: 1px solid #000; }
@@ -418,10 +431,10 @@
 }
 .titleBox, .infoBox {
   position: absolute;
-  width: 131px;
-  height: 19px;
-  top: 16px; /* vertically centered: (51-19)/2 = 16 */
-  font-size: 13px;
+  width: cqw(131);
+  height: cqw(26);
+  top: cqw(16); /* vertically centered: (51-19)/2 = 16 */
+  font-size: fsz(13);
   font-weight: 300;
   text-transform: uppercase;
   line-height: 1.05;
@@ -430,14 +443,14 @@
   justify-content: center;
   color: #000;
 }
-.titleBox { left: 9px; text-align: left; }
-.infoBox { right: 9px; text-align: right; }
+.titleBox { left: cqw(9); text-align: left; }
+.infoBox { right: cqw(9); text-align: right; }
 .footerButton {
   position: absolute;
-  width: 50px;
-  height: 19px;
-  top: 16px;
-  font-size: 20px;
+  width: cqw(60);
+  height: cqw(23);
+  top: cqw(16);
+  font-size: fsz(20);
   font-weight: 400;
   background: none;
   border: none;
@@ -447,28 +460,28 @@
   align-items: center;
   justify-content: center;
 }
-.topButton { right: 15px; }
-.botButton { left: 15px; }
+.topButton { right: cqw(15); }
+.botButton { left: cqw(15); }
 
 /* ========== Expanded TOP footer layout (option selector + color selector) ========== */
 .topExpandedLeft {
   position: absolute;
   top: 0;
-  left: 30px; /* requested left offset */
-  height: 101px;
+  left: cqw(30); /* requested left offset */
+  height: cqw(101);
   display: flex;
   align-items: center; /* vertically center the block */
 }
 .topExpandedLeftInner {
-  width: 120px;
-  height: 31px;
+  width: cqw(120);
+  height: cqw(31);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 .topExpandedArrowsBtn {
-  width: 22px;
-  height: 30px;
+  width: cqw(22);
+  height: cqw(30);
   border: none;
   background: none;
   padding: 0;
@@ -479,34 +492,34 @@
 }
 .topExpandedTextBlock {
   flex: 1;
-  height: 30px;
+  height: cqw(30);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   line-height: 1;
 }
-.topExpandedMain { font-size: 16px; font-weight: 400; }
-.topExpandedSub { font-size: 10px; font-weight: 300; }
+.topExpandedMain { font-size: fsz(16); font-weight: 400; }
+.topExpandedSub { font-size: fsz(10); font-weight: 300; }
 
 /* Right side color circles */
 .topExpandedRight {
   position: absolute;
   top: 0;
-  right: 30px; /* requested right offset */
-  height: 101px;
+  right: cqw(30); /* requested right offset */
+  height: cqw(101);
   display: flex;
   align-items: center;
 }
 .topExpandedColorsInner {
-  width: 190px; /* widened from 190 to accommodate 13 + 10 + 10 + 13 spacing with element sizes */
-  height: 30px;
+  width: cqw(190); /* widened from 190 to accommodate 13 + 10 + 10 + 13 spacing with element sizes */
+  height: cqw(30);
   display: flex;
   align-items: center;
   justify-content: center; /* center the colorCircles block */
 }
 .colorArrowBtn { @extend .topExpandedArrowsBtn; }
-.colorCircles { width:119px; display: flex; align-items: center; justify-content: space-between; margin:0 13px; }
+.colorCircles { width: cqw(119); display: flex; align-items: center; justify-content: space-between; margin:0 cqw(13); }
 .colorCircleBtnWrapper { background: none; border: none; padding: 0; cursor: pointer; display: flex; }
 
 

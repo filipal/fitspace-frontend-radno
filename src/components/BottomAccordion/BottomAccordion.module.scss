@@ -1,6 +1,15 @@
+/* Scale like UnrealMeasurements: 430 baseline via cqw */
+$design-w: 430;
+@function cqw($px, $base: $design-w) {
+  @return calc((#{$px} / #{$base}) * 100cqw);
+}
+@function fsz($n, $minFactor: .85) {
+  @return clamp(#{$n * $minFactor}px, cqw(#{$n}), #{$n}px);
+}
+
 .container {
-  width: 430px;
-  height: 180px;
+  width: 100%;
+  height: cqw(180);
   background: #ececec;
   border-top: 1px solid #000;
   box-sizing: border-box;
@@ -11,10 +20,10 @@
 }
 
 .brandBar {
-  width: 70px;
-  height: 16px;
-  margin-top: 7px;
-  font-size: 13px;
+  width: cqw(70);
+  height: cqw(16);
+  margin-top: cqw(7);
+  font-size: fsz(13);
   font-weight: 300;
   display: flex;
   align-items: center;
@@ -24,15 +33,15 @@
 
 .carouselRow {
   flex: 1;
-  width: 370px;
+  width: cqw(370);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
 .arrowBtn {
-  width: 24px;
-  height: 32.8px;
+  width: cqw(24);
+  height: cqw(32.8);
   padding: 0;
   background: none;
   border: none;
@@ -44,24 +53,24 @@
 .arrowBtn img { width: 100%; height: 100%; object-fit: contain; }
 
 .carouselInner {
-  width: 275px;
-  height: 120px;
+  width: cqw(275);
+  height: cqw(120);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
 .sideItem {
-  width: 65px;
-  height: 65px;
+  width: cqw(65);
+  height: cqw(65);
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: .7;
 }
 .centerItem {
-  width: 120px;
-  height: 120px;
+  width: cqw(120);
+  height: cqw(120);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -69,10 +78,10 @@
 .sideItem img, .centerItem img { width: 100%; height: 100%; object-fit: contain; }
 
 .productTitle {
-  min-width: 238px;
-  height: 22px;
-  margin-bottom: 4px;
-  font-size: 14px;
+  width: cqw(238);
+  height: cqw(22);
+  margin-bottom: cqw(4);
+  font-size: fsz(14);
   font-weight: 300;
   text-align: center;
   display: flex;

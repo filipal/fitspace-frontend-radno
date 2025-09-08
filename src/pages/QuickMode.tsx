@@ -88,136 +88,135 @@ export default function QuickMode() {
   }
 
   return (
-      <div className={styles.quickmodePage}>
+    <div className={styles.quickmodePage}>
       <div className={styles.canvas}>
-      {/* Header */}
-      <Header
-        title="Body Shape & Fitness"
-        variant="dark"
-        onExit={() => navigate('/')}
-        onInfo={() => navigate('/use-of-data')}
-      />
-      <div className={styles.quickmodeContent}>
-        {/* Body Shape */}
-        <div className={styles.section}>
-          <div className={styles.sectionLabel}>What’s your body shape?</div>
-          <div className={styles.bodyshapeRow}>
-            {bodyShapes.map((shape) => (
-              <button
-                key={shape.id}
-                className={`${styles.buttonReset} ${styles.bodyshapeBtn}`}
-                onClick={() => setSelectedBodyShape(shape.id)}
-                aria-label={shape.label}
-                type="button"
+        {/* Header */}
+        <Header
+          title="Body Shape & Fitness"
+          variant="dark"
+          onExit={() => navigate('/')}
+          onInfo={() => navigate('/use-of-data')}
+        />
+        <div className={styles.quickmodeContent}>
+          {/* Body Shape */}
+          <div className={styles.section}>
+            <div className={styles.sectionLabel}>What’s your body shape?</div>
+            <div className={styles.bodyshapeRow}>
+              {bodyShapes.map((shape) => (
+                <button
+                  key={shape.id}
+                  className={`${styles.buttonReset} ${styles.bodyshapeBtn}`}
+                  onClick={() => setSelectedBodyShape(shape.id)}
+                  aria-label={shape.label}
+                  type="button"
+                >
+                  <shape.Icon
+                    width={shape.width}
+                    height={shape.height}
+                    fill={selectedBodyShape === shape.id ? '#000' : '#fff'}
+                    className={styles.bodyshapeIcon}
+                    color={selectedBodyShape === shape.id ? '#000' : '#fff'}
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Athletic Level */}
+          <div className={styles.section}>
+            <div className={styles.sectionLabel}>How athletic are you?</div>
+            <div className={styles.athleticSliderWrap}>
+              <div
+                id="athletic-slider-track"
+                className={styles.athleticSliderTrack}
+                onMouseDown={handleSliderMouseDown}
+                onTouchStart={handleSliderTouchStart}
               >
-                <shape.Icon
-                  width={shape.width}
-                  height={shape.height}
-                  fill={selectedBodyShape === shape.id ? '#000' : '#fff'}
-                  className={styles.bodyshapeIcon}
-                  color={selectedBodyShape === shape.id ? '#000' : '#fff'}
+                <img src={athleticTrack} alt="" className={styles.athleticTrack} />
+                <img
+                  src={athleticCircle}
+                  alt=""
+                  className={`${styles.athleticCircle} ${athleticLevel === 0
+                      ? styles.level0
+                      : athleticLevel === 1
+                        ? styles.level1
+                        : styles.level2
+                    }`}
+                  draggable={false}
                 />
-              </button>
-            ))}
+              </div>
+              <div className={styles.athleticIcons}>
+                <img src={athleticThin} alt="Thin" />
+                <img src={athleticNormal} alt="Normal" />
+                <img src={athleticMuscular} alt="Muscular" />
+              </div>
+            </div>
+          </div>
+
+          {/* Measurements */}
+          <div className={styles.sectionMeasurements}>
+            <div className={styles.measureRow}>
+              <div className={styles.measureLabel}>Bust Circumference</div>
+              <select
+                value={bustCircumference}
+                onChange={e => setBustCircumference(e.target.value)}
+                className={styles.measureSelect}
+              >
+                <option value="">...</option>
+                {measurementOptions.map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+              <span className={styles.measureUnit}>cm</span>
+            </div>
+            <div className={styles.measureRow}>
+              <div className={styles.measureLabel}>Waist Circumference</div>
+              <select
+                value={waistCircumference}
+                onChange={e => setWaistCircumference(e.target.value)}
+                className={styles.measureSelect}
+              >
+                <option value="">...</option>
+                {measurementOptions.map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+              <span className={styles.measureUnit}>cm</span>
+            </div>
+            <div className={styles.measureRow}>
+              <div className={styles.measureLabel}>Low Hip Circumference</div>
+              <select
+                value={lowHipCircumference}
+                onChange={e => setLowHipCircumference(e.target.value)}
+                className={styles.measureSelect}
+              >
+                <option value="">...</option>
+                {measurementOptions.map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+              <span className={styles.measureUnit}>cm</span>
+            </div>
           </div>
         </div>
 
-        {/* Athletic Level */}
-        <div className={styles.section}>
-          <div className={styles.sectionLabel}>How athletic are you?</div>
-        <div className={styles.athleticSliderWrap}>
-          <div
-            id="athletic-slider-track"
-            className={styles.athleticSliderTrack}
-            onMouseDown={handleSliderMouseDown}
-            onTouchStart={handleSliderTouchStart}
-          >
-            <img src={athleticTrack} alt="" className={styles.athleticTrack} />
-            <img
-              src={athleticCircle}
-              alt=""
-              className={`${styles.athleticCircle} ${
-                athleticLevel === 0
-                  ? styles.level0
-                  : athleticLevel === 1
-                    ? styles.level1
-                    : styles.level2
-              }`}
-              draggable={false}
-            />
-          </div>
-          <div className={styles.athleticIcons}>
-            <img src={athleticThin} alt="Thin" />
-            <img src={athleticNormal} alt="Normal" />
-            <img src={athleticMuscular} alt="Muscular" />
-          </div>
-        </div>
-        </div>
-
-        {/* Measurements */}
-        <div className={styles.sectionMeasurements}>
-          <div className={styles.measureRow}>
-            <div className={styles.measureLabel}>Bust Circumference</div>
-            <select
-              value={bustCircumference}
-              onChange={e => setBustCircumference(e.target.value)}
-              className={styles.measureSelect}
-            >
-              <option value="">...</option>
-              {measurementOptions.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-            <span className={styles.measureUnit}>cm</span>
-          </div>
-          <div className={styles.measureRow}>
-            <div className={styles.measureLabel}>Waist Circumference</div>
-            <select
-              value={waistCircumference}
-              onChange={e => setWaistCircumference(e.target.value)}
-              className={styles.measureSelect}
-            >
-              <option value="">...</option>
-              {measurementOptions.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-            <span className={styles.measureUnit}>cm</span>
-          </div>
-          <div className={styles.measureRow}>
-            <div className={styles.measureLabel}>Low Hip Circumference</div>
-            <select
-              value={lowHipCircumference}
-              onChange={e => setLowHipCircumference(e.target.value)}
-              className={styles.measureSelect}
-            >
-              <option value="">...</option>
-              {measurementOptions.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-            <span className={styles.measureUnit}>cm</span>
-          </div>
+        {/* Bottom Buttons */}
+        <div className={styles.footerSlot}>
+          <Footer
+            backText="Back"
+            actionText="Generate Avatar"
+            onBack={() => navigate('/avatar-info')}
+            onAction={() => navigate('/unreal-measurements')}
+            actionDisabled={
+              !selectedBodyShape ||
+              bustCircumference === '' ||
+              waistCircumference === '' ||
+              lowHipCircumference === ''
+            }
+            actionType="primary"
+          />
         </div>
       </div>
-
-      {/* Bottom Buttons */}
-      <div className={styles.footerSlot}>
-      <Footer
-        backText="Back"
-        actionText="Generate Avatar"
-        onBack={() => navigate('/avatar-info')}
-        onAction={() => navigate('/unreal-measurements')}
-        actionDisabled={
-          !selectedBodyShape ||
-          bustCircumference === '' ||
-          waistCircumference === '' ||
-          lowHipCircumference === ''
-        }
-        actionType="primary"
-      />
-      </div>
-    </div>
     </div>
   )
 }
