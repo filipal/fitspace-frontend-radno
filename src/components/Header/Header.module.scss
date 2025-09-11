@@ -1,15 +1,9 @@
-/* .body-scan-page .header-title {
-  color: #fff !important;
-}
-.body-scan-page .exitButton img {
-  filter: brightness(0) invert(1);
-} */
 .appHeader {
   width: 100%;
   max-width: var(--page-max-width);
   height: 101px;                         /* dizajn visina */
   margin: 0 auto;
-  border-bottom: 1px solid #000;
+  position: relative;
 
   /* bočni guteri + safe-area */
   padding-inline: calc(16px + env(safe-area-inset-left));
@@ -28,6 +22,15 @@
 
   color: #000;
   background: transparent;
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 100vw;
+    transform: translateX(-50%);
+    border-bottom: 1px solid #000;
+  }
 }
 .appHeader > * {
   align-self: end;                  /* spusti svaki direktni child na dno */
@@ -77,21 +80,6 @@
 @supports (container-type: inline-size) and (width: 1cqw) {
   .rightBox > *:last-child { margin-inline-end: 3.2558cqw; } /* 14px @ 430 */
 }
-/* .infoButton {
-  position: absolute;
-  top: 61px;
-  left: 375px;
-}
-
-.exitButton {
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  top: 61px;
-  left: 30px;
-  transform: rotate(0deg);
-  opacity: 1;
-} */
 
 .exitButton:focus,
 .exitButton:active {
@@ -122,26 +110,13 @@
   text-overflow: ellipsis;
 }
 
-/* @media (max-width: 400px) {
-  .appHeader {
-    width: 100%;
-    height: 92.3px;
-    padding-top: 57.5px;
-    padding-inline: calc(14px + env(safe-area-inset-left));
-    padding-inline-start: calc(35px + env(safe-area-inset-left));
-    padding-inline-end: calc(14px + env(safe-area-inset-right));
-    column-gap: 12px;
-  }
-} */
 
 /* Container-query skala (npr. stranice s container-type: inline-size) */
 @supports (container-type: inline-size) and (width: 1cqw) {
   .appHeader {
     /* 101 / 430 * 100 */
-    /* height: 23.4884cqw; */
     height: clamp(70px, 23.4884cqw, 101px);
     padding-top: 0;
-    /* padding-bottom: 3.4884cqw; */
     padding-bottom: clamp(10.3961px, 3.4884cqw, 15px);
     /* Skalarni bočni odmaci: 35px i 16px → cqw + safe-area */
     padding-inline-start: calc(8.1395cqw + env(safe-area-inset-left));  /* 35/430 */
@@ -166,28 +141,21 @@
 /* DESKTOP (≥ 1440px): header 1440 x 70                              */
 /* ——————————————————————————— */
 
-/* @media (min-width: 1440px) {
-  .appHeader {
-    width: 1440px;
-    height: 70px;
-    padding-inline: 24px;
-    grid-template-columns: auto 1fr auto;
-    align-items: center;
-    padding-top: 0;
-  }
-} */
-
 @media (min-width: 1280px) {
   .appHeader {
     width: 100vw;
     margin-left: calc(50% - 50vw);
     margin-right: calc(50% - 50vw);
-    height: 70px;
+    height: 71px;
     padding-left: 35px;
     padding-right: 22px;
 /*     padding-inline: 24px; */
     grid-template-columns: auto 1fr auto;
     align-items: center;
     padding-top: 0;
+    padding-bottom: 0;
+  }
+  .appHeader > * {
+    align-self: center;
   }
 }
