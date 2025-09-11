@@ -183,7 +183,18 @@ $design-w: 430;
   width: cqw(60); height: cqw(40);
   border: cqw(2) solid #000; background: #fff;
   text-align: center; font-size: fsz(16); box-sizing: border-box; margin-left: cqw(10);
+  color: #000; /* boja odabrane vrijednosti */
+  -webkit-text-fill-color: #000; /* iOS/Safari internal text fill */
+  /* Zadrži iOS picker, ali bez zaobljenih rubova i native skina */
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 0;
+  box-shadow: none;
+  cursor: pointer;
 }
+
+/* Osiguraj da i options budu crne (fallback za neke UA stilove) */
+.measureSelect option { color: #000; }
 .measureUnit{
   width: cqw(27.77); height: cqw(40); margin-left: cqw(1);
   display: flex; align-items: center; justify-content: center;

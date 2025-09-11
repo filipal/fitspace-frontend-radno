@@ -1,104 +1,111 @@
 @use '../styles' as s;
 
-$design-w: 430;
+/* 0) Globalni reset ako ga već nemaš */
+html, body { height: 100%; }
+body { margin: 0; }
 
-/* 1cqw = 1% od širine .startPage (container) */
-@function cqw($px, $base: $design-w) {
-  @return calc((#{$px} / #{$base}) * 100cqw);
-}
+/* ——————————————————————————— */
+/* VARS: širina stranice + fiksna visina platna za web */
+:root { --page-max-width: 430px; --canvas-h: 932px; }
 
-/* font-size skala: 100% @430, mekano ↓ ispod 430 */
-@function fsz($n, $minFactor: .85) {
-  @return clamp(#{$n * $minFactor}px, cqw(#{$n}), #{$n}px);
-}
+@include s.respond(xlarge-mobile)  { :root { --page-max-width: 540px; } }
+@include s.respond(xxlarge-mobile) { :root { --page-max-width: 600px; } }
+@include s.respond(tablet)         { :root { --page-max-width: 744px; } }
+@include s.respond(tablet-sd)      { :root { --page-max-width: 768px; } }
+@include s.respond(tablet-md)      { :root { --page-max-width: 820px; } }
+@include s.respond(tablet-lg)      { :root { --page-max-width: 834px; } }
+@include s.respond(tablet-mlg)     { :root { --page-max-width: 853px; } }
+@include s.respond(tablet-xlg)     { :root { --page-max-width: 912px; } }
+@include s.respond(tablet-xxl)     { :root { --page-max-width: 1024px; } }
+@include s.respond(laptop)         { :root { --page-max-width: 960px; } }
+@include s.respond(laptop-lg)      { :root { --page-max-width: 1440px; } }
 
-/* Cap širine stranice na 430 */
-:root {
-  --page-max-width: 430px;
-  --page-width: min(100%, var(--page-max-width));
-}
-
-/* KORIJEN: centriraj i omogući container queries */
+/* ——————————————————————————— */
+/* PAGE */
 .startPage {
-  container-type: inline-size;       /* ključ za cqw */
-  width: 100%;
-  max-width: var(--page-max-width);
-  height: 100dvh;                    /* precizna visina za 50% pozicioniranje */
+  inline-size: 100%;
+  max-inline-size: var(--page-max-width);
   margin: 0 auto;
-  display: block;                    /* koristit ćemo flex unutar .canvas */
-  padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
+  position: relative;
   font-family: 'Outfit', sans-serif;
+  padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
+  overflow-y: auto;           /* ako je prozor niži od platna → skrolaj stranicu */
+}
 
-  /* postavi 100lvh override na kraj bloka kako bi izbjegli mixed-decls upozorenje */
-  @supports (height: 100lvh) {
-    height: 100lvh;                  /* mobiteli: koristi large viewport height */
+/* ——————————————————————————— */
+/* CANVAS – MOBITEL (default): visina = viewport (nema ogromnog platna) */
+.canvas {
+  container-type: inline-size; /* cqw računa po platnu */
+  position: relative;
+  inline-size: 100%;
+  aspect-ratio: auto;          /* upravljamo visinom direktno */
+  block-size: 100svh;          /* ⬅︎ rješava <430 i 540 bez skrola */
+}
+@supports not (height: 100svh) {
+  .canvas { block-size: 100vh; }
+}
+
+/* ——————————————————————————— */
+/* TITLE – 100px @430, ≤100 na širim */
+.title {
+  position: absolute;
+  top: s.cap(s.cqw(100), 100px);
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  text-align: center;
+  max-inline-size: 90cqw;
+  font-size: s.fsz(32);
+  line-height: 1.05;
+  color: #000;
+}
+
+/* XS (320–359.98): nijansu manji title */
+@media (min-width: 320px) {
+  .title {
+    font-size: s.fsz(28, .86); // ≈24px @320
+    line-height: 1.06;
   }
 }
 
-/* Unutarnji raspored: 100px top offset, centrirano, bez oslanjanja na cqw */
-.canvas {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;                /* omogući apsolutno pozicioniranje gumba */
-  padding-top: 100px; /* točno 100px od vrha @430 */
+/* XS (320–359.98): nijansu manji title */
+@media (min-width: 360px) {
+  .title {
+    font-size: s.fsz(28, .96); // ≈24px @320
+    line-height: 1.06;
+  }
 }
 
-/* Title — 100px ispod vrha; na 430 se lomi u 2 reda jer je širina limitirana */
-.title {
-  margin: 0 0 24px 0;                /* razmak do gumba */
-  display: grid; place-items: center;
-  font-size: fsz(32);
-  line-height: 1.05;
-  color: #000;
-  text-align: center;
-  white-space: normal;
-  word-break: normal;
-  overflow-wrap: normal;
-}
-
-/* Start gumb — točno centar vodoravno, dimenzije 320×50 @430 */
+/* ——————————————————————————— */
+/* BUTTON – MOBITEL: točan centar platna */
 .startButton {
-  position: absolute;                /* točno na sredinu stranice */
+  position: absolute;
   left: 50%;
   top: 50%;
-  transform: translate(-50%, -50%);
-  width: calc(100% - 110px);         /* 55px lijevo/desno → 320px @430 */
-  max-width: 320px;                  /* ne preko 320 na većim širinama */
-  height: 50px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 6px;
-  background: #000;
-  color: #fff;
-  cursor: pointer;
-  font-size: fsz(18);
-  line-height: 1;
+  transform: translate(-50%, -50%);     /* centriranje po visini samo na mobu */
+  @include s.app-button-dims(55, 50, 44, 420px); /* širina 55/55 @430; visina ≤ 50px */
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: #000; color: #fff; cursor: pointer;
+  font-size: s.fsz(18); line-height: 1;
 }
 
-/* ——————————————————— */
-/* WEB / DESKTOP: jedan red */
-/* ——————————————————— */
-@include s.respond(xl) {
-  /* po želji možeš malo povećati cap */
-  :root { --page-max-width: 600px; }
-
-  .title {
-    inline-size: max-content;        /* pusti da ide u jedan red */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: clamp(20px, cqw(32), 32px);
-    block-size: auto;
+/* ——————————————————————————— */
+/* WEB (≥ tablet 744): fiksna visina platna 932px, gumb fiksno na 466px */
+@include s.respond(tablet) {
+  .canvas {
+    block-size: var(--canvas-h); /* ⬅︎ nema svh/vh, nema aspect-ratio */
   }
 
   .startButton {
-    width: 420px;                    /* desktop širina */
-    height: 56px;
-    font-size: clamp(18px, cqw(20), 20px);
+    top: calc(var(--canvas-h) / 2);   /* 466px */
+    transform: translateX(-50%);      /* bez translateY → ne miče se nikad */
+    max-inline-size: 420px;
+  }
+
+  .title {
+    max-inline-size: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }

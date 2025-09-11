@@ -1,0 +1,61 @@
+@use 'sass:math';
+
+// Referentne dimenzije dizajna — default 430×932
+$design-w: 430 !default; // broj, bez px
+$design-h: 932 !default; // broj, bez px
+
+// cqw/cqh – 1cqw = 1% širine containera, 1cqh = 1% visine containera
+@function cqw($px, $base: $design-w) { @return calc((#{$px}/#{$base}) * 100cqw); }
+@function cqh($px, $base: $design-h) { @return calc((#{$px}/#{$base}) * 100cqh); }
+@function cqmin($pxw, $pxh) { @return min(cqw($pxw), cqh($pxh)); }
+
+// Fluidni font: 100% na dizajnu, mekano ↓ ispod dizajna
+@function fsz($n, $minFactor: .85) {
+  // Ako dođe 32px, pretvori u 32 (unitless). Ako već jest unitless, ništa.
+  @if not math.is-unitless($n) {
+    $n: math.div($n, 1px);
+  }
+  // $n je sada unitless “px iz dizajna”
+  @return clamp(#{$n * $minFactor}px, cqw($n), #{$n}px);
+}
+
+// Sigurne zone (notch)
+@mixin safe-bottom($extra: 0px) {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + #{$extra});
+}
+
+/* ---- CAP helperi ---- */
+/* ograniči širinski-skaliranu vrijednost na najviše $max px */
+@function cqw-cap($px, $max: $px) {
+  @return clamp(0px, cqw($px), #{$max}px);
+}
+/* ograniči visinski-skaliranu vrijednost na najviše $max px */
+@function cqh-cap($px, $max: $px) {
+  @return clamp(0px, cqh($px), #{$max}px);
+}
+/* generički cap nad bilo kojom preferiranom vrijednošću */
+@function cap($preferred, $max) {
+  @return clamp(0px, $preferred, $max);
+}
+
+/* ---- App gumb mixin (globalno konzistentan) ---- */
+/* $side-margins: bočni razmak u px @430 (npr. 55 znači 55px s obje strane @430)
+   $h: visina gumba u px @430 (npr. 50), ali nikad preko 50px na većim širinama */
+@mixin app-button-dims($side-margins: 55, $h: 50, $min-h: 44, $max-w: 420px) {
+  inline-size: calc(100% - #{cqw($side-margins * 2)});
+  max-inline-size: $max-w;
+  /* visina: skalira se iz širine, ali se reže na max 50px */
+  block-size: clamp(#{$min-h}px, cqw($h), #{$h}px);
+}
+
+/* ---- (Opcionalno) Fallback helperi za vrlo stare browse­re bez cqw/cqh ---- */
+/* Koristi ih samo gdje te baš brine fallback (npr. kritični elementi). */
+@mixin prop-cqw($prop, $px, $base: $design-w) {
+  // Fallback (vw) + override kad postoji cqw
+  #{$prop}: clamp(#{$px * .85}px, #{($px/$base)*100}vw, #{$px}px);
+  @supports (width: 1cqw) { #{$prop}: cqw($px, $base); }
+}
+@mixin prop-cqh($prop, $px, $base: $design-h) {
+  #{$prop}: clamp(#{$px * .85}px, #{($px/$base)*100}svh, #{$px}px);
+  @supports (width: 1cqh) { #{$prop}: cqh($px, $base); }
+}

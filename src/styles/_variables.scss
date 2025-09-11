@@ -7,20 +7,26 @@ $font-size-base: 16px;
 $breakpoints: (
   xs: 320px,        // iPhone SE, najmanji telefoni
   sm: 360px,        // Android Small/Large
+  xsl: 375px,        // iPhone SE, newer
   md: 375px,        // iPhone 8, 11 Pro/X
   mdplus: 390px,    // iPhone 13/14
   lg: 414px,        // iPhone 8 Plus, 11 Pro Max, Pixel XL
   xl: 428px,        // iPhone 14 Plus
   xxl: 440px,       // iPhone 16 Pro Max
   pixel: 411px,     // Google Pixel 2/XL
-  compact: 412px,   // Android Compact
+  compact: 428px,   // iPhone 14 Plus
   large-mobile: 430px, // iPhone 16 Plus
   mac128k: 512px,   // Macintosh 128k
+  xlarge-mobile: 540px, // iPhone 16 Plus
+  xxlarge-mobile: 600px, // Nexus 7
   tablet-sm: 700px,   // Android Medium
   tablet: 744px,      // iPad mini 8.3
-  tablet-md: 768px,   // iPad mini 5
+  tablet-sd: 768px,   // iPad mini 5
+  tablet-md: 820px,   // iPad Air
   tablet-lg: 834px,   // iPad Pro 11"
-  tablet-xl: 1024px,  // iPad Pro 12.9"
+  tablet-mlg: 853px,   // Asus Zenbook Fold 
+  tablet-xlg: 912px,   // Surface Pro 7  
+  tablet-xxl: 1024px,  // iPad Pro 12.9"
   laptop-sm: 1152px,  // MacBook
   laptop: 1280px,     // iMac, Android Expanded, MacBook Air
   laptop-md: 1368px,  // Surface Pro 4

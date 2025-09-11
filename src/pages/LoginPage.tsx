@@ -8,42 +8,7 @@ import styles from './LoginPage.module.scss'
 
 export default function LoginPage() {
   const auth = useAuth()
-  const params = new URLSearchParams(window.location.search)
-  const isCallback = params.has('code') || params.has('error')
-
   // AuthProvider handles the OIDC redirect callback via onSigninCallback in src/main.tsx.
-  // If Cognito omits the `state` parameter, signin processing will fail with "No state in response".
-
-
-  if (isCallback) {
-    // Temporary debug UI to inspect callback params and auth state
-    const debugInfo = (() => {
-      try {
-        const authInfo = {
-          isLoading: auth?.isLoading,
-          isAuthenticated: auth?.isAuthenticated,
-          error: auth?.error ? auth.error.message : null,
-          // don't expand full user object to avoid leaking tokens
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          user: auth?.user ? { id: (auth.user as any)?.profile?.sub ?? (auth.user as any)?.id ?? null, profile: (auth.user as any)?.profile ?? null } : null,
-        }
-
-        return JSON.stringify({ href: window.location.href, params: Object.fromEntries(params.entries()), auth: authInfo }, null, 2)
-      } catch (e) {
-        return `debug stringify error: ${String(e)}`
-      }
-    })()
-
-    return (
-      <div>
-        <p>Processing login...</p>
-        <div style={{ marginTop: 12 }}>
-          <strong>Debug</strong>
-          <pre style={{ whiteSpace: 'pre-wrap', background: '#f6f8fa', padding: 12, borderRadius: 6, maxHeight: 400, overflow: 'auto' }}>{debugInfo}</pre>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className={styles.loginPage}>
@@ -94,8 +59,6 @@ export default function LoginPage() {
                 <span className={styles.socialLabel}>Log in with Facebook</span>
               </button>
             </div>
-            {auth.isLoading && <p>Učitavanje...</p>}
-            {auth.error && <p style={{ color: "red" }}>Greška: {auth.error.message}</p>}
           </div>
         </div>
       </div>

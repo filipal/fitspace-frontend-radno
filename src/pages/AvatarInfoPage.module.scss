@@ -468,7 +468,7 @@
 
 /* Desktop pojačanje (opcionalno) */
 
-@include s.respond(xxl) {
+@include s.respond(tablet-xxl) {
   .pickerValues {
     position: relative;
     height: 31px;
@@ -603,7 +603,7 @@
   }
 }
 
-@include s.respond(xxl) {
+@include s.respond(laptop-lg) {
   .pickersGroup {
     width: min(100%, 490px);
     margin-inline: auto;

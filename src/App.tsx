@@ -20,6 +20,7 @@ import PixelStreamingDemo from './pages/PixelStreamingDemo.tsx'
 import DebugOverlay from './components/DebugOverlay/DebugOverlay.tsx'
 import { PixelStreamingProvider } from './context/PixelStreamingContext'
 import './App.module.scss'
+import ScrollToTop from './components/ScrollToTop'
 
 
 export default function App() {
@@ -52,6 +53,7 @@ export default function App() {
 
   return (
     <PixelStreamingProvider>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<StartPage />} />
         <Route path="/login" element={<LoginPage />} />
