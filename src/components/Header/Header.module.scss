@@ -138,9 +138,11 @@
 @supports (container-type: inline-size) and (width: 1cqw) {
   .appHeader {
     /* 101 / 430 * 100 */
-    height: 23.4884cqw;
+    /* height: 23.4884cqw; */
+    height: clamp(70px, 23.4884cqw, 101px);
     padding-top: 0;
-    padding-bottom: 3.4884cqw;
+    /* padding-bottom: 3.4884cqw; */
+    padding-bottom: clamp(10.3961px, 3.4884cqw, 15px);
     /* Skalarni bočni odmaci: 35px i 16px → cqw + safe-area */
     padding-inline-start: calc(8.1395cqw + env(safe-area-inset-left));  /* 35/430 */
     padding-inline-end:   calc(3.7209cqw + env(safe-area-inset-right)); /* 16/430 */
@@ -164,7 +166,7 @@
 /* DESKTOP (≥ 1440px): header 1440 x 70                              */
 /* ——————————————————————————— */
 
-@media (min-width: 1440px) {
+/* @media (min-width: 1440px) {
   .appHeader {
     width: 1440px;
     height: 70px;
@@ -173,13 +175,17 @@
     align-items: center;
     padding-top: 0;
   }
-}
+} */
 
 @media (min-width: 1280px) {
   .appHeader {
-    width: 1440px;
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
     height: 70px;
-    padding-inline: 24px;
+    padding-left: 35px;
+    padding-right: 22px;
+/*     padding-inline: 24px; */
     grid-template-columns: auto 1fr auto;
     align-items: center;
     padding-top: 0;

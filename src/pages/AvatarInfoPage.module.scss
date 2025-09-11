@@ -20,9 +20,10 @@
 .canvas {
   position: static;
   width: 100%;
-  height: auto;
+  min-height: var(--page-height);
+  max-height: var(--page-height);
   transform: none;
-
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   /* TEMP gutters: poravnaj sadržaj od ruba zaslona na mobitelu */
@@ -228,13 +229,13 @@
   width: 100%;
   max-width: 320px;
   margin-inline: auto;
-  margin-bottom: 12px;
+  margin-bottom: 20px;
   font-size: 17px;
   font-weight: 300;
   text-align: center;
   color: #000;
   font-weight: 300;
-  height: 21px;
+  white-space: nowrap;
 }
 
 .scanButton, .quickButton {
@@ -438,11 +439,11 @@
     padding: 0;
   }
   .howText {
-    margin-bottom: 11px;
-    height: 21px;
+    margin-bottom: 20px;
   }
   .actionsGrid {
     width: min(100%, 292.5px);
+    margin-inline: auto;
   }
   .scanButton, .quickButton {
     width: 100%;
@@ -633,4 +634,15 @@
   }
 }
 
-	
+@media (min-width: 1280px) {
+  .avatarInfoPage {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+  }
+
+  .canvas {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+}
