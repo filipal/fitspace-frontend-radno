@@ -140,8 +140,8 @@
 /* ——————————————————————————— */
 /* DESKTOP (≥ 1440px): header 1440 x 70                              */
 /* ——————————————————————————— */
-
-@media (min-width: 1280px) {
+@media (min-width: 1024px) { .appHeader { width: 100%; max-width: none; } }
+@media (min-width: 1024px) {
   .appHeader {
     width: 100vw;
     margin-left: calc(50% - 50vw);

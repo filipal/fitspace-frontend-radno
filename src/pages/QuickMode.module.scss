@@ -54,32 +54,43 @@ $design-w: 430;
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  min-height: 0;
-
-  /* rezerviraj prostor = visina footera + razmak od dna + safe area */
-  padding-bottom: calc(
-    var(--footer-h, #{cqw(50)}) +
-    var(--footer-gap, #{cqw(45)}) +
-    env(safe-area-inset-bottom)
-  );
+  min-height: 0; /* flex child can shrink; footer uses margin-top:auto to push down */
 }
 .footerSlot {
-  position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: calc(env(safe-area-inset-bottom) + var(--footer-gap, #{cqw(45)}));
-  width: #{cqw(320)};            /* 55px bočno → 320px u dizajnu 430 */
+  position: static;               /* u toku dokumenta – nije lebdeći */
+  /* width: #{cqw(320)}; */             /* 55px bočno → 320px u dizajnu 430 */
+  margin-left: #{cqw(55)}; margin-right: #{cqw(55)};
   height: var(--footer-h, #{cqw(50)});
   display: grid;
   place-items: center;
-  z-index: 1000;
-
-  /* spriječi da overlay blokira klikove izvan footera */
-  pointer-events: none;
+  margin-top: auto;               /* gurni na dno canvasa */
+  margin-bottom: calc(var(--footer-gap, #{cqw(45)}) + env(safe-area-inset-bottom));
+  z-index: 1;
 }
 .footerSlot > *{
-  pointer-events: auto;          /* ali Footer unutra je normalno klikabilan */
+  pointer-events: auto;
   width: 100%;                   /* da prati širinu slota */
+}
+
+/* — WEB (≥1024): footer nije lebdeći; stoji fiksno 400px ispod sadržaja — */
+@media (min-width: 500px) {
+  .footerSlot {
+    position: static;
+    left: auto;
+    bottom: auto;
+    transform: none;
+    width: 100%;
+    height: auto;
+    margin-top: 400px;
+    pointer-events: auto;
+    /* centriraj u širini stranice */
+    margin-left: auto;
+    margin-right: auto;
+    max-width: var(--page-max-width);
+    display: flex;
+    justify-content: center;
+  }
+  .footerSlot > * { width: auto; max-width: none; margin: 0; }
 }
 /* — SECTION LABEL — */
 .sectionLabel{
@@ -115,14 +126,23 @@ $design-w: 430;
   justify-content: space-between;
   gap: 0;
   box-sizing: border-box;
+  /* spriječi da djeca ikad premaše visinu reda na manjim ekranima */
+  overflow: hidden;
 }
 .bodyshapeBtn{
   border: 2px solid transparent;
   padding: 0; background: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
+  /* ključ: neka gumbi naslijede visinu reda i ne rastu više od nje */
+  height: 100%;
+  max-height: 100%;
+  flex: 0 0 auto;
 }
 .selected{ background:#000; border-color:#000 !important; }
-.bodyshapeIcon{ width: 100%; height: 100%; object-fit: contain; display: block; }
+/* SVG ikone: visina 100%, širina auto (zadrži omjer) i ne prelazi red */
+.bodyshapeIcon{ height: 100%; width: auto; max-width: 100%; object-fit: contain; display: block; }
+/* Ako neki SVG ignorira class dimenzije, prisili i preko tag selektora */
+.bodyshapeBtn svg{ height: 100% !important; width: auto !important; max-width: 100%; display: block; }
 .selectedIcon{ filter: brightness(0) invert(1); }
 
 /* — ATHLETIC SLIDER (68px bočno → 294 širina @430) — */
@@ -130,26 +150,28 @@ $design-w: 430;
   width: cqw(294);
   height: cqw(51);
   margin: cqw(22) auto 0;        /* 22px ispod drugog labela */
-  display: flex; 
-  flex-direction: column; 
-  align-items: center; 
-  justify-content: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;  /* razmak samo između tracka i ikona */
 }
 .athleticSliderTrack{
   position: relative;
   width: cqw(257);
-  height: cqw(9);
+  height: cqw(25);
   margin: 0;
   cursor: pointer;
 }
 .athleticTrack{
-  position: absolute; left: 0;
-  top: cqw(12); width: 100%; height: cqw(9);
+  position: absolute; left: 0; right: 0;
+  top: 50%; transform: translateY(-50%);
+  width: 100%; height: cqw(9);
 }
 .athleticCircle{
-  position: absolute; top: cqw(3);
+  position: absolute; top: 50%;
   width: cqw(25); height: cqw(25);
-  left: calc(var(--athletic-level, 1) * 50% - #{cqw(16)}); /* centrirano prema assetu */
+  left: calc(var(--athletic-level, 1) * 50%);
+  transform: translate(-50%, -50%);
   transition: left .2s;
   z-index: 2;
 }
@@ -159,7 +181,7 @@ $design-w: 430;
 
 .athleticIcons{
   width: 100%;
-  margin-top: cqw(22);
+  margin-top: 0;                  /* bez vanjskog razmaka; space-between rješava razmak */
   display: flex; align-items: center; justify-content: space-between;
 }
 .athleticIcon{ width: cqw(32); height: cqw(24); object-fit: contain; }

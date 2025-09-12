@@ -15,7 +15,7 @@
   overflow: visible;
   font-family: 'Inter', sans-serif;
 }
-
+.canvas > *:first-child { flex: 0 0 auto; }
 /* Unutarnje "platno" koje se skalira da stane na ekran */
 .canvas {
   position: static;
@@ -266,6 +266,12 @@
   font-weight: 300;
 }
 
+/* Mobile: zadrži u jednom retku; Desktop: dopusti prijelom na <br> */
+.scanDesc br { display: none; }
+@media (min-width: 1024px) {
+  .scanDesc br { display: inline; }
+}
+
 .quickDesc {
   margin-bottom: 20px;
   font-size: 11.8px;
@@ -282,7 +288,7 @@
   color: #000;
   font-size: 18px;
   cursor: pointer;
-  margin-bottom: calc(24px + env(safe-area-inset-bottom));
+  /* margin-bottom: calc(24px + env(safe-area-inset-bottom)); */
 }
 .actionsGrid {
   width: min(100%, 320px);
@@ -466,9 +472,62 @@
   }
 }
 
+@media (max-width: 320px) {
+  .howText {
+    font-size: 15px;
+  }
+  .pickerAge {
+    .pickerValues {
+      max-width: 220px;
+    }
+    .side {
+      font-size: 18px;
+    }
+    .selected {
+      font-size: 28px;
+    }
+  }
+  .pickerNumber {
+    .pickerValues {
+      max-width: 220px;
+    }
+    .pickerValues { gap: 8px; margin: 0 10px; }
+    .selected { font-size: 26px; }
+    .sideOuter  { flex: 0 0 29px; font-size: 16px; font-weight: 600; opacity: .2; color: #000; }
+    .sideInner  { flex: 0 0 40px; font-size: 24px; font-weight: 600; opacity: .4; color: #000; }
+  }
+}
 
-/* Desktop pojačanje (opcionalno) */
+@include s.respond(laptop-lg) {
+  .pickersGroup {
+    width: min(100%, 490px);
+    margin-inline: auto;
+  }
+  .picker {
+    max-width: none;
+    width: 100%;
+    margin-bottom: 60px;
+  }
+  .pickerControl {
+    width: 490px;
+    max-width: 100%;
+    margin-inline: auto;
+  }
+  .webPanel {
+    max-width: 790px;
+    width: 100%;
+    margin-inline: auto;
+  }
+  .howText {
+    font-size: 19px;
+    font-weight: 300;
+    width: 420px;
+    margin-top: 30px;
+    margin-bottom: 20px;
+  }
+}
 
+/* Desktop pojačanje */
 @include s.respond(tablet-xxl) {
   .pickerValues {
     position: relative;
@@ -602,47 +661,87 @@
   .backButtonAvatarinfo {
     margin-top: 20px;
   }
-}
-
-@include s.respond(laptop-lg) {
-  .pickersGroup {
-    width: min(100%, 490px);
-    margin-inline: auto;
+  /* AGE (prvi) – točno 366px i bez praznih rubova */
+  .pickersGroup .picker:nth-of-type(1) .pickerValues {
+    width: 366px;
+    max-width: 366px;
+    margin: 0;
   }
-  .picker {
-    max-width: none;
-    width: 100%;
-    margin-bottom: 60px;
+  /* Grid varijanta: tri kolone sadržaja, razmak samo između (bez unutarnjih lijevo/desno) */
+  .pickersGroup .picker:nth-of-type(1).pickerAge .pickerValues {
+    grid-template-columns: auto auto auto;
+    justify-content: space-between;
   }
-  .pickerControl {
-    width: 490px;
-    max-width: 100%;
-    margin-inline: auto;
-    /* ostavi ostale deklaracije izvan media query */
-  }
-  .webPanel {
-    max-width: 790px;
-    width: 100%;
-    margin-inline: auto;
-  }
-  .howText {
-    font-size: 19px;
-    font-weight: 300;
-    width: 420px;
-    margin-top: 30px;
-    margin-bottom: 20px;
+  .pickersGroup .picker:nth-of-type(2) .pickerValues,
+  .pickersGroup .picker:nth-of-type(3) .pickerValues {
+    width: 377px;
+    max-width: 377px;
+    margin: 0;
+    /* Flex varijanta: razmak samo između stavki, bez praznih rubova */
+    justify-content: space-between;
   }
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
   .avatarInfoPage {
     width: 100vw;
     margin-left: calc(50% - 50vw);
   }
+  .pickersGroup {
+    height: 312px;
+  }
+  .pickerNumber:last-of-type {
+    margin-bottom: 0;
+  }
 
+  /* Centriraj .pickerValues horizontalno i vertikalno unutar .pickerControl,
+     strelice pozicioniraj apsolutno lijevo/desno (bez preklapanja) */
+  .pickerControl {
+    position: relative;
+    width: 490px;
+    max-width: 100%;
+    margin-inline: auto;
+    height: 31px;
+    display: block;
+  }
+  .pickerControl .pickerValues {
+    position: relative;
+    height: 31px;
+    width: calc(100% - 40px);
+    margin: 0 20px;
+    display: flex;
+    align-items: center;      /* vertikalno centriraj track */
+    justify-content: center;  /* horizontalno centriraj track */
+  }
+  .pickerControl .arrowButton {
+    position: absolute;
+    top: 0;
+    width: 20px;
+    height: 31px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pickerControl .arrowButton:first-of-type { left: 0; }
+  .pickerControl .arrowButton:last-of-type  { right: 0; }
+}
+
+/* Desktop: širina tracka samo za 2. i 3. picker (Height, Weight) */
+@media (min-width: 1440px) {
   .canvas {
     display: flex;
     flex-direction: column;
     align-items: center;
   }
+
+  .howText {
+    margin-top: 104px;
+    font-size: 20px;
+    max-width: 490px;
+  }
+  .backButtonAvatarinfo {
+    margin: 0;
+  }
 }
+

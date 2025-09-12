@@ -176,8 +176,8 @@ export default function AvatarInfoPage() {
                 Scan Body
               </button>
               <div className={styles.scanDesc}>
-                Highly accurate. Scan your body & face<br />
-                with a phone in 3 minutes.
+                Highly accurate.<br />
+                Scan your body & face with a phone in 3 minutes.
               </div>
             </div>
             <div className={styles.action}>
