@@ -214,7 +214,7 @@ $design-w: 430; // jedan izvor istine
   width: cqw(410);
   height: cqw(60);
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start; /* poravnaj bottomNav uz gornji rub bottomSection */
   z-index: 3;
 }
 
@@ -263,23 +263,14 @@ $design-w: 430; // jedan izvor istine
 .bottomSection {
   width: 100%;
   max-width: 430px;
+  height: calc(cqw(60) + max(env(safe-area-inset-bottom, 0px), cqw(21)));
   border-top: 1px solid #000; /* border ostavi 1px zbog oštrine */
   display: flex;
   justify-content: center;
-  /* margin-bottom: cqw(20); */
+  align-items: flex-end;
   padding-top: 0;
   background: #ececec;
   position: relative;
-}
-.bottomSection::after {
-  content: '';
-  position: absolute;
-  left: 0; right: 0;
-  bottom: calc(-1 * cqw(20));
-  height: cqw(20);
-  background: #ececec;
-  z-index: 0;
-  pointer-events: none;
 }
 
 .bottomNav {
@@ -287,6 +278,7 @@ $design-w: 430; // jedan izvor istine
   max-width: cqw(410);
   height: cqw(60);
   display: flex;
+  align-self: flex-start; /* poravnaj uz gornji rub roditelja */
 }
 
 .navButton {
@@ -376,7 +368,6 @@ $design-w: 430; // jedan izvor istine
     position: absolute; top: 70px; right: 0; width: 90px; height: calc(100% - 70px);
     border-top: none; border-left: 1px solid #000; margin-bottom: 0; justify-content: flex-start;
   }
-  .bottomSection::after { display: none; }
   .bottomNav { width: 90px; height: 100%; flex-direction: column; margin-top: 0; align-items: center; }
   .navIndicator { top: 0; bottom: 0; left: 0; right: auto; width: 5px; height: 100%; }
   .navButton { width: 90px; height: 90px; }
