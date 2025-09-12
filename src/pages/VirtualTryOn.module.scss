@@ -27,8 +27,8 @@ $design-w: 430; // baseline širina dizajna
   background: none;
   border: none;
   padding: 0;
-  width: cqw(30);
-  height: cqw(25);
+  width: min(30px, cqw(30));
+  height: min(25px, cqw(25));
   display: flex;
   align-items: center;
   justify-content: center;

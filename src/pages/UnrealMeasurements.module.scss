@@ -58,9 +58,11 @@ $design-w: 430; // jedan izvor istine
 }
 
 .avatarButton {
-  inline-size: calc((30/ 430) * var(--page-w-px)); /* 32px @430 */
+/*   inline-size: calc((30/ 430) * var(--page-w-px));
   height: calc((19 / 430) * var(--page-w-px));
-  block-size:  calc((32 / 430) * var(--page-w-px));
+  block-size:  calc((32 / 430) * var(--page-w-px)); */
+  inline-size: min(30px, calc((30 / 430) * var(--page-w-px)));
+  block-size: min(19px, calc((19 / 430) * var(--page-w-px)));
   padding: 0;
   border: 0;
   background: transparent;
@@ -360,8 +362,8 @@ $design-w: 430; // jedan izvor istine
   }
   .centralWrapper.withAccordion { width: calc(100% - 90px - 335px); justify-content: flex-start; }
   .avatarShifted { margin-left: 123px; }
-  .avatarSection { width: 604px; height: 953px; }
-  .bodySelected { height: 953px; justify-content: center; }
+  .avatarSection { width: 604px; height: min(var(--avatar-h), 953px); }
+  .bodySelected { height: min(var(--avatar-h), 953px); justify-content: center; }
   .bodySelected::before { display: none; }
   .bodySelected .avatarImage { width: 100%; height: 100%; }
   .dataPanelWrapper { position: static; width: 273px; height: 774px; margin-left: 15px; margin-right: 22px; margin-top: 62px; }
