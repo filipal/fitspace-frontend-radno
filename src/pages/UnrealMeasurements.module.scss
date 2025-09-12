@@ -49,7 +49,7 @@ $design-w: 430; // jedan izvor istine
 
 .avatarSection {
   width: 100%;
-  height: calc(#{cqw(750)} - var(--acc-h, 0));
+  height: var(--avatar-h, calc(#{cqw(750)} - var(--acc-h, 0)));
   position: relative;
   display: flex;
   justify-content: center;
