@@ -359,7 +359,7 @@ $design-w: 430; // jedan izvor istine
   }
   .centralWrapper.withAccordion { width: calc(100% - 90px - 335px); justify-content: flex-start; }
   .avatarShifted { margin-left: 123px; }
-  .avatarSection { width: 604px; height: min(var(--avatar-h), 953px); }
+  .avatarSection { position: relative; width: 604px; height: min(var(--avatar-h), 953px); }
   .bodySelected { height: min(var(--avatar-h), 953px); justify-content: center; }
   .bodySelected::before { display: none; }
   .bodySelected .avatarImage { width: 100%; height: 100%; }
@@ -375,7 +375,14 @@ $design-w: 430; // jedan izvor istine
   .navButton:not(:first-child) { margin-left: 0; margin-top: 10px; }
   .navIcon { max-width: 50px; max-height: 36px; margin-bottom: 2px; }
   .navIcon img { width: 100%; height: 100%; object-fit: contain; }
-  .controlGroup { width: 410px; height: 60px; bottom: 10px; }
+  .controlGroup {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 410px;
+    height: 60px;
+  }
   .rotateleft  { width: 60px; margin-right: 50px; }
   .upload      { width: 50px; margin-right: 25px; }
   .fullscreen  { width: 40px; margin-right: 25px; }
