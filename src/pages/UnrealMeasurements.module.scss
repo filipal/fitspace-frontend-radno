@@ -58,7 +58,8 @@ $design-w: 430; // jedan izvor istine
 }
 
 .avatarButton {
-  inline-size: calc((32 / 430) * var(--page-w-px)); /* 32px @430 */
+  inline-size: calc((30/ 430) * var(--page-w-px)); /* 32px @430 */
+  height: calc((19 / 430) * var(--page-w-px));
   block-size:  calc((32 / 430) * var(--page-w-px));
   padding: 0;
   border: 0;
