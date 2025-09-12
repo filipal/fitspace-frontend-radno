@@ -54,6 +54,7 @@ $design-w: 430; // jedan izvor istine
   display: flex;
   justify-content: center;
   align-items: center;
+  background: #ADADAC;
 }
 
 .avatarButton {
@@ -97,7 +98,7 @@ $design-w: 430; // jedan izvor istine
 }
 
 .bodySelected {
-  height: cqw(579);
+  height: min(var(--avatar-h), cqw(579));
   justify-content: flex-end;
 }
 @container page (max-width: 400px){
@@ -124,7 +125,7 @@ $design-w: 430; // jedan izvor istine
 
 .bodySelected .avatarImage {
   width: cqw(274);
-  height: cqw(579);
+  height: min(var(--avatar-h), cqw(579));
 }
 
 .avatarImage {
@@ -135,7 +136,7 @@ $design-w: 430; // jedan izvor istine
 
 /* Face mode: show top-cropped/zoomed view at 430x670 */
 .faceSelected {
-  height: cqw(670);
+  height: min(var(--avatar-h), cqw(670));
   --avatar-zoom: 2.4;
   overflow: hidden;
 }
@@ -151,7 +152,7 @@ $design-w: 430; // jedan izvor istine
 
 /* Skin mode */
 .skinSelected {
-  height: cqw(690);
+  height: min(var(--avatar-h), cqw(690));
   overflow: hidden;
   --avatar-zoom: 1.0;
   background: #BAB9BA;
@@ -166,7 +167,7 @@ $design-w: 430; // jedan izvor istine
 
 /* Hair mode */
 .hairSelected {
-  height: cqw(630);
+  height: min(var(--avatar-h), cqw(630));
   overflow: hidden;
   --avatar-zoom: 2.4;
 }
@@ -182,7 +183,7 @@ $design-w: 430; // jedan izvor istine
 
 /* Extras mode */
 .extrasSelected {
-  height: cqw(630);
+  height: min(var(--avatar-h), cqw(630));
   overflow: hidden;
   --avatar-zoom: 2.4;
 }
