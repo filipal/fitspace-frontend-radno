@@ -49,7 +49,8 @@ interface Measurement {
 type NavKey = 'Body' | 'Face' | 'Skin' | 'Hair' | 'Extras' | 'Save'
 
 export default function UnrealMeasurements() {
-  const pageRef = useRef<HTMLDivElement | null>(null);
+  const pageRef = useRef<HTMLDivElement | null>(null)
+  const bottomRef = useRef<HTMLDivElement | null>(null)
 
   useLayoutEffect(() => {
     const el = pageRef.current;
@@ -97,6 +98,33 @@ export default function UnrealMeasurements() {
       window.removeEventListener('orientationchange', set);
     };
   }, []);
+
+  useLayoutEffect(() => {
+    const page = pageRef.current
+    const header = document.querySelector('[data-app-header]') as HTMLElement | null
+    const bottom = bottomRef.current
+    if (!page || !header || !bottom) return
+
+    const set = () => {
+      const viewportH = window.visualViewport?.height ?? window.innerHeight
+      const headerH = Math.round(header.getBoundingClientRect().height)
+      const bottomH = Math.round(bottom.getBoundingClientRect().height)
+      const availableH = viewportH - headerH - bottomH
+      page.style.setProperty('--bottom-real-h', `${bottomH}px`)
+      page.style.setProperty('--avatar-h', `${availableH}px`)
+    }
+
+    set()
+    window.addEventListener('resize', set)
+    window.addEventListener('orientationchange', set)
+    window.visualViewport?.addEventListener('resize', set)
+
+    return () => {
+      window.removeEventListener('resize', set)
+      window.removeEventListener('orientationchange', set)
+      window.visualViewport?.removeEventListener('resize', set)
+    }
+  }, [])
 
   const navigate = useNavigate()
   const location = useLocation()
@@ -262,7 +290,7 @@ export default function UnrealMeasurements() {
         </div>
       )}
 
-      <div className={styles.bottomSection}>
+      <div ref={bottomRef} className={styles.bottomSection}>
         <div className={styles.bottomNav}>
           {navButtons.map(btn => (
             <button
