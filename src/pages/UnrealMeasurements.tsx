@@ -220,6 +220,7 @@ export default function UnrealMeasurements() {
   return (
     <div ref={pageRef} className={styles.page}>
       <Header
+        data-app-header
         title="Your Avatar"
         variant="dark"
         onExit={() => navigate('/')}
