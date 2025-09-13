@@ -108,9 +108,12 @@ export default function UnrealMeasurements() {
     const set = () => {
       const viewportH = window.visualViewport?.height ?? window.innerHeight
       const headerH = Math.round(header.getBoundingClientRect().height)
-      const bottomH = Math.round(bottom.getBoundingClientRect().height)
-      const availableH = viewportH - headerH - bottomH
-      page.style.setProperty('--bottom-real-h', `${bottomH}px`)
+      // Desktop (≥1440): bottom nav je bočno (visina ne oduzima vertikalu)
+      const isDesktop = window.innerWidth >= 1440
+      const measuredBottomH = Math.round(bottom.getBoundingClientRect().height)
+      const bottomH = isDesktop ? 0 : measuredBottomH
+      const availableH = Math.max(viewportH - headerH - bottomH, 200)
+      page.style.setProperty('--bottom-real-h', `${measuredBottomH}px`)
       page.style.setProperty('--avatar-h', `${availableH}px`)
     }
 

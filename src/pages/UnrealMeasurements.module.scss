@@ -49,6 +49,7 @@ $design-w: 430; // jedan izvor istine
 
 .avatarSection {
   width: 100%;
+  flex: 1;
   height: var(--avatar-h, calc(#{cqw(750)} - var(--acc-h, 0)));
   position: relative;
   display: flex;
@@ -354,7 +355,7 @@ $design-w: 430; // jedan izvor istine
     height: calc(100% - 70px);
     justify-content: center;
     padding-left: 0;
-    margin-bottom: cqw(9);
+    margin-bottom: cqw(1);
     background: #B1B1B0;
   }
   .centralWrapper.withAccordion { width: calc(100% - 90px - 335px); justify-content: flex-start; }
