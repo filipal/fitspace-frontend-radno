@@ -79,9 +79,9 @@
 
 @supports (container-type: inline-size) and (width: 1cqw) {
   .rightBox > *:last-child { margin-inline-end: 3.2558cqw; } /* 14px @ 430 */
-  @media (min-width: 1024px) {
+/*   @media (min-width: 1024px) {
     .rightBox > *:last-child { margin-inline-end: 14px; }
-  }
+  } */
 }
 
 .exitButton:focus,

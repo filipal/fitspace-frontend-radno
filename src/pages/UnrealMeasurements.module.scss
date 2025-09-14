@@ -341,9 +341,11 @@ $design-w: 430; // jedan izvor istine
 
 /* —— desktop layout ostaje kako je —— */
 @include s.respond(xxl) {
+  /* Full-bleed na ≥1440: bez bočnih margina; poravnaj .page na cijeli viewport */
   .page {
-    width: var(--page-width);
-    max-width: var(--page-max-width);
+    width: 100vw;
+    max-width: none;
+    margin-left: calc(50% - 50vw);
     height: 100svh;
     align-items: flex-start;
     position: relative;
@@ -369,17 +371,22 @@ $design-w: 430; // jedan izvor istine
   .bottomSection {
     position: absolute;
     right: 0;
-    top: calc(var(--header-real-h, 70px) + 20px);
+    top: var(--header-real-h, 70px);
     width: 90px;
-    height: calc(100% - (var(--header-real-h, 70px) + 20px));
-    border-top: none;
+    height: calc(100% - var(--header-real-h, 70px));
+    border-top: 1px solid #000;
     border-left: 1px solid #000;
     margin-bottom: 0;
     justify-content: flex-start;
+    padding-top: 20px;            /* unutarnji razmak za nav */
+    box-sizing: border-box;
+    overflow-y: auto;            /* omogući skrol ako je ekran nizak */
   }
+  .bottomNav { margin-top: 0; }
   .bottomNav { width: 90px; height: 100%; flex-direction: column; margin-top: 0; align-items: center; }
   .navIndicator { top: 0; bottom: 0; left: 0; right: auto; width: 5px; height: 100%; }
-  .navButton { width: 90px; height: 90px; }
+  /* Smanji gumb na manjim visinama da stane više stavki; min 56px */
+  .navButton { width: 90px; height: clamp(56px, calc((100svh - var(--header-real-h, 70px) - 20px)/6 - 6px), 90px); }
   .navButton:not(:first-child) { margin-left: 0; margin-top: 10px; }
   .navIcon { max-width: 50px; max-height: 36px; margin-bottom: 2px; }
   .navIcon img { width: 100%; height: 100%; object-fit: contain; }
