@@ -367,8 +367,15 @@ $design-w: 430; // jedan izvor istine
   .dataPanelWrapper { position: static; width: 273px; height: 774px; margin-left: 15px; margin-right: 22px; margin-top: 62px; }
   .accordion { width: 335px; height: calc(100% - 70px); position: absolute; top: 70px; right: 90px; }
   .bottomSection {
-    position: absolute; top: 70px; right: 0; width: 90px; height: calc(100% - 70px);
-    border-top: none; border-left: 1px solid #000; margin-bottom: 0; justify-content: flex-start;
+    position: absolute;
+    right: 0;
+    top: calc(var(--header-real-h, 70px) + 20px);
+    width: 90px;
+    height: calc(100% - (var(--header-real-h, 70px) + 20px));
+    border-top: none;
+    border-left: 1px solid #000;
+    margin-bottom: 0;
+    justify-content: flex-start;
   }
   .bottomNav { width: 90px; height: 100%; flex-direction: column; margin-top: 0; align-items: center; }
   .navIndicator { top: 0; bottom: 0; left: 0; right: auto; width: 5px; height: 100%; }
