@@ -113,13 +113,16 @@ export default function UnrealMeasurements() {
     const set = () => {
       const viewportH = window.visualViewport?.height ?? window.innerHeight
       const headerH = Math.round(header.getBoundingClientRect().height)
+      const w = window.innerWidth
+      // Sidebar accordion za ≥600: ne oduzima visinu (samo širinu)
+      const sideAccordion = w >= 600
       // Desktop (≥1440): bottom nav je bočno (visina ne oduzima vertikalu)
-      const isDesktop = window.innerWidth >= 1440
+      const isDesktop = w >= 1440
       const measuredBottomH = Math.round(bottom.getBoundingClientRect().height)
       const bottomH = isDesktop ? 0 : measuredBottomH
       // Ako je accordion otvoren, oduzmi njegovu stvarnu visinu
       const accEl = accordionRef.current
-      const accH = accEl ? Math.round(accEl.getBoundingClientRect().height) : 0
+      const accH = sideAccordion ? 0 : (accEl ? Math.round(accEl.getBoundingClientRect().height) : 0)
       const availableH = Math.max(viewportH - headerH - bottomH - accH, 200)
       page.style.setProperty('--bottom-real-h', `${measuredBottomH}px`)
       page.style.setProperty('--avatar-h', `${availableH}px`)

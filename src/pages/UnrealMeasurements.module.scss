@@ -375,6 +375,29 @@ $design-w: 430; // jedan izvor istine
 }
 
 /* —— desktop layout ostaje kako je —— */
+/* WEB ≥600 i <1440: desni sidebar (accordion) s fiksnim širinama, visine kao centralni dio */
+@include s.respond(tablet) {
+  .accordion {
+    position: fixed;
+    right: 0;
+    top: var(--header-real-h, 70px);
+    height: calc(100svh - var(--header-real-h, 70px));
+    background: #ececec;
+    border-left: 1px solid #000;
+    z-index: 2;
+  }
+  .accBody   + .accordion { width: 335px; }
+  .accFace   + .accordion { width: 187px; }
+  .accSkin   + .accordion { width: 117px; }
+  .accHair   + .accordion { width: 187px; }
+  .accExtras + .accordion { width: 187px; }
+  .accBody   { --acc-w: 335px; }
+  .accFace   { --acc-w: 187px; }
+  .accSkin   { --acc-w: 117px; }
+  .accHair   { --acc-w: 187px; }
+  .accExtras { --acc-w: 187px; }
+  .centralWrapper { padding-right: var(--acc-w, 0px); }
+}
 @include s.respond(xxl) {
   .page {
     width: 100vw;

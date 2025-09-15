@@ -17,7 +17,7 @@ $design-w: 430;
   block-size: #{cqw(171)};
   background: #ececec;
   backdrop-filter: blur(#{cqw(4)});
-  box-shadow: 0 #{cqw(4)} #{cqw(10)} rgba(0,0,0,.25);
+/*   box-shadow: 0 #{cqw(4)} #{cqw(10)} rgba(0,0,0,.25); */
   display: flex; 
   align-items: stretch;
   font-family: 'Outfit', sans-serif;
@@ -99,6 +99,43 @@ $design-w: 430;
   position:relative;
 }
 
+/* WEB ≥ 600px: desktop raspored kao na 1440 */
+@media (min-width: 600px) {
+  /* Glavni layout: lijevi blok (strelice + stack) i desni blok (kontrole) u retku */
+  .container { flex-direction: row !important; inline-size: 100%; block-size: auto; align-items: center; }
+  .leftSection { inline-size: auto !important; display: flex; align-items: center; justify-content: center; }
+
+  /* Strelice horizontalne (lijevo-desno), bez vertikalne rotacije */
+  .arrowUp img { transform: none; }
+  .arrowDown img { transform: none; }
+
+  /* Stack horizontalan, fiksne širine 210px */
+  .stack {
+    inline-size: 210px !important;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    column-gap: 8px;
+    grid-template-rows: none;
+  }
+
+  /* Desni blok dimenzioniraj prema zahtjevu */
+  .rightInner { inline-size: 294px !important; block-size: auto; gap: 6px; }
+  .rows { gap: 8px; }
+  .row {
+    display: grid;
+    grid-template-columns: 236px 58px;   /* sliderGroup | rowPct */
+    grid-template-rows: auto 30px;       /* label iznad, pa slider+postotak */
+    align-items: center;
+    row-gap: 4px;
+  }
+  .rowLabel { grid-column: 1 / -1; font-size: 14px; }
+  .sliderGroup { inline-size: 236px !important; block-size: 30px !important; }
+  .sliderBar   { inline-size: 236px !important; block-size: 10px !important;   background: transparent !important;/*  box-shadow: inset 0 0 0 1px #000 !important; */ }
+  .sliderThumb { inline-size: 30px !important;  block-size: 30px !important; }
+  .rowPct { font-size: 10px; justify-self: end; }
+}
+
 .rightInner {
   inline-size: #{cqw(330)};
   block-size: #{cqw(140)};
@@ -154,7 +191,7 @@ $design-w: 430;
   block-size: #{cqw(10)};
   background: transparent;
   border-radius: #{cqw(10)};
-  box-shadow: inset 0 0 0 #{cqw(1.5)} #000;
+/*   box-shadow: inset 0 0 0 #{cqw(1.5)} #000; */
   touch-action: none;
 }
 
@@ -348,6 +385,7 @@ $design-w: 430;
   .sliderBar {
     width: 236px;
     height: 10px;
+    
   }
 
   .sliderThumb {
