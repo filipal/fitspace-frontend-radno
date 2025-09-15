@@ -426,10 +426,11 @@ $design-w: 430; // jedan izvor istine
   }
   .bottomNav {
     width: 90px;
-    height: 100%;
+    height: min(639px, calc(100% - 19.5px));
     flex-direction: column;
     align-items: center;
-    margin-top: 20px;
+    margin-top: 19.5px;
+    overflow-y: auto;
   }
   .navIndicator { top: 0; bottom: 0; left: 0; right: auto; width: 5px; height: 100%; }
   .navButton { width: 90px; height: 90px; }
