@@ -51,10 +51,10 @@ export default function BodyAccordion({ updateMorph }: BodyAccordionProps) {
   const draggingRef = useRef(false)
   const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n))
 
-  // Track viewport size to switch behavior at the desktop breakpoint
+  // Track viewport size to switch behavior at the ≥600px breakpoint
   const [isLarge, setIsLarge] = useState(false)
   useEffect(() => {
-    const mq = window.matchMedia('(min-width: 1440px)')
+    const mq = window.matchMedia('(min-width: 600px)')
     const handler = (e: MediaQueryListEvent) => setIsLarge(e.matches)
     setIsLarge(mq.matches)
     mq.addEventListener('change', handler)
