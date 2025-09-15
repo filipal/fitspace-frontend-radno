@@ -37,23 +37,37 @@ $design-w: 430; // jedan izvor istine
 
 .centralWrapper {
   /* var za visinu accordeona (0 dok je zatvoren) */
-  --acc-h: 0;
+/*   --acc-h: 0;
   position: static;
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%; */
+  --acc-h: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   width: 100%;
+  height: var(--avatar-h);
 }
 
 .withAccordion { --acc-h: cqw(171); }
 
 .avatarSection {
-  width: 100%;
+/*   width: 100%;
   height: var(--avatar-h, calc(#{cqw(750)} - var(--acc-h, 0)));
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
+  background: #ADADAC; */
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
   background: #ADADAC;
 }
 
@@ -131,8 +145,12 @@ $design-w: 430; // jedan izvor istine
 }
 
 .avatarImage {
-  width: 100%;
+/*   width: 100%;
   height: 100%;
+  object-fit: contain; */
+  height: 100%;
+  width: auto;
+  max-width: 100%;
   object-fit: contain;
 }
 
@@ -367,18 +385,27 @@ $design-w: 430; // jedan izvor istine
     position: relative;
   }
   .centralWrapper {
-    flex-direction: row;
+/*     flex-direction: row;
     align-items: flex-start;
     width: calc(100% - 90px);
     height: calc(100% - var(--header-real-h, 71px));
     justify-content: center;
     padding-left: 0;
     margin-bottom: cqw(9);
-    background: #B1B1B0;
+    background: #B1B1B0; */
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    width: calc(100vw - 90px);
+    height: calc(100vh - var(--header-real-h, 71px));
   }
   .centralWrapper.withAccordion { width: calc(100% - 90px - 335px); justify-content: flex-start; }
   .avatarShifted { margin-left: 123px; }
-  .avatarSection { width: 604px; height: 953px; }
+/*   .avatarSection { width: 604px; height: 953px; } */
+  .avatarSection {
+    max-width: 604px;
+    height: 100%;
+  }
   .bodySelected { height: 953px; justify-content: center; }
   .bodySelected::before { display: none; }
   .bodySelected .avatarImage { width: 100%; height: 100%; }
@@ -397,8 +424,13 @@ $design-w: 430; // jedan izvor istine
     margin-bottom: 0;
     justify-content: flex-start;
   }
-  .bottomNav { margin-top: 20px; }
-  .bottomNav { width: 90px; height: 100%; flex-direction: column; margin-top: 0; align-items: center; }
+  .bottomNav {
+    width: 90px;
+    height: 100%;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+  }
   .navIndicator { top: 0; bottom: 0; left: 0; right: auto; width: 5px; height: 100%; }
   .navButton { width: 90px; height: 90px; }
   .navButton:not(:first-child) { margin-left: 0; margin-top: 10px; }
