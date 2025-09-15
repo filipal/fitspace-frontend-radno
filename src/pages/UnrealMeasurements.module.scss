@@ -36,13 +36,6 @@ $design-w: 430; // jedan izvor istine
 }
 
 .centralWrapper {
-  /* var za visinu accordeona (0 dok je zatvoren) */
-/*   --acc-h: 0;
-  position: static;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%; */
   --acc-h: 0;
   display: flex;
   flex-direction: column;
@@ -54,13 +47,6 @@ $design-w: 430; // jedan izvor istine
 .withAccordion { --acc-h: cqw(171); }
 
 .avatarSection {
-/*   width: 100%;
-  height: var(--avatar-h, calc(#{cqw(750)} - var(--acc-h, 0)));
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #ADADAC; */
   width: 100%;
   height: 100%;
   max-width: 100%;
@@ -385,14 +371,6 @@ $design-w: 430; // jedan izvor istine
     position: relative;
   }
   .centralWrapper {
-/*     flex-direction: row;
-    align-items: flex-start;
-    width: calc(100% - 90px);
-    height: calc(100% - var(--header-real-h, 71px));
-    justify-content: center;
-    padding-left: 0;
-    margin-bottom: cqw(9);
-    background: #B1B1B0; */
     flex-direction: row;
     align-items: flex-start;
     justify-content: center;
@@ -406,6 +384,39 @@ $design-w: 430; // jedan izvor istine
     max-width: 604px;
     height: 100%;
   }
+  .controlGroup {
+    width: 410px;
+    height: 60px;
+    bottom: 10px;
+  }
+  .rotateleft {
+    width: 60px;
+    height: 60px;
+    margin-right: 50px;
+  }
+  .upload {
+    width: 50px;
+    height: 50px;
+    margin-right: 25px;
+  }
+  .fullscreen {
+    width: 40px;
+    height: 40px;
+    margin-right: 25px;
+  }
+  .download {
+    width: 50px;
+    height: 50px;
+    margin-right: 50px;
+  }
+  .rotateright {
+    width: 60px;
+    height: 60px;
+  }
+  .outerCircle {
+    border-width: 2px;
+  }
+
   .bodySelected { height: 953px; justify-content: center; }
   .bodySelected::before { display: none; }
   .bodySelected .avatarImage { width: 100%; height: 100%; }
@@ -449,5 +460,6 @@ $design-w: 430; // jedan izvor istine
   }
   .page [data-app-header] > * {
     align-self: center !important;
-    }
+  }
+  .centralWrapper { background: #ADADAC; }
 }
