@@ -4,6 +4,8 @@
   height: 101px;                         /* dizajn visina */
   margin: 0 auto;
   position: relative;
+  /* Omogući stabilno cqw skaliranje u odnosu na sam header */
+  container-type: inline-size;
 
   /* bočni guteri + safe-area */
   padding-inline: calc(16px + env(safe-area-inset-left));
@@ -137,6 +139,17 @@
     height: clamp(16px, 4.6512cqw, 20px);
     display: block;
   }
+}
+
+/* WEB ≥ 600px: fiksna visina 71px, svi elementi centrirani po visini */
+@media (min-width: 600px) {
+  .appHeader {
+    height: 71px;
+    padding-top: 0;
+    padding-bottom: 0;
+    align-items: center;
+  }
+  .appHeader > * { align-self: center; }
 }
 
 
