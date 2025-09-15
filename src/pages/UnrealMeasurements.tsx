@@ -51,6 +51,11 @@ type NavKey = 'Body' | 'Face' | 'Skin' | 'Hair' | 'Extras' | 'Save'
 export default function UnrealMeasurements() {
   const pageRef = useRef<HTMLDivElement | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
+  const accordionRef = useRef<HTMLDivElement | null>(null)
+  // State used by effects below must be declared before effects
+  const [selectedControl, setSelectedControl] = useState<string | null>(null)
+  const [selectedNav, setSelectedNav] = useState<NavKey | null>(null)
+  const [avatarSrc] = useState<string>(avatarMeasure)
 
   useLayoutEffect(() => {
     const el = pageRef.current;
@@ -112,7 +117,10 @@ export default function UnrealMeasurements() {
       const isDesktop = window.innerWidth >= 1440
       const measuredBottomH = Math.round(bottom.getBoundingClientRect().height)
       const bottomH = isDesktop ? 0 : measuredBottomH
-      const availableH = Math.max(viewportH - headerH - bottomH, 200)
+      // Ako je accordion otvoren, oduzmi njegovu stvarnu visinu
+      const accEl = accordionRef.current
+      const accH = accEl ? Math.round(accEl.getBoundingClientRect().height) : 0
+      const availableH = Math.max(viewportH - headerH - bottomH - accH, 200)
       page.style.setProperty('--bottom-real-h', `${measuredBottomH}px`)
       page.style.setProperty('--avatar-h', `${availableH}px`)
     }
@@ -121,21 +129,25 @@ export default function UnrealMeasurements() {
     window.addEventListener('resize', set)
     window.addEventListener('orientationchange', set)
     window.visualViewport?.addEventListener('resize', set)
+    window.visualViewport?.addEventListener('scroll', set)
+    // Promjene visine accordeona (npr. sadržaj) – promatraj i njega
+    const ro = new ResizeObserver(() => set())
+    if (accordionRef.current) ro.observe(accordionRef.current)
 
     return () => {
       window.removeEventListener('resize', set)
       window.removeEventListener('orientationchange', set)
       window.visualViewport?.removeEventListener('resize', set)
+      window.visualViewport?.removeEventListener('scroll', set)
+      ro.disconnect()
     }
-  }, [])
+  }, [selectedNav])
 
   const navigate = useNavigate()
   const location = useLocation()
   const { sendFittingRoomCommand, connectionState } = usePixelStreaming()
 
-  const [selectedControl, setSelectedControl] = useState<string | null>(null)
-  const [selectedNav, setSelectedNav] = useState<NavKey | null>(null)
-  const [avatarSrc] = useState<string>(avatarMeasure)
+
 
   const openSkinRight = (
     location.state as { openSkinRight?: boolean } | undefined
@@ -234,7 +246,7 @@ export default function UnrealMeasurements() {
         )}
       />
 
-      <div className={`${styles.centralWrapper} ${selectedNav ? styles.withAccordion : ''}`}>
+      <div className={`${styles.centralWrapper} ${selectedNav ? styles.withAccordion : ''} ${selectedNav === 'Body' ? styles.accBody : ''} ${selectedNav === 'Face' ? styles.accFace : ''} ${selectedNav === 'Skin' ? styles.accSkin : ''} ${selectedNav === 'Hair' ? styles.accHair : ''} ${selectedNav === 'Extras' ? styles.accExtras : ''}`}>
         <div className={`${styles.avatarSection} ${selectedNav ? styles.avatarShifted : ''} ${selectedNav === 'Body' ? styles.bodySelected : ''} ${selectedNav === 'Face' ? styles.faceSelected : ''} ${selectedNav === 'Skin' ? styles.skinSelected : ''} ${selectedNav === 'Hair' ? styles.hairSelected : ''} ${selectedNav === 'Extras' ? styles.extrasSelected : ''}`}>
           <img src={avatarImage} alt="Avatar" className={styles.avatarImage} />
 
@@ -265,31 +277,31 @@ export default function UnrealMeasurements() {
         )}
       </div>
       {selectedNav === 'Body' && (
-        <div className={styles.accordion}>
+        <div ref={accordionRef} className={styles.accordion}>
           <BodyAccordion updateMorph={updateMorph} />
         </div>
       )}
 
       {selectedNav === 'Face' && (
-        <div className={styles.accordion}>
+        <div ref={accordionRef} className={styles.accordion}>
           <FaceAccordion />
         </div>
       )}
 
       {selectedNav === 'Skin' && (
-        <div className={styles.accordion}>
+        <div ref={accordionRef} className={styles.accordion}>
           <SkinAccordion defaultRightExpanded={openSkinRight} />
         </div>
       )}
 
       {selectedNav === 'Hair' && (
-        <div className={styles.accordion}>
+        <div ref={accordionRef} className={styles.accordion}>
           <HairAccordion />
         </div>
       )}
 
       {selectedNav === 'Extras' && (
-        <div className={styles.accordion}>
+        <div ref={accordionRef} className={styles.accordion}>
           <ExtrasAccordion />
         </div>
       )}
