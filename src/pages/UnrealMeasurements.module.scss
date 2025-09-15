@@ -359,8 +359,9 @@ $design-w: 430; // jedan izvor istine
 /* —— desktop layout ostaje kako je —— */
 @include s.respond(xxl) {
   .page {
-    width: var(--page-width);
-    max-width: var(--page-max-width);
+    width: 100vw;
+    max-width: none;
+    margin-left: calc(50% - 50vw);
     height: 100svh;
     align-items: flex-start;
     position: relative;
@@ -385,8 +386,16 @@ $design-w: 430; // jedan izvor istine
 2px; }
   .accordion { width: 335px; height: calc(100% - 70px); position: absolute; top: 70px; right: 90px; }
   .bottomSection {
-    position: absolute; top: 70px; right: 0; width: 90px; height: calc(100% - 70px);
-    border-top: none; border-left: 1px solid #000; margin-bottom: 0; justify-content: flex-start;
+    position: absolute;
+    right: 0;
+    border-left: 1px solid #000; margin-bottom: 0; justify-content: flex-start;
+    top: calc(var(--header-real-h, 70px) + 20px);
+    width: 90px;
+    height: calc(100% - (var(--header-real-h, 70px) + 20px));
+    border-top: none;
+    border-left: 1px solid #000;
+    margin-bottom: 0;
+    justify-content: flex-start;
   }
   .bottomNav { width: 90px; height: 100%; flex-direction: column; margin-top: 0; align-items: center; }
   .navIndicator { top: 0; bottom: 0; left: 0; right: auto; width: 5px; height: 100%; }
