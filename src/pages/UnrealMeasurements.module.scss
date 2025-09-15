@@ -376,6 +376,7 @@ $design-w: 430; // jedan izvor istine
     justify-content: center;
     width: calc(100vw - 90px);
     height: calc(100vh - var(--header-real-h, 71px));
+    --panel-scale: calc(var(--avatar-h) / 953);
   }
   .centralWrapper.withAccordion { width: calc(100% - 90px - 335px); justify-content: flex-start; }
   .avatarShifted { margin-left: 123px; }
@@ -420,8 +421,14 @@ $design-w: 430; // jedan izvor istine
   .bodySelected { height: min(var(--avatar-h), 953px); justify-content: center; }
   .bodySelected::before { display: none; }
   .bodySelected .avatarImage { width: 100%; height: 100%; max-height: var(--avatar-h); }
-  .dataPanelWrapper { position: static; width: 273px; height: 774px; margin-left: 15px; margin-right: 22px; margin-top: 6
-2px; }
+  .dataPanelWrapper {
+    position: static;
+    width: 273px;
+    height: calc(750.75px * var(--panel-scale));
+    margin-left: 15px;
+    margin-right: calc(24px * var(--panel-scale));
+    margin-top: calc(62px * var(--panel-scale));
+  }
   .accordion { width: 335px; height: calc(100% - 70px); position: absolute; top: 70px; right: 90px; }
   .bottomSection {
     position: absolute;

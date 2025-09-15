@@ -111,7 +111,7 @@ $design-w: 430;
   .dataPanel {
     position: static;
     width: 273px;
-    height: 750.75px;
+    max-height: calc(750.75px * var(--panel-scale));
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
@@ -125,7 +125,7 @@ $design-w: 430;
   }
   .dataPanelContent {
     width: 273px;
-    height: 750px;
+    max-height: calc(750.75px * var(--panel-scale));
   }
   .dataPanelHeader p {
     font-size: 20px;
