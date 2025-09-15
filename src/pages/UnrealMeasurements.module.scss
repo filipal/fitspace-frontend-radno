@@ -58,9 +58,9 @@ $design-w: 430; // jedan izvor istine
 }
 
 .avatarButton {
-  inline-size: calc((30/ 430) * var(--page-w-px)); /* 32px @430 */
-  height: calc((19 / 430) * var(--page-w-px));
-  block-size:  calc((32 / 430) * var(--page-w-px));
+  inline-size: min(calc((30 / 430) * var(--page-w-px)), 30px);
+  height: min(calc((19 / 430) * var(--page-w-px)), 19px);
+  block-size: min(calc((19 / 430) * var(--page-w-px)), 19px);
   padding: 0;
   border: 0;
   background: transparent;
@@ -391,12 +391,12 @@ $design-w: 430; // jedan izvor istine
     border-left: 1px solid #000; margin-bottom: 0; justify-content: flex-start;
     top: calc(var(--header-real-h, 70px) + 20px);
     width: 90px;
-    height: calc(100% - (var(--header-real-h, 70px) + 20px));
     border-top: none;
     border-left: 1px solid #000;
     margin-bottom: 0;
     justify-content: flex-start;
   }
+  .bottomNav { margin-top: 20px; }
   .bottomNav { width: 90px; height: 100%; flex-direction: column; margin-top: 0; align-items: center; }
   .navIndicator { top: 0; bottom: 0; left: 0; right: auto; width: 5px; height: 100%; }
   .navButton { width: 90px; height: 90px; }
