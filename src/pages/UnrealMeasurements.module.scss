@@ -370,7 +370,7 @@ $design-w: 430; // jedan izvor istine
     flex-direction: row;
     align-items: flex-start;
     width: calc(100% - 90px);
-    height: calc(100% - 70px);
+    height: calc(100% - var(--header-real-h, 71px));
     justify-content: center;
     padding-left: 0;
     margin-bottom: cqw(9);
@@ -389,7 +389,8 @@ $design-w: 430; // jedan izvor istine
     position: absolute;
     right: 0;
     border-left: 1px solid #000; margin-bottom: 0; justify-content: flex-start;
-    top: calc(var(--header-real-h, 70px) + 20px);
+    top: var(--header-real-h, 71px);
+    height: calc(100% - var(--header-real-h, 71px));
     width: 90px;
     border-top: none;
     border-left: 1px solid #000;
