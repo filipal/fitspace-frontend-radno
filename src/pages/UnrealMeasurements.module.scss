@@ -417,9 +417,9 @@ $design-w: 430; // jedan izvor istine
     border-width: 2px;
   }
 
-  .bodySelected { height: 953px; justify-content: center; }
+  .bodySelected { height: min(var(--avatar-h), 953px); justify-content: center; }
   .bodySelected::before { display: none; }
-  .bodySelected .avatarImage { width: 100%; height: 100%; }
+  .bodySelected .avatarImage { width: 100%; height: 100%; max-height: var(--avatar-h); }
   .dataPanelWrapper { position: static; width: 273px; height: 774px; margin-left: 15px; margin-right: 22px; margin-top: 6
 2px; }
   .accordion { width: 335px; height: calc(100% - 70px); position: absolute; top: 70px; right: 90px; }
