@@ -175,7 +175,8 @@ export default function BodyAccordion({ updateMorph }: BodyAccordionProps) {
       ? (scrollIndex / maxScroll) * (trackSmall - fillH)
       : 0
   }
-  const view = isLarge ? list : list.slice(scrollIndex, scrollIndex + VISIBLE)
+  // Mobile: prikaži cijeli popis i oslanjaj se na nativni scroll (.rows overflow-y: auto)
+  const view = list
   // Slider row component
   // Function to convert slider percentage into morph value
 

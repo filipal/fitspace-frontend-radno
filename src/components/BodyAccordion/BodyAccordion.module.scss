@@ -17,7 +17,7 @@ $design-w: 430;
   block-size: #{cqw(171)};
   background: #ececec;
   backdrop-filter: blur(#{cqw(4)});
-/*   box-shadow: 0 #{cqw(4)} #{cqw(10)} rgba(0,0,0,.25); */
+  box-shadow: 0 #{cqw(4)} #{cqw(10)} rgba(0,0,0,.25);
   display: flex; 
   align-items: stretch;
   font-family: 'Outfit', sans-serif;
@@ -99,43 +99,6 @@ $design-w: 430;
   position:relative;
 }
 
-/* WEB ≥ 600px: desktop raspored kao na 1440 */
-@media (min-width: 600px) {
-  /* Glavni layout: lijevi blok (strelice + stack) i desni blok (kontrole) u retku */
-  .container { flex-direction: row !important; inline-size: 100%; block-size: auto; align-items: center; }
-  .leftSection { inline-size: auto !important; display: flex; align-items: center; justify-content: center; }
-
-  /* Strelice horizontalne (lijevo-desno), bez vertikalne rotacije */
-  .arrowUp img { transform: none; }
-  .arrowDown img { transform: none; }
-
-  /* Stack horizontalan, fiksne širine 210px */
-  .stack {
-    inline-size: 210px !important;
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: max-content;
-    column-gap: 8px;
-    grid-template-rows: none;
-  }
-
-  /* Desni blok dimenzioniraj prema zahtjevu */
-  .rightInner { inline-size: 294px !important; block-size: auto; gap: 6px; }
-  .rows { gap: 8px; }
-  .row {
-    display: grid;
-    grid-template-columns: 236px 58px;   /* sliderGroup | rowPct */
-    grid-template-rows: auto 30px;       /* label iznad, pa slider+postotak */
-    align-items: center;
-    row-gap: 4px;
-  }
-  .rowLabel { grid-column: 1 / -1; font-size: 14px; }
-  .sliderGroup { inline-size: 236px !important; block-size: 30px !important; }
-  .sliderBar   { inline-size: 236px !important; block-size: 10px !important;   background: transparent !important;/*  box-shadow: inset 0 0 0 1px #000 !important; */ }
-  .sliderThumb { inline-size: 30px !important;  block-size: 30px !important; }
-  .rowPct { font-size: 10px; justify-self: end; }
-}
-
 .rightInner {
   inline-size: #{cqw(330)};
   block-size: #{cqw(140)};
@@ -191,7 +154,7 @@ $design-w: 430;
   block-size: #{cqw(10)};
   background: transparent;
   border-radius: #{cqw(10)};
-/*   box-shadow: inset 0 0 0 #{cqw(1.5)} #000; */
+  box-shadow: inset 0 0 0 #{cqw(1.5)} #000;
   touch-action: none;
 }
 
@@ -219,31 +182,84 @@ $design-w: 430;
 }
 
 /* Vertical indicator 130x3, 10px from right edge */
-.vTrack {
-  position: absolute;
-  top: #{cqw(10)}; 
-  right: #{cqw(10)};
-  inline-size: #{cqw(3)}; 
-  block-size: #{cqw(130)};
-  display:flex; 
-  align-items:flex-start; 
-  justify-content:center;
+.vTrack { position: absolute; display: none; pointer-events: auto; }
+.vBar  { position:absolute; inline-size: 3px; height: 100%; background:#000; opacity:.2; pointer-events: none; }
+.vFill { position:absolute; left:0; inline-size: 3px; background:#000; border-radius: #{cqw(2)}; pointer-events: none; }
+
+/* WEB ≥ 600px: desktop raspored kao na 1440 */
+@media (min-width: 600px) {
+  /* Glavni layout: kao na 1440 — left na vrhu, fiksnih 335×129; right ispod fleksibilan */
+  .container { width: 335px; height: 100%; display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; }
+  .leftSection { width: 100%; flex: 0 0 129px; height: 129px; display: flex; align-items: center; justify-content: center; }
+  .left { width: 100%; height: 100%; display: flex; flex-direction: row; align-items: center; padding: 0 35px; margin: 0; gap: 8px; justify-content: center; box-sizing: border-box; }
+  .arrowBtn { width: 24px; height: 18px; padding: 0; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+  .arrowUp img { transform: rotate(180deg); }
+  .arrowDown img { transform: rotate(0deg); }
+  .arrowBtn img { width: 24px; height: 18px; display: block; }
+  .stack { display: inline-flex; flex: 0 0 auto; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin: 0; width: 210px; }
+  .right { width: 100%; flex: 1 1 auto; height: auto; min-height: 0; position: relative; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; padding: 0; box-sizing: border-box; }
+  .rightInner { width: 100%; flex: 1 1 auto; height: auto; min-height: 0; box-sizing: border-box; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 20px; overflow: hidden; }
+  .rows { margin: 0; width: 100%; display: flex; flex-direction: column; margin-top: 20px; gap: 20px; flex: 1 1 auto; overflow-y: auto; }
+  /* Jedan row: 294×49, centriran; red 1 = label (14px), red 2 = slider(250) + pct (44) → 30px */
+  .row {
+    width: 294px;
+    height: 49px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 250px 44px;
+    grid-template-rows: 14px 30px;
+    row-gap: 5px; /* 14 + 30 + 5 = 49 */
+    align-items: center;
+  }
+  .rowLabel {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    margin: 0;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 14px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .sliderGroup { grid-column: 1; grid-row: 2; width: 250px; height: 30px; display: flex; align-items: center; position: relative; }
+  .sliderBar   { width: 250px; height: 10px; background: transparent; box-shadow: inset 0 0 0 1px #000; }
+  .sliderThumb { width: 30px; height: 30px; top: 50%; transform: translate(-50%, -50%); }
+  .rowPct { grid-column: 2; grid-row: 2; align-self: center; justify-self: end; width: auto; font-size: 10px; line-height: 14px; text-align: right; padding: 0; }
+
+  /* Strelice horizontalne (lijevo-desno), bez vertikalne rotacije */
+  .arrowUp img { transform: none; }
+  .arrowDown img { transform: none; }
+
+  /* Stack horizontalan, fiksne širine 210px */
+  .stack {
+    inline-size: 210px !important;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    column-gap: 8px;
+    grid-template-rows: none;
+  }
+
+  /* Desni blok dimenzioniraj prema zahtjevu */
+  .rightInner { inline-size: 294px !important; block-size: auto; gap: 6px; }
+  .rows { gap: 8px; }
+  .row {
+    display: grid;
+    grid-template-columns: 236px 58px;   /* sliderGroup | rowPct */
+    grid-template-rows: auto 30px;       /* label iznad, pa slider+postotak */
+    align-items: center;
+    row-gap: 4px;
+  }
+  .rowLabel { grid-column: 1 / -1; font-size: 14px; }
+  .sliderGroup { inline-size: 236px !important; block-size: 30px !important; }
+  .sliderBar   { inline-size: 236px !important; block-size: 10px !important;   background: transparent !important; border-radius: 5px !important; box-shadow: inset 0 0 0 1px #000 !important; }
+  .container { box-shadow: inset 0 0 0 1px #000 !important; }
+  .sliderThumb { inline-size: 30px !important;  block-size: 30px !important; }
+  .rowPct { font-size: 10px; justify-self: end; }
 }
 
-.vBar  { 
-  position:absolute; 
-  inline-size: #{cqw(3)}; 
-  block-size: #{cqw(130)}; 
-  background:#000; 
-  opacity:.2; 
-}
-.vFill { 
-  position:absolute; 
-  left:0; 
-  inline-size: #{cqw(3)}; 
-  background:#000; 
-  border-radius: #{cqw(2)}; 
-}
 
 @media (min-width: 1440px) {
   .container {
@@ -251,6 +267,7 @@ $design-w: 430;
     height: 100%;
     display: flex;
     flex-direction: column;
+    box-shadow: inset 0 0 0 1px #000;
   }
 
   .leftSection {
@@ -352,6 +369,10 @@ $design-w: 430;
     flex: 1 1 auto;
     overflow-y: auto;
   }
+  /* Sakrij native scrollbar; koristimo custom rail. Ne prekrivaj sadržaj railom */
+  .right { overflow: hidden; padding-right: 6px; }
+  .rows { scrollbar-width: none; }
+  .rows::-webkit-scrollbar { width: 0; height: 0; }
 
   .row {
     display: flex;
@@ -406,15 +427,8 @@ $design-w: 430;
 
   .vTrack { display: none; }
 
-  .right.scrollable .vTrack {
-    display: flex;
-    position: absolute;
-    top: 20px;
-    right: 8px;
-    height: calc(100% - 40px);
-  }
-
-  .right.scrollable .vBar,
-  .right.scrollable .vFill { height: 100%; }
+  .right.scrollable .vTrack { display: flex; position: absolute; top: 20px; right: 0; width: 3px; height: calc(100% - 40px); z-index: 3; }
 
 }
+  .right.scrollable .vBar,
+  .right.scrollable .vFill { height: 100%; }
