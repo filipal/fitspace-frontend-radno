@@ -17,7 +17,6 @@ $design-w: 430;
   block-size: #{cqw(171)};
   background: #ececec;
   backdrop-filter: blur(#{cqw(4)});
-  box-shadow: 0 #{cqw(4)} #{cqw(10)} rgba(0,0,0,.25);
   display: flex; 
   align-items: stretch;
   font-family: 'Outfit', sans-serif;
@@ -32,7 +31,7 @@ $design-w: 430;
 
 .left {
   inline-size: #{cqw(42)};
-  block-size: #{cqw(150)};
+  block-size: calc(100% - #{cqw(22)});
   /* margin-left: #{cqw(19)}; */
   display: grid;
   grid-template-rows: #{cqw(25)} 1fr #{cqw(25)};
@@ -198,9 +197,9 @@ $design-w: 430;
   .left { width: 100%; height: 100%; display: flex; flex-direction: row; align-items: center; padding: 0 35px; margin: 0; gap: 8px; justify-content: center; box-sizing: border-box; }
   .arrowBtn { width: 24px; height: 18px; padding: 0; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
   .arrowBtn img { width: 24px; height: 18px; display: block; }
-  .right { width: 100%; flex: 1 1 auto; height: 100%; min-height: 0; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 0; box-sizing: border-box; overflow: hidden; }
+  .right { width: 100%; flex: 1 1 auto; height: 100%; min-height: 0; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 0; box-sizing: border-box; overflow: hidden; --visible-rows-height: calc(5 * 49px + 4 * 8px); }
   .rightInner { width: 294px; flex: 1 1 auto; height: 100%; min-height: 0; box-sizing: border-box; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 6px; overflow: hidden; }
-  .rows { margin: 0; width: 100%; display: flex; flex-direction: column; margin-top: 20px; gap: 8px; flex: 1 1 auto; overflow-y: auto; scrollbar-width: none; padding-right: 6px; box-sizing: border-box; }
+  .rows { margin: 0; width: 100%; display: flex; flex-direction: column; margin-top: 20px; gap: 8px; flex: 1 1 auto; max-height: var(--visible-rows-height); overflow-y: auto; scrollbar-width: none; padding-right: 6px; box-sizing: border-box; }
   .rows::-webkit-scrollbar { width: 0; height: 0; }
   /* Jedan row: 294×49, centriran; red 1 = label (14px), red 2 = slider(250) + pct (44) → 30px */
   .row {
@@ -233,8 +232,9 @@ $design-w: 430;
   .rowPct { grid-column: 2; grid-row: 2; align-self: center; justify-self: end; width: 28px; font-size: 10px; line-height: 14px; text-align: right; padding: 0; }
 
   /* Strelice horizontalne (lijevo-desno), bez vertikalne rotacije */
-  .arrowUp img { transform: none; }
+  .arrowUp img { transform: rotate(180deg); }
   .arrowDown img { transform: none; }
+
 
   /* Stack horizontalan, fiksne širine 210px */
   .stack {
@@ -245,5 +245,12 @@ $design-w: 430;
     column-gap: 8px;
     grid-template-rows: none;
   }
-  .right.scrollable .vTrack { display: flex; position: absolute; top: 20px; right: 6px; width: 3px; height: calc(100% - 40px); z-index: 3; }
+
+.topSmall { font-size: 9px; }
+.upper { font-size: 15px; }
+.selected { font-size: 26px; }
+.lower { font-size: fsz(13); opacity: .7; }
+.bottomSmall { font-size: fsz(11); opacity: .2; }
+
+  .right.scrollable .vTrack { display: flex; position: absolute; top: 20px; right: 6px; width: 3px; height: var(--visible-rows-height); z-index: 3; }
 }
