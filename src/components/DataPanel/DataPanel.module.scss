@@ -111,24 +111,29 @@ $design-w: 430;
   .dataPanel {
     position: static;
     width: 273px;
-    max-height: calc(750.75px * var(--panel-scale));
+    min-height: 0;
+    height: calc(750.75px * var(--panel-scale, 1));
+    max-height: 750.75px;
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
   }
   .dataPanelHeader {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     width: 100%;
-    height: auto;
-    margin-top: 0;
+    margin: 0;
+    padding: calc(18px * var(--panel-scale, 1)) calc(16px * var(--panel-scale, 1));
     box-sizing: border-box;
   }
   .dataPanelContent {
-    width: 273px;
-    max-height: calc(750.75px * var(--panel-scale));
+    flex: 1 1 auto;
+    width: 100%;
+    max-height: none;
+    overflow-y: auto;
+    min-height: 0;
   }
   .dataPanelHeader p {
-    font-size: 20px;
+    font-size: clamp(14px, calc(20px * var(--panel-scale, 1)), 20px);
     font-weight: 400;
     margin: 0;
     color: #000;
@@ -136,51 +141,51 @@ $design-w: 430;
   .measurementItem {
     display: flex;
     align-items: center;
-    height: 13.65px;
-    margin-bottom: 16.68px; // Razmak između redova
-    padding: 0 15.17px;
+    height: calc(13.65px * var(--panel-scale, 1));
+    padding: 0 calc(15.17px * var(--panel-scale, 1));
   }
 
   .measurementIcon {
-    width: 30.42px;
-    height: 15.35px; // Maksimalna visina
+    width: calc(30.42px * var(--panel-scale, 1));
+    height: calc(15.35px * var(--panel-scale, 1)); // Maksimalna visina
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    margin-right: 15.17px; // 15px razmak između ikone i teksta
+    margin-right: calc(15.17px * var(--panel-scale, 1)); // 15px razmak između ikone i teksta
   }
 
   .measurementIcon img {
-    max-width: 30.42px;
-    max-height: 15.35px;
+    max-width: calc(30.42px * var(--panel-scale, 1));
+    max-height: calc(15.35px * var(--panel-scale, 1));
     object-fit: contain;
   }
   .measurementName {
     flex: 1;
-    height: 15.35px;
-    font-size: 18px;
+    height: calc(15.35px * var(--panel-scale, 1));
+    font-size: clamp(14px, calc(18px * var(--panel-scale, 1)), 18px);
     font-weight: 500;
     color: #000;
-    line-height: 15.35px;
-    margin-right: 10px; // 10px razmak između teksta i broja
+    line-height: calc(15.35px * var(--panel-scale, 1));
+    margin-right: calc(10px * var(--panel-scale, 1)); // 10px razmak između teksta i broja
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   .measurementValue {
-    height: 15.35px;
-    font-size: 18px;
+    height: calc(15.35px * var(--panel-scale, 1));
+    font-size: clamp(14px, calc(18px * var(--panel-scale, 1)), 18px);
     font-weight: 400;
     color: #000;
-    line-height: 15.35px;
+    line-height: calc(15.35px * var(--panel-scale, 1));
     text-align: right;
     margin-left: auto;
     font-variant-numeric: tabular-nums;
     min-width: 3.5ch;
   }
   .measurementsList {
-    padding: 16.68px 0 0 0; // Prvi red na 16.68px od gornje margine
+    padding: calc(16.68px * var(--panel-scale, 1)) 0 0 0; // Prvi red na 16.68px od gornje margine
+    gap: calc(16.68px * var(--panel-scale, 1));
+    justify-content: flex-start;
   }
 
 }
-
