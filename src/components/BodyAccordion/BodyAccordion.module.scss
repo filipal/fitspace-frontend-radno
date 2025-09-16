@@ -126,13 +126,15 @@ $design-w: 430;
 
 .row {
   inline-size: 100%;
-  display:grid;
-  grid-template-columns: 1fr #{cqw(170)} #{cqw(50)}; /* label | slider | % */
+  display: grid;
+  /* label | spacer | slider | % */
+  grid-template-columns: 1fr #{cqw(10)} #{cqw(170)} #{cqw(50)};
   align-items: center;
-  gap: #{cqw(10)};
+  gap: 0;
 }
 
 .rowLabel { 
+  grid-column: 1;
   font-size: fsz(10, .8);   /* dopusti do 80% ako baš treba */
   line-height: 1;
   white-space: nowrap;
@@ -141,6 +143,7 @@ $design-w: 430;
 }
 
 .sliderGroup {
+  grid-column: 3;
   inline-size: #{cqw(170)}; 
   block-size: #{cqw(25)}; 
   display:flex; 
@@ -175,10 +178,11 @@ $design-w: 430;
 }
 
 .rowPct {
+  grid-column: 4;
   text-align: right;
   font-size: clamp(9px, #{cqw(10)}, 14px);
-  padding-right: #{cqw(4)};
-  margin-right: #{cqw(10)};
+  padding-right: 0;
+  margin-right: 0;
 }
 
 /* Vertical indicator 130x3, 10px from right edge */
@@ -193,27 +197,27 @@ $design-w: 430;
   .leftSection { width: 100%; flex: 0 0 129px; height: 129px; display: flex; align-items: center; justify-content: center; }
   .left { width: 100%; height: 100%; display: flex; flex-direction: row; align-items: center; padding: 0 35px; margin: 0; gap: 8px; justify-content: center; box-sizing: border-box; }
   .arrowBtn { width: 24px; height: 18px; padding: 0; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
-  .arrowUp img { transform: rotate(180deg); }
-  .arrowDown img { transform: rotate(0deg); }
   .arrowBtn img { width: 24px; height: 18px; display: block; }
-  .stack { display: inline-flex; flex: 0 0 auto; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; margin: 0; width: 210px; }
-  .right { width: 100%; flex: 1 1 auto; height: auto; min-height: 0; position: relative; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; padding: 0; box-sizing: border-box; }
-  .rightInner { width: 100%; flex: 1 1 auto; height: auto; min-height: 0; box-sizing: border-box; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 20px; overflow: hidden; }
-  .rows { margin: 0; width: 100%; display: flex; flex-direction: column; margin-top: 20px; gap: 20px; flex: 1 1 auto; overflow-y: auto; }
+  .right { width: 100%; flex: 1 1 auto; height: 100%; min-height: 0; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 0; box-sizing: border-box; overflow: hidden; }
+  .rightInner { width: 294px; flex: 1 1 auto; height: 100%; min-height: 0; box-sizing: border-box; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 6px; overflow: hidden; }
+  .rows { margin: 0; width: 100%; display: flex; flex-direction: column; margin-top: 20px; gap: 8px; flex: 1 1 auto; overflow-y: auto; scrollbar-width: none; padding-right: 6px; box-sizing: border-box; }
+  .rows::-webkit-scrollbar { width: 0; height: 0; }
   /* Jedan row: 294×49, centriran; red 1 = label (14px), red 2 = slider(250) + pct (44) → 30px */
   .row {
     width: 294px;
     height: 49px;
     margin: 0 auto;
     display: grid;
-    grid-template-columns: 250px 44px;
+    grid-template-columns: 250px 28px;
+    column-gap: 16px;
     grid-template-rows: 14px 30px;
     row-gap: 5px; /* 14 + 30 + 5 = 49 */
     align-items: center;
   }
   .rowLabel {
-    grid-column: 1 / -1;
+    grid-column: 1;
     grid-row: 1;
+    width: 250px;
     margin: 0;
     font-size: 14px;
     font-weight: 400;
@@ -223,10 +227,10 @@ $design-w: 430;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .sliderGroup { grid-column: 1; grid-row: 2; width: 250px; height: 30px; display: flex; align-items: center; position: relative; }
-  .sliderBar   { width: 250px; height: 10px; background: transparent; box-shadow: inset 0 0 0 1px #000; }
+  .sliderGroup { grid-column: 1; grid-row: 2; width: 250px; height: 30px; display: flex; align-items: center; justify-content: center; position: relative; }
+  .sliderBar   { width: 236px; height: 10px; margin: 0 auto; background: transparent; box-shadow: inset 0 0 0 1px #000; }
   .sliderThumb { width: 30px; height: 30px; top: 50%; transform: translate(-50%, -50%); }
-  .rowPct { grid-column: 2; grid-row: 2; align-self: center; justify-self: end; width: auto; font-size: 10px; line-height: 14px; text-align: right; padding: 0; }
+  .rowPct { grid-column: 2; grid-row: 2; align-self: center; justify-self: end; width: 28px; font-size: 10px; line-height: 14px; text-align: right; padding: 0; }
 
   /* Strelice horizontalne (lijevo-desno), bez vertikalne rotacije */
   .arrowUp img { transform: none; }
@@ -241,194 +245,5 @@ $design-w: 430;
     column-gap: 8px;
     grid-template-rows: none;
   }
-
-  /* Desni blok dimenzioniraj prema zahtjevu */
-  .rightInner { inline-size: 294px !important; block-size: auto; gap: 6px; }
-  .rows { gap: 8px; }
-  .row {
-    display: grid;
-    grid-template-columns: 236px 58px;   /* sliderGroup | rowPct */
-    grid-template-rows: auto 30px;       /* label iznad, pa slider+postotak */
-    align-items: center;
-    row-gap: 4px;
-  }
-  .rowLabel { grid-column: 1 / -1; font-size: 14px; }
-  .sliderGroup { inline-size: 236px !important; block-size: 30px !important; }
-  .sliderBar   { inline-size: 236px !important; block-size: 10px !important;   background: transparent !important; border-radius: 5px !important; box-shadow: inset 0 0 0 1px #000 !important; }
-  .container { box-shadow: inset 0 0 0 1px #000 !important; }
-  .sliderThumb { inline-size: 30px !important;  block-size: 30px !important; }
-  .rowPct { font-size: 10px; justify-self: end; }
+  .right.scrollable .vTrack { display: flex; position: absolute; top: 20px; right: 6px; width: 3px; height: calc(100% - 40px); z-index: 3; }
 }
-
-
-@media (min-width: 1440px) {
-  .container {
-    width: 335px;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    box-shadow: inset 0 0 0 1px #000;
-  }
-
-  .leftSection {
-    width: 100%;
-    flex: 0 0 130px;           /* fiksno 130px */
-    height: 130px;
-    display: flex;
-    align-items: center;
-  }
-
-  .left {
-    width: 100%;
-    height: 100%;              /* preuzima 130px od .leftSection */
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    padding: 0 35px;
-    margin: 0;
-    gap: 8px;
-    justify-content: center;
-    box-sizing: border-box;
-  }
-
-  .arrowBtn {
-    width: 24px;
-    height: 18px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 auto;
-  }
-
-  .arrowUp img { transform: rotate(180deg); }
-  .arrowDown img { transform: rotate(0deg); }
-  .arrowBtn img {
-    width: 24px;
-    height: 18px;
-    display: block;
-  }
-
-  .stack {
-    display: inline-flex;
-    flex: 0 0 auto;
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 8px;          /* razmak između itema */
-    margin: 0;
-    width: auto;
-  }
-
-  .stack > * {
-    flex: 0 0 auto;
-  }
-  .item { max-width: none; }
-
-  .topSmall { font-size: 9px; opacity: 0.2; }
-  .upper { font-size: 15px; opacity: 0.7; }
-  .selected { font-size: 26px; font-weight: 400; opacity: 1; }
-  .lower { font-size: 15px; opacity: 0.7; }
-  .bottomSmall { font-size: 9px; opacity: 0.2; }
-
-  .right {
-    width: 100%;
-    flex: 1 1 auto;
-    height: auto;              /* poništava height:171 iz base */
-    min-height: 0;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-start;
-    padding: 0;                /* nema dodatnog vertikalnog offset-a ovdje */
-    box-sizing: border-box;
-  }
-
-  .rightInner {
-    width: 100%;
-    flex: 1 1 auto;
-    height: auto;              /* poništava fiksnih 140px iz base */
-    min-height: 0;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-start;
-    gap: 20px;
-    overflow: hidden;
-  }
-
-  .rows {
-    margin: 0;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    margin-top: 20px;
-    gap: 20px;
-    flex: 1 1 auto;
-    overflow-y: auto;
-  }
-  /* Sakrij native scrollbar; koristimo custom rail. Ne prekrivaj sadržaj railom */
-  .right { overflow: hidden; padding-right: 6px; }
-  .rows { scrollbar-width: none; }
-  .rows::-webkit-scrollbar { width: 0; height: 0; }
-
-  .row {
-    display: flex;
-    flex-wrap: wrap;
-    align-content: flex-start;
-    height: 49px;
-  }
-
-  .rowLabel {
-    flex: 0 0 100%;
-    margin: 0 0 6px 35px;
-    font-size: 14px;
-    font-weight: 400;
-    line-height: 14px;
-    max-width: calc(100% - 35px - 35px);
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .sliderGroup {
-    margin-left: 35px;
-    width: 236px;
-    height: 25px;
-    display: flex;
-    align-items: center;
-    position: relative;
-  }
-
-  .sliderBar {
-    width: 236px;
-    height: 10px;
-    
-  }
-
-  .sliderThumb {
-    top: 50%;
-    transform: translate(-50%, -50%);
-  }
-
-  .rowPct {
-    position: relative;
-    top: 8px;              /* spušta tekst da baseline sjedne na dno sliderGroup */
-    margin-left: 10px;
-    width: 26px;
-    font-size: 10px;
-    line-height: 14px;
-    text-align: right;
-    padding: 0;
-  }
-
-  .vTrack { display: none; }
-
-  .right.scrollable .vTrack { display: flex; position: absolute; top: 20px; right: 0; width: 3px; height: calc(100% - 40px); z-index: 3; }
-
-}
-  .right.scrollable .vBar,
-  .right.scrollable .vFill { height: 100%; }
