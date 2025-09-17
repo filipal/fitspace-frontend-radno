@@ -21,7 +21,7 @@ $design-w: 430; // jedan izvor istine
   container-type: inline-size;
   position: relative;   /* ⟵ referenca za apsolutno pozicioniranje */
   width: 100%;
-  max-width: calc(var(--design-w) * 1px);
+  max-width: 100%;
   min-height: 100dvh;
   margin: 0 auto;
   display: flex;
@@ -226,6 +226,7 @@ $design-w: 430; // jedan izvor istine
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
   border-radius: 0 !important;
   -webkit-text-size-adjust: none;
   text-size-adjust: none;
@@ -293,8 +294,19 @@ $design-w: 430; // jedan izvor istine
 /* Bottom nav sekcija */
 .bottomSection {
   width: 100%;
-  max-width: 430px;
-  height: calc(cqw(60) + max(env(safe-area-inset-bottom, 0px), cqw(21)));
+  max-width: none;
+  --nav-scale: clamp(.75, calc(var(--page-w-px) / 430px), 2);
+  --nav-size: calc(60px * var(--nav-scale));
+  --nav-gap: calc(10px * var(--nav-scale));
+  --nav-track: calc(5px * var(--nav-scale));
+  --nav-label-h: clamp(18px, calc(20px * min(var(--nav-scale), 1)), 32px);
+  --nav-label-font: clamp(12px, calc(14px * min(var(--nav-scale), 1.1)), 20px);
+  --nav-icon-target: calc(31px * var(--nav-scale));
+  --nav-icon-max: calc(var(--nav-size) - var(--nav-track) - var(--nav-label-h) - 4px);
+  --nav-icon-h: clamp(16px, min(var(--nav-icon-target), var(--nav-icon-max)), calc(var(--nav-size) * .68));
+  --nav-icon-w: clamp(24px, calc(var(--nav-icon-h) * 1.35), calc(var(--nav-size) * .85));
+  --nav-icon-gap: clamp(2px, calc(2px * var(--nav-scale)), 8px);
+  height: calc(var(--nav-size) + max(env(safe-area-inset-bottom, 0px), calc(21px * var(--nav-scale))));
   border-top: 1px solid #000; /* border ostavi 1px zbog oštrine */
   display: flex;
   justify-content: center;
@@ -306,15 +318,15 @@ $design-w: 430; // jedan izvor istine
 
 .bottomNav {
   width: 100%;
-  max-width: cqw(410);
-  height: cqw(60);
+  max-width: calc(410px * var(--nav-scale));
+  height: var(--nav-size);
   display: flex;
   align-self: flex-start; /* poravnaj uz gornji rub roditelja */
 }
 
 .navButton {
-  width: cqw(60);
-  height: cqw(60);
+  width: var(--nav-size);
+  height: var(--nav-size);
   padding: 0;
   border: none;
   background: none;
@@ -328,7 +340,7 @@ $design-w: 430; // jedan izvor istine
 }
 
 .navButton:not(:first-child) {
-  margin-left: cqw(10);
+  margin-left: var(--nav-gap);
 }
 
 .navIndicator {
@@ -336,7 +348,7 @@ $design-w: 430; // jedan izvor istine
   top: 0;
   left: 0;
   right: 0;
-  height: cqw(5);
+  height: var(--nav-track);
   display: none;
 }
 
@@ -349,21 +361,22 @@ $design-w: 430; // jedan izvor istine
   display: flex;
   align-items: center;
   justify-content: center;
-  max-height: cqw(35);
+  width: var(--nav-icon-w);
+  height: var(--nav-icon-h);
   order: 2; // Stavlja ikonu u sredinu
-  margin-bottom: cqw(2);
+  margin-bottom: var(--nav-icon-gap);
 }
 
 .navIcon img {
-  max-width: cqw(42);
-  max-height: cqw(31);
-  width: auto;
-  height: auto;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
 }
 
 .navLabel {
-  height: cqw(20);
-  font-size: clamp(12px, cqw(14), 16px);
+  height: var(--nav-label-h);
+  font-size: var(--nav-label-font);
   color: inherit;           /* naslijedi crnu iz .navButton */
   white-space: nowrap;      /* izbjegni lom teksta u širinu */
   max-width: 100%;
@@ -375,31 +388,7 @@ $design-w: 430; // jedan izvor istine
   order: 3; // Stavlja label na dno
 }
 
-/* —— desktop layout ostaje kako je —— */
-/* WEB ≥600 i <1440: desni sidebar (accordion) s fiksnim širinama, visine kao centralni dio */
-@include s.respond(tablet) {
-  .accordion {
-    position: fixed;
-    right: 0;
-    top: var(--header-real-h, 70px);
-    height: calc(100svh - var(--header-real-h, 70px));
-    background: #ececec;
-    border-left: 1px solid #000;
-    z-index: 2;
-  }
-  .accBody   + .accordion { width: 335px; }
-  .accFace   + .accordion { width: 187px; }
-  .accSkin   + .accordion { width: 117px; }
-  .accHair   + .accordion { width: 187px; }
-  .accExtras + .accordion { width: 187px; }
-  .accBody   { --acc-w: 335px; --acc-gap: 24px; }
-  .accFace   { --acc-w: 187px; --acc-gap: 0px; }
-  .accSkin   { --acc-w: 117px; --acc-gap: 0px; }
-  .accHair   { --acc-w: 187px; --acc-gap: 0px; }
-  .accExtras { --acc-w: 187px; --acc-gap: 0px; }
-  .centralWrapper { padding-right: var(--acc-w, 0px); }
-}
-@include s.respond(xxl) {
+@include s.respond(tablet-xxl) {
   .page {
     width: 100vw;
     max-width: none;
@@ -423,6 +412,16 @@ $design-w: 430; // jedan izvor istine
     justify-content: flex-start;
     gap: clamp(15px, calc(24px * var(--desktop-gap-scale, 1)), 24px);
   }
+  .accBody   { --acc-w: 335px; --acc-gap: 24px; }
+  .accFace   { --acc-w: 187px; --acc-gap: 0px; }
+  .accSkin   { --acc-w: 117px; --acc-gap: 0px; }
+  .accHair   { --acc-w: 187px; --acc-gap: 0px; }
+  .accExtras { --acc-w: 187px; --acc-gap: 0px; }
+  .accBody   + .accordion { width: 335px; }
+  .accFace   + .accordion { width: 187px; }
+  .accSkin   + .accordion { width: 117px; }
+  .accHair   + .accordion { width: 187px; }
+  .accExtras + .accordion { width: 187px; }
   .avatarShifted { margin-left: clamp(20px, calc(123px * var(--desktop-gap-scale, 1)), 123px); }
 /*   .avatarSection { width: 604px; height: 953px; } */
   .avatarSection {
@@ -480,7 +479,15 @@ $design-w: 430; // jedan izvor istine
     align-self: flex-start;
     margin-top: clamp(10px, calc(62px * var(--panel-scale, 1)), 62px);
   }
-  .accordion { width: 335px; height: calc(100% - 70px); position: absolute; top: 70px; right: 90px; }
+  .accordion {
+    position: absolute;
+    top: var(--header-real-h, 70px);
+    right: 90px;
+    height: calc(100svh - var(--header-real-h, 70px));
+    background: #ececec;
+    border-left: 1px solid #000;
+    z-index: 2;
+  }
   .bottomSection {
     position: absolute;
     right: 0;

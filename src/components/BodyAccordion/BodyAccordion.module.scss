@@ -189,8 +189,8 @@ $design-w: 430;
 .vBar  { position:absolute; inline-size: 3px; height: 100%; background:#000; opacity:.2; pointer-events: none; }
 .vFill { position:absolute; left:0; inline-size: 3px; background:#000; border-radius: #{cqw(2)}; pointer-events: none; }
 
-/* WEB ≥ 600px: desktop raspored kao na 1440 */
-@media (min-width: 600px) {
+/* WEB ≥ 1024px: desktop raspored kao na 1440 */
+@media (min-width: 1024px) {
   /* Glavni layout: kao na 1440 — left na vrhu, fiksnih 335×129; right ispod fleksibilan */
   .container { width: 335px; height: 100%; display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; }
   .leftSection { width: 100%; flex: 0 0 129px; height: 129px; display: flex; align-items: center; justify-content: center; }
