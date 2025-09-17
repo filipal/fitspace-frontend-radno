@@ -491,17 +491,27 @@ $design-w: 430; /* jedan izvor istine */
   .bottomSection {
     position: absolute;
     right: 0;
-    border-left: 1px solid #000; margin-bottom: 0; justify-content: flex-start;
+    --nav-scale: 1.5;
+    --nav-size: 90px;
+    --nav-gap: calc(10px * var(--nav-scale));
+    --nav-track: calc(5px * var(--nav-scale));
+    --nav-label-h: clamp(18px, calc(20px * min(var(--nav-scale), 1)), 32px);
+    --nav-label-font: clamp(12px, calc(14px * min(var(--nav-scale), 1.1)), 20px);
+    --nav-icon-target: calc(31px * var(--nav-scale));
+    --nav-icon-max: calc(var(--nav-size) - var(--nav-track) - var(--nav-label-h) - 4px);
+    --nav-icon-h: clamp(16px, min(var(--nav-icon-target), var(--nav-icon-max)), calc(var(--nav-size) * .68));
+    --nav-icon-w: clamp(24px, calc(var(--nav-icon-h) * 1.35), calc(var(--nav-size) * .85));
+    --nav-icon-gap: clamp(2px, calc(2px * var(--nav-scale)), 8px);
     top: var(--header-real-h, 71px);
     height: calc(100% - var(--header-real-h, 71px));
-    width: 90px;
+    width: var(--nav-size);
     border-top: none;
     border-left: 1px solid #000;
     margin-bottom: 0;
     justify-content: flex-start;
   }
   .bottomNav {
-    width: 90px;
+    width: var(--nav-size);
     height: min(639px, calc(100% - 19.5px));
     flex-direction: column;
     align-items: center;
@@ -509,7 +519,7 @@ $design-w: 430; /* jedan izvor istine */
     overflow-y: auto;
   }
   .navIndicator { top: 0; bottom: 0; left: 0; right: auto; width: 5px; height: 100%; }
-  .navButton { width: 90px; height: 90px; }
+  .navButton { width: var(--nav-size); height: var(--nav-size); }
   .navButton:not(:first-child) { margin-left: 0; margin-top: 10px; }
 }
 
@@ -589,5 +599,21 @@ $design-w: 430; /* jedan izvor istine */
       100vh
     ) !important;
     z-index: 2 !important;
+  }
+
+  .bottomSection {
+    --nav-scale: clamp(.75, calc(var(--page-w-px) / 430px), 1.5);
+    --nav-size: calc(60px * var(--nav-scale));
+  }
+
+  .bottomNav {
+    width: 100%;
+    max-width: 100%;
+    justify-content: center;
+  }
+
+  .navButton {
+    width: var(--nav-size);
+    height: var(--nav-size);
   }
 }
