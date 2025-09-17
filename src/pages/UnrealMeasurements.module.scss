@@ -299,14 +299,12 @@ $design-w: 430; /* jedan izvor istine */
   --nav-size: calc(60px * var(--nav-scale));
   --nav-gap: calc(10px * var(--nav-scale));
   --nav-track: calc(5px * var(--nav-scale));
-  --nav-label-h: clamp(18px, calc(20px * min(var(--nav-scale), 1)), 32px);
+  --nav-label-h: clamp(15px, calc(20px * min(var(--nav-scale), 1)), 32px);
   --nav-label-font: clamp(12px, calc(14px * min(var(--nav-scale), 1.1)), 20px);
   --nav-icon-target: calc(31px * var(--nav-scale));
   --nav-icon-max: calc(var(--nav-size) - var(--nav-track) - var(--nav-label-h) - 4px);
-  --nav-icon-h: clamp(16px, min(var(--nav-icon-target), var(--nav-icon-max)), calc(var(--nav-size) * .68));
-  --nav-icon-w: clamp(24px, calc(var(--nav-icon-h) * 1.35), calc(var(--nav-size) * .85));
-  --nav-icon-gap: clamp(2px, calc(2px * var(--nav-scale)), 8px);
-  --nav-icon-top-gap: calc(var(--nav-track) + var(--nav-icon-gap));
+  --nav-icon-fallback-h: clamp(16px, min(var(--nav-icon-target), var(--nav-icon-max)), calc(var(--nav-size) * .68));
+  --nav-icon-fallback-w: clamp(24px, calc(var(--nav-icon-fallback-h) * 1.35), calc(var(--nav-size) * .85));
   height: calc(var(--nav-size) + max(env(safe-area-inset-bottom, 0px), calc(21px * var(--nav-scale))));
   border-top: 1px solid #000; /* border ostavi 1px zbog oštrine */
   display: flex;
@@ -338,6 +336,14 @@ $design-w: 430; /* jedan izvor istine */
   align-items: center;
   justify-content: flex-end; /* Poravnava sadržaj po dnu */
   position: relative; /* Allows absolute-positioned top indicator */
+  --nav-icon-base-h: var(--nav-icon-height, calc(var(--nav-icon-fallback-h) / var(--nav-scale)));
+  --nav-icon-base-w: var(--nav-icon-width, calc(var(--nav-icon-fallback-w) / var(--nav-scale)));
+  --nav-icon-h: calc(var(--nav-icon-base-h) * var(--nav-scale));
+  --nav-icon-w: calc(var(--nav-icon-base-w) * var(--nav-scale));
+  --nav-icon-available-h: calc(var(--nav-size) - var(--nav-track) - var(--nav-label-h));
+  --nav-icon-free-space: max(0px, calc(var(--nav-icon-available-h) - var(--nav-icon-h)));
+  --nav-icon-top-gap: calc(var(--nav-track) + var(--nav-icon-free-space) / 2);
+  --nav-icon-bottom-gap: calc(var(--nav-icon-free-space) / 2);
 }
 
 .navButton:not(:first-child) {
@@ -366,12 +372,14 @@ $design-w: 430; /* jedan izvor istine */
   height: var(--nav-icon-h);
   order: 2; /* Stavlja ikonu u sredinu */
   margin-top: var(--nav-icon-top-gap);
-  margin-bottom: var(--nav-icon-gap);
+  margin-bottom: var(--nav-icon-bottom-gap);
 }
 
 .navIcon img {
-  width: 100%;
-  height: 100%;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
   object-position: center;
 }
@@ -497,14 +505,12 @@ $design-w: 430; /* jedan izvor istine */
     --nav-size: 90px;
     --nav-gap: calc(10px * var(--nav-scale));
     --nav-track: calc(5px * var(--nav-scale));
-    --nav-label-h: clamp(18px, calc(20px * min(var(--nav-scale), 1)), 32px);
+    --nav-label-h: clamp(15px, calc(20px * min(var(--nav-scale), 1)), 32px);
     --nav-label-font: clamp(12px, calc(14px * min(var(--nav-scale), 1.1)), 20px);
     --nav-icon-target: calc(31px * var(--nav-scale));
     --nav-icon-max: calc(var(--nav-size) - var(--nav-track) - var(--nav-label-h) - 4px);
-    --nav-icon-h: clamp(16px, min(var(--nav-icon-target), var(--nav-icon-max)), calc(var(--nav-size) * .68));
-    --nav-icon-w: clamp(24px, calc(var(--nav-icon-h) * 1.35), calc(var(--nav-size) * .85));
-    --nav-icon-gap: clamp(2px, calc(2px * var(--nav-scale)), 8px);
-    --nav-icon-top-gap: calc(var(--nav-track) + var(--nav-icon-gap));
+    --nav-icon-fallback-h: clamp(16px, min(var(--nav-icon-target), var(--nav-icon-max)), calc(var(--nav-size) * .68));
+    --nav-icon-fallback-w: clamp(24px, calc(var(--nav-icon-fallback-h) * 1.35), calc(var(--nav-size) * .85));
     top: var(--header-real-h, 71px);
     height: calc(100% - var(--header-real-h, 71px));
     width: var(--nav-size);
@@ -607,7 +613,6 @@ $design-w: 430; /* jedan izvor istine */
   .bottomSection {
     --nav-scale: clamp(.75, calc(var(--page-w-px) / 430px), 1.5);
     --nav-size: calc(60px * var(--nav-scale));
-    --nav-icon-top-gap: calc(var(--nav-track) + var(--nav-icon-gap));
   }
 
   .bottomNav {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef, type ComponentType, type SVGProps } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, type ComponentType, type SVGProps, type CSSProperties } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import Header from '../components/Header/Header'
 import { usePixelStreaming } from '../context/PixelStreamingContext'
@@ -38,6 +38,8 @@ interface NavButton {
   key: NavKey
   icon: string
   label: string
+  iconWidth: number
+  iconHeight: number
 }
 
 interface Measurement {
@@ -198,12 +200,12 @@ export default function UnrealMeasurements() {
   ]
 
   const navButtons: NavButton[] = [
-    { key: 'Body', icon: bodyIcon, label: 'Body' },
-    { key: 'Face', icon: faceIcon, label: 'Face' },
-    { key: 'Skin', icon: skinIcon, label: 'Skin' },
-    { key: 'Hair', icon: hairIcon, label: 'Hair' },
-    { key: 'Extras', icon: extrasIcon, label: 'Extras' },
-    { key: 'Save', icon: saveIcon, label: 'Save' },
+    { key: 'Body', icon: bodyIcon, label: 'Body', iconWidth: 16.11, iconHeight: 33.83 },
+    { key: 'Face', icon: faceIcon, label: 'Face', iconWidth: 31.85, iconHeight: 31.85 },
+    { key: 'Skin', icon: skinIcon, label: 'Skin', iconWidth: 30.89, iconHeight: 33.83 },
+    { key: 'Hair', icon: hairIcon, label: 'Hair', iconWidth: 35.17, iconHeight: 35.17 },
+    { key: 'Extras', icon: extrasIcon, label: 'Extras', iconWidth: 48.47, iconHeight: 18.96 },
+    { key: 'Save', icon: saveIcon, label: 'Save', iconWidth: 35.06, iconHeight: 33.83 },
   ]
 
   const avatarImage = selectedNav === 'Body' ? unrealFBBodyButton : avatarSrc
@@ -311,22 +313,30 @@ export default function UnrealMeasurements() {
 
       <div ref={bottomRef} className={styles.bottomSection}>
         <div className={styles.bottomNav}>
-          {navButtons.map(btn => (
-            <button
-              key={btn.key}
-              className={`${styles.navButton} ${selectedNav === btn.key ? styles.active : ''}`}
-              onClick={() =>
-                setSelectedNav(prev => (prev === btn.key ? null : btn.key))
-              }
-              type="button"
-            >
-              <div className={styles.navIndicator} />
-              <div className={styles.navIcon}>
-                <img src={btn.icon} alt={btn.label} />
-              </div>
-              <span className={styles.navLabel}>{btn.label}</span>
-            </button>
-          ))}
+          {navButtons.map(btn => {
+            const navButtonVars = {
+              '--nav-icon-width': `${btn.iconWidth}px`,
+              '--nav-icon-height': `${btn.iconHeight}px`,
+            } as CSSProperties
+
+            return (
+              <button
+                key={btn.key}
+                className={`${styles.navButton} ${selectedNav === btn.key ? styles.active : ''}`}
+                onClick={() =>
+                  setSelectedNav(prev => (prev === btn.key ? null : btn.key))
+                }
+                type="button"
+                style={navButtonVars}
+              >
+                <div className={styles.navIndicator} />
+                <div className={styles.navIcon}>
+                  <img src={btn.icon} alt={btn.label} />
+                </div>
+                <span className={styles.navLabel}>{btn.label}</span>
+              </button>
+            )
+          })}
         </div>
       </div>
     </div>
