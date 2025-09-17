@@ -418,6 +418,8 @@ $design-w: 430; /* jedan izvor istine */
     --panel-scale: clamp(0, calc(var(--avatar-h, 953px) / 953px), 1);
     --desktop-gap-scale: clamp(0, calc((100vw - 90px - var(--acc-w, 0px)) / 1015px), 1);
   }
+  
+
   .centralWrapper.withAccordion {
     justify-content: flex-start;
     gap: clamp(15px, calc(24px * var(--desktop-gap-scale, 1)), 24px);
@@ -433,7 +435,7 @@ $design-w: 430; /* jedan izvor istine */
   .accHair   + .accordion { width: 187px; }
   .accExtras + .accordion { width: 187px; }
   .avatarShifted { margin-left: clamp(20px, calc(123px * var(--desktop-gap-scale, 1)), 123px); }
-/*   .avatarSection { width: 604px; height: 953px; } */
+  /*   .avatarSection { width: 604px; height: 953px; } */
   .avatarSection {
     flex: 1 1 auto;
     min-width: 410px;
@@ -477,17 +479,16 @@ $design-w: 430; /* jedan izvor istine */
   .bodySelected::before { display: none; }
   .bodySelected .avatarImage { width: auto; height: 100%; max-height: var(--avatar-h); }
   .dataPanelWrapper {
-    position: static;
+    position: absolute;
+    top: 133px;
+    right: calc(90px + var(--acc-w, 0px) + var(--acc-gap, 24px));
+    left: auto;
     inline-size: 273px;
     width: 273px;
-    block-size: calc(750.75px * var(--panel-scale, 1));
-    height: calc(750.75px * var(--panel-scale, 1));
+    block-size: calc(750.75px * var(--panel-scale, var(--panel-scale-fallback, 1)));
+    height: calc(750.75px * var(--panel-scale, var(--panel-scale-fallback, 1)));
     min-height: 0;
     margin: 0;
-    margin-left: auto;
-    margin-right: var(--acc-gap, 24px);
-    align-self: flex-start;
-    margin-top: clamp(10px, calc(62px * var(--panel-scale, 1)), 62px);
   }
   .accordion {
     position: absolute;

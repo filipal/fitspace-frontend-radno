@@ -113,7 +113,7 @@ export default function UnrealMeasurements() {
     if (!page || !header || !bottom) return
 
     const set = () => {
-      const viewportH = window.visualViewport?.height ?? window.innerHeight
+      const docEl = document.documentElement
       const headerH = Math.round(header.getBoundingClientRect().height)
       const w = window.innerWidth
       // Sidebar accordion tek za ≥1024: tada visina ostaje ista (samo širina)
@@ -125,9 +125,15 @@ export default function UnrealMeasurements() {
       // Ako je accordion otvoren, oduzmi njegovu stvarnu visinu
       const accEl = accordionRef.current
       const accH = sideAccordion ? 0 : (accEl ? Math.round(accEl.getBoundingClientRect().height) : 0)
-      const availableH = Math.max(viewportH - headerH - bottomH - accH, 200)
+      const docHeight = docEl?.clientHeight ?? 0
+      const viewportH = verticalNav
+        ? window.innerHeight || docHeight || window.visualViewport?.height || 0
+        : window.visualViewport?.height ?? window.innerHeight ?? docHeight
+      const layoutHeight = Math.max(viewportH - headerH - bottomH - accH, 200)
+      const panelScale = Math.min(1, layoutHeight / 953)
       page.style.setProperty('--bottom-real-h', `${measuredBottomH}px`)
-      page.style.setProperty('--avatar-h', `${availableH}px`)
+      page.style.setProperty('--avatar-h', `${layoutHeight}px`)
+      page.style.setProperty('--panel-scale', panelScale.toString())
     }
 
     set()
