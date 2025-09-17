@@ -306,6 +306,7 @@ $design-w: 430; /* jedan izvor istine */
   --nav-icon-h: clamp(16px, min(var(--nav-icon-target), var(--nav-icon-max)), calc(var(--nav-size) * .68));
   --nav-icon-w: clamp(24px, calc(var(--nav-icon-h) * 1.35), calc(var(--nav-size) * .85));
   --nav-icon-gap: clamp(2px, calc(2px * var(--nav-scale)), 8px);
+  --nav-icon-top-gap: calc(var(--nav-track) + var(--nav-icon-gap));
   height: calc(var(--nav-size) + max(env(safe-area-inset-bottom, 0px), calc(21px * var(--nav-scale))));
   border-top: 1px solid #000; /* border ostavi 1px zbog oštrine */
   display: flex;
@@ -364,6 +365,7 @@ $design-w: 430; /* jedan izvor istine */
   width: var(--nav-icon-w);
   height: var(--nav-icon-h);
   order: 2; /* Stavlja ikonu u sredinu */
+  margin-top: var(--nav-icon-top-gap);
   margin-bottom: var(--nav-icon-gap);
 }
 
@@ -502,6 +504,7 @@ $design-w: 430; /* jedan izvor istine */
     --nav-icon-h: clamp(16px, min(var(--nav-icon-target), var(--nav-icon-max)), calc(var(--nav-size) * .68));
     --nav-icon-w: clamp(24px, calc(var(--nav-icon-h) * 1.35), calc(var(--nav-size) * .85));
     --nav-icon-gap: clamp(2px, calc(2px * var(--nav-scale)), 8px);
+    --nav-icon-top-gap: calc(var(--nav-track) + var(--nav-icon-gap));
     top: var(--header-real-h, 71px);
     height: calc(100% - var(--header-real-h, 71px));
     width: var(--nav-size);
@@ -604,6 +607,7 @@ $design-w: 430; /* jedan izvor istine */
   .bottomSection {
     --nav-scale: clamp(.75, calc(var(--page-w-px) / 430px), 1.5);
     --nav-size: calc(60px * var(--nav-scale));
+    --nav-icon-top-gap: calc(var(--nav-track) + var(--nav-icon-gap));
   }
 
   .bottomNav {
