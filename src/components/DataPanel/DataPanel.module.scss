@@ -108,7 +108,11 @@ $design-w: 430;
 .measurementName { grid-column: 4; inline-size: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: clamp(11px, #{cqw(12.5)}, 16px); line-height: 1; }
 .measurementValue { grid-column: 6; text-align: right;   font-size: clamp(11px, #{cqw(12.5)}, 16px); line-height: 1; min-width: 3ch; }
 
-
+@media (min-width: 700px) and (max-width: 1023px) {
+  .dataPanelHeader p {
+        font-size: clamp(14px, calc(20px * var(--panel-scale, 1)), 20px);
+  }
+}
 
 @media (min-width: 1440px) {
   .dataPanel {

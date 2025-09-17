@@ -1,5 +1,5 @@
 @use '../styles' as s;
-$design-w: 430; // jedan izvor istine
+$design-w: 430; /* jedan izvor istine */
 
 @function cqw($px, $base: $design-w) {
   @return calc((#{$px} / #{$base}) * 100cqw); 
@@ -311,7 +311,7 @@ $design-w: 430; // jedan izvor istine
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  padding-top: 0; // Uklanja padding da border bude flush
+  padding-top: 0; /* Uklanja padding da border bude flush */
   background: #ececec;
   position: relative;
 }
@@ -335,8 +335,8 @@ $design-w: 430; // jedan izvor istine
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end; // Poravnava sadržaj po dnu
-  position: relative; // Allows absolute-positioned top indicator
+  justify-content: flex-end; /* Poravnava sadržaj po dnu */
+  position: relative; /* Allows absolute-positioned top indicator */
 }
 
 .navButton:not(:first-child) {
@@ -363,7 +363,7 @@ $design-w: 430; // jedan izvor istine
   justify-content: center;
   width: var(--nav-icon-w);
   height: var(--nav-icon-h);
-  order: 2; // Stavlja ikonu u sredinu
+  order: 2; /* Stavlja ikonu u sredinu */
   margin-bottom: var(--nav-icon-gap);
 }
 
@@ -385,7 +385,7 @@ $design-w: 430; // jedan izvor istine
   display: flex;
   align-items: center;
   justify-content: center;
-  order: 3; // Stavlja label na dno
+  order: 3; /* Stavlja label na dno */
 }
 
 @include s.respond(tablet-xxl) {
@@ -527,4 +527,67 @@ $design-w: 430; // jedan izvor istine
     align-self: center !important;
   }
   .centralWrapper { background: #ADADAC; }
+}
+
+@media (min-width: 700px) and (max-width: 1023px) {
+  .centralWrapper {
+    position: relative;
+  }
+  
+  .controlGroup {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 10px; // ili koliko treba
+  width: 410px;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  z-index: 3;
+  }
+
+  .rotateleft,
+  .rotateright {
+    width: 60px !important;
+    height: 60px !important;
+    min-width: 60px !important;
+    min-height: 60px !important;
+    max-width: 60px !important;
+    max-height: 60px !important;
+  }
+
+  .upload,
+  .download {
+    width: 50px !important;
+    height: 50px !important;
+    min-width: 50px !important;
+    min-height: 50px !important;
+    max-width: 50px !important;
+    max-height: 50px !important;
+  }
+
+  .fullscreen {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+  }
+  .dataPanelWrapper {
+    position: absolute !important;
+    top: 10px !important;
+    left: calc((10 / 430) * var(--page-w-px)) !important;
+    inline-size: calc((180 / 430) * var(--page-w-px)) !important;
+    block-size: min(
+      calc((495 / 430) * var(--page-w-px)),
+      100vh
+    ) !important;
+    height: min(
+      calc((495 / 430) * var(--page-w-px)),
+      100vh
+    ) !important;
+    z-index: 2 !important;
+  }
 }

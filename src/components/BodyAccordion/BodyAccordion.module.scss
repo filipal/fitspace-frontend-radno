@@ -99,7 +99,7 @@ $design-w: 430;
 }
 
 .rightInner {
-  inline-size: #{cqw(330)};
+  inline-size: #{cqw(320)};
   block-size: #{cqw(140)};
   display:flex; 
   flex-direction:column; 
@@ -127,7 +127,7 @@ $design-w: 430;
   inline-size: 100%;
   display: grid;
   /* label | spacer | slider | % */
-  grid-template-columns: 1fr #{cqw(10)} #{cqw(170)} #{cqw(50)};
+  grid-template-columns: 1fr #{cqw(10)} #{cqw(158)} #{cqw(49)};
   align-items: center;
   gap: 0;
 }
@@ -189,6 +189,82 @@ $design-w: 430;
 .vBar  { position:absolute; inline-size: 3px; height: 100%; background:#000; opacity:.2; pointer-events: none; }
 .vFill { position:absolute; left:0; inline-size: 3px; background:#000; border-radius: #{cqw(2)}; pointer-events: none; }
 
+
+@media (min-width: 700px) and (max-width: 1023px) {
+  .withAccordion {
+    --acc-h: calc(var(--avatar-h) * 0.27);
+    --visible-rows-height: calc(5 * 33px + 4 * 4px);
+  }
+  .container,
+  .right,
+  .leftSection,
+  .left { // <-- dodano
+    block-size: var(--acc-h) !important;
+    height: var(--acc-h) !important;
+    max-height: var(--acc-h) !important;
+  }
+  .rows {
+    max-height: var(--visible-rows-height);
+    overflow-y: auto;
+    padding-right: 6px;
+    box-sizing: border-box;
+    scrollbar-width: thin;
+  }
+  .rows::-webkit-scrollbar {
+    width: 4px;
+    background: #ececec;
+  }
+  .stack, .left {
+    inline-size: 120px;
+  }
+  .rowLabel,
+  .rowPct {
+    font-size: calc(var(--acc-h) / 10);
+  }
+  .topSmall, .bottomSmall { font-size: 17px; }
+  .upper, .lower         { font-size: 19px; }
+  .selected              { font-size: 22px; }
+
+  .controlGroup {
+    height: 60px;
+  }
+  .controlGroup {
+    height: 60px !important;
+    min-height: 60px !important;
+    max-height: 60px !important;
+  }
+
+  .rotateleft,
+  .rotateright {
+    width: 60px !important;
+    height: 60px !important;
+    min-width: 60px !important;
+    min-height: 60px !important;
+    max-width: 60px !important;
+    max-height: 60px !important;
+  }
+
+  .upload,
+  .download {
+    width: 50px !important;
+    height: 50px !important;
+    min-width: 50px !important;
+    min-height: 50px !important;
+    max-width: 50px !important;
+    max-height: 50px !important;
+  }
+
+  .fullscreen {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+  }
+}
+
+
 /* WEB ≥ 1024px: desktop raspored kao na 1440 */
 @media (min-width: 1024px) {
   /* Glavni layout: kao na 1440 — left na vrhu, fiksnih 335×129; right ispod fleksibilan */
@@ -246,11 +322,11 @@ $design-w: 430;
     grid-template-rows: none;
   }
 
-.topSmall { font-size: 9px; }
-.upper { font-size: 15px; }
-.selected { font-size: 26px; }
-.lower { font-size: fsz(13); opacity: .7; }
-.bottomSmall { font-size: fsz(11); opacity: .2; }
+  .topSmall { font-size: 9px; }
+  .upper { font-size: 15px; }
+  .selected { font-size: 26px; }
+  .lower { font-size: fsz(13); opacity: .7; }
+  .bottomSmall { font-size: fsz(11); opacity: .2; }
 
   .right.scrollable .vTrack { display: flex; position: absolute; top: 20px; right: 6px; width: 3px; height: var(--visible-rows-height); z-index: 3; }
 }
