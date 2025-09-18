@@ -109,7 +109,6 @@ $design-w: 430; /* jedan izvor istine */
     calc(var(--avatar-h) - var(--ctrl-h, #{cqw(60)}) - var(--ctrl-bottom, #{cqw(10)}) - 10px)
   );
   max-block-size: calc(var(--avatar-h) - var(--ctrl-h, #{cqw(60)}) - var(--ctrl-bottom, #{cqw(10)}) - 2px);
-  overflow: hidden;
   z-index: 2;
 }
 

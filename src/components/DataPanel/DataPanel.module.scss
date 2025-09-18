@@ -62,7 +62,6 @@ $design-w: 430;
   /* padding-top: #{cqw(5)}; */
   border: 1px solid rgba(255,255,255,.5);
   background: rgba(236,236,236,.5);
-  border-radius: 0 0 #{cqw(6)} #{cqw(6)};
   box-sizing: border-box;
   padding: 0;
   overflow: hidden;    /* bez scrolla */
@@ -137,6 +136,7 @@ $design-w: 430;
     align-items: center;
     justify-content: center;
     block-size: calc(36.5px * var(--panel-scale, 1));  /* Scaled height */
+    border-radius: 10px 10px 0 0;
   }
   .dataPanelContent {
     flex: 1 1 auto;  /* Allow flex to adjust */
@@ -174,6 +174,7 @@ $design-w: 430;
     justify-content: center;  /* Horizontally center content within measurementsList */
     gap: calc(15px * var(--panel-scale, 1));  /* Scaled gap between elements */
     block-size: calc(15.35px * var(--panel-scale, 1));
+    min-block-size: none;
   }
   .measurementItem:first-child { margin-top: 0; }  /* Not needed with space-between */
   .measurementItem:last-child { margin-bottom: 0; }  /* Not needed with space-between */
