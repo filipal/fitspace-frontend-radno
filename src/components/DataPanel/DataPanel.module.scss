@@ -156,8 +156,8 @@ $design-w: 430;
     color: #000;
   }
   .measurementsList {
-    display: grid;
-    grid-auto-rows: calc(15.35px * var(--panel-scale, 1));
+    display: flex;
+    flex-direction: column;
     row-gap: 0;
     inline-size: 100%;
     block-size: calc(713px * var(--panel-scale, 1));
@@ -179,6 +179,7 @@ $design-w: 430;
     align-items: center;
     block-size: calc(15.35px * var(--panel-scale, 1));
     min-block-size: calc(15.35px * var(--panel-scale, 1));
+    justify-self: stretch;
   }
   .measurementIcon {
     grid-column: 1;
@@ -195,6 +196,7 @@ $design-w: 430;
     object-fit: contain;
   }
   .measurementName {
+    width: calc(150px * var(--panel-scale, 1));
     grid-column: 2;
     height: calc(15.35px * var(--panel-scale, 1));
     font-size: clamp(12px, calc(18px * var(--panel-scale, 1)), 18px);
