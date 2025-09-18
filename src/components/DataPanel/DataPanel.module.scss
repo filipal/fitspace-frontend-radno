@@ -156,31 +156,34 @@ $design-w: 430;
     color: #000;
   }
   .measurementsList {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;  /* Auto-distribute space between first and last item */
-    align-items: stretch;
+    display: grid;
+    grid-auto-rows: calc(15.35px * var(--panel-scale, 1));
+    row-gap: 0;
     inline-size: 100%;
     block-size: calc(713px * var(--panel-scale, 1));
     margin: 0;
-    padding: calc(15px * var(--panel-scale, 1)) 0;  /* 15px top/bottom padding for first/last margins  */
-    overflow: hidden;  /* No scrolling */
+    padding: calc(15px * var(--panel-scale, 1)) calc(15px * var(--panel-scale, 1));
+    overflow: hidden;
     scrollbar-gutter: stable;
+    align-content: space-between;
   }
+
   .measurementItem {
-    margin: 0;  /* Remove margins; space-between handles distribution */
-    display: flex;
+    margin: 0;
+    display: grid;
+    grid-template-columns:
+      calc(30.42px * var(--panel-scale, 1))
+      minmax(0, 1fr)
+      calc(45.5px * var(--panel-scale, 1));
+    column-gap: calc(15px * var(--panel-scale, 1));
     align-items: center;
-    justify-content: center;  /* Horizontally center content within measurementsList */
-    gap: calc(15px * var(--panel-scale, 1));  /* Scaled gap between elements */
     block-size: calc(15.35px * var(--panel-scale, 1));
-    min-block-size: none;
+    min-block-size: calc(15.35px * var(--panel-scale, 1));
   }
-  .measurementItem:first-child { margin-top: 0; }  /* Not needed with space-between */
-  .measurementItem:last-child { margin-bottom: 0; }  /* Not needed with space-between */
   .measurementIcon {
-    width: calc(30.42px * var(--panel-scale, 1));  /* Scaled width */
-    height: calc(15.35px * var(--panel-scale, 1));  /* Scaled height */
+    grid-column: 1;
+    width: calc(30.42px * var(--panel-scale, 1));
+    height: calc(15.35px * var(--panel-scale, 1));
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -192,7 +195,7 @@ $design-w: 430;
     object-fit: contain;
   }
   .measurementName {
-    flex: 1;  /* Take remaining space */
+    grid-column: 2;
     height: calc(15.35px * var(--panel-scale, 1));
     font-size: clamp(12px, calc(18px * var(--panel-scale, 1)), 18px);
     font-weight: 500;
@@ -201,18 +204,17 @@ $design-w: 430;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    margin-right: 0;
   }
   .measurementValue {
-    width: calc(45.5px * var(--panel-scale, 1));  /* Scaled width */
+    grid-column: 3;
     height: calc(15.35px * var(--panel-scale, 1));
     font-size: clamp(12px, calc(18px * var(--panel-scale, 1)), 18px);
     font-weight: 400;
     color: #000;
     line-height: calc(15.35px * var(--panel-scale, 1));
     text-align: right;
-    margin-left: 0;
     justify-self: flex-end;
     font-variant-numeric: tabular-nums;
   }
 }
+
