@@ -433,6 +433,11 @@ $design-w: 430; /* jedan izvor istine */
   .accSkin   + .accordion { width: 117px; }
   .accHair   + .accordion { width: 187px; }
   .accExtras + .accordion { width: 187px; }
+  .accFace   + .accordion {
+    align-items: flex-start;
+    justify-content: center;
+  }
+  .accFace   + .accordion > div { width: 187px; max-width: 100%; height: 311px; max-height: 311px; margin: 0 auto; }
   .avatarShifted { margin-left: clamp(20px, calc(123px * var(--desktop-gap-scale, 1)), 123px); }
   /*   .avatarSection { width: 604px; height: 953px; } */
   .avatarSection {
@@ -614,6 +619,19 @@ $design-w: 430; /* jedan izvor istine */
   .bottomSection {
     --nav-scale: clamp(.75, calc(var(--page-w-px) / 430px), 1.5);
     --nav-size: calc(60px * var(--nav-scale));
+  }
+
+  .accFace + .accordion {
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .accFace + .accordion > div {
+    width: 187px;
+    max-width: 100%;
+    height: 311px;
+    max-height: 311px;
+    margin: 0 auto;
   }
 
   .bottomNav {
