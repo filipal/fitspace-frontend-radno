@@ -433,7 +433,8 @@ $design-w: 430; /* jedan izvor istine */
   .accSkin   + .accordion { width: 117px; }
   .accHair   + .accordion { width: 187px; }
   .accExtras + .accordion { width: 187px; }
-  .centralWrapper.accFace,
+  .centralWrapper.accBody { align-items: center; justify-content: center; }
+  .centralWrapper.accFace { align-items: center; justify-content: flex-start; }
   .centralWrapper.accHair { align-items: center; justify-content: center; }
   .accFace   + .accordion {
     align-items: flex-start;
@@ -445,28 +446,33 @@ $design-w: 430; /* jedan izvor istine */
     justify-content: center;
   }
   .accHair   + .accordion > div { width: 187px; max-width: 100%; height: 311px; max-height: 311px; margin: 0 auto; }
-  .accFace .avatarSection,
-  .accHair .avatarSection {
+  .accBody .avatarSection,
+  .accHair .avatarSection { align-items: center; justify-content: center; }
+  .accFace .avatarSection {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
   }
   .accFace .faceSelected,
   .accHair .hairSelected {
-    height: min(var(--avatar-h), 520px);
-    --avatar-zoom: 1.35;
+    height: 100%;
+    max-height: none;
+    overflow: hidden;
     display: flex;
-    align-items: center;
     justify-content: center;
+    position: relative;
   }
-  .accHair .hairSelected { height: min(var(--avatar-h), 560px); }
+  .accFace .faceSelected { align-items: flex-start; --avatar-zoom: 1.65; --avatar-shift: -6%; }
+  .accHair .hairSelected { align-items: center; --avatar-zoom: 1.4; --avatar-shift: 0%; }
   .accFace .faceSelected .avatarImage,
   .accHair .hairSelected .avatarImage {
-    width: auto;
-    height: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    transform: none;
+    width: 100%;
+    height: auto;
+    max-height: none;
+    object-fit: cover;
+    transform: translateY(var(--avatar-shift, 0%)) scale(var(--avatar-zoom, 1.5));
+    transform-origin: top center;
+    object-position: top center;
   }
   .avatarShifted { margin-left: clamp(20px, calc(123px * var(--desktop-gap-scale, 1)), 123px); }
   /*   .avatarSection { width: 604px; height: 953px; } */
