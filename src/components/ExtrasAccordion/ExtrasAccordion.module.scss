@@ -176,3 +176,161 @@ $design-w: 430;
   block-size: cqw(40);
   display: block;
 }
+
+@media (min-width: 1024px) {
+  .container {
+    inline-size: 187px;
+    block-size: 953px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    margin: 0;
+    align-self: flex-start;
+    padding: 0;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  .left {
+    inline-size: 100%;
+    block-size: 204px;
+    border-right: none;
+    border-bottom: 1px solid #000;
+    display: grid;
+    grid-template-rows: 45px 1fr 45px;
+    justify-items: center;
+    align-items: center;
+  }
+
+  .left .vArrow {
+    inline-size: 23.8px;
+    block-size: 24px;
+  }
+
+  .center {
+    inline-size: 100%;
+    block-size: 455px;
+    border-bottom: 1px solid #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .centerInner {
+    inline-size: 126px;
+    block-size: 388px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    column-gap: 0;
+    margin: 0;
+  }
+
+  .centerInner {
+    align-items: stretch;
+  }
+
+  .centerInner .hArrow {
+    inline-size: 32.81px;
+    block-size: 24px;
+    align-self: center;
+  }
+
+  .centerInner .hArrow:first-of-type img { transform: rotate(90deg); }
+  .centerInner .hArrow:last-of-type img { transform: rotate(-90deg); }
+
+  .centerStrip {
+    inline-size: 126px;
+    block-size: 306px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .thumbSmall {
+    inline-size: 72px;
+    block-size: 72px;
+  }
+
+  .stack {
+    inline-size: 89px;
+    block-size: 81px;
+    row-gap: 8px;
+  }
+
+  .stackItem.small {
+    font-size: 15px;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .stackItem.big {
+    font-size: 26px;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .thumbSmall img,
+  .glassesSmallIcon {
+    inline-size: 72px;
+    block-size: auto;
+    max-height: 72px;
+  }
+
+  .thumbBig {
+    inline-size: 126px;
+    block-size: 126px;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glassesBigIcon {
+    inline-size: 100%;
+    block-size: auto;
+    max-height: calc(126px - 32px);
+    object-fit: contain;
+    display: block;
+  }
+
+  .glassesIndex {
+    font-size: 20px;
+    line-height: 1;
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255,255,255,0.8);
+    padding: 2px 8px;
+    border-radius: 12px;
+  }
+
+  .right {
+    inline-size: 100%;
+    block-size: 294px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-right: none;
+  }
+
+  .colorPicker {
+    inline-size: 60px;
+    block-size: 214px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+  }
+}

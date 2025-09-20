@@ -13,6 +13,14 @@ export default function FaceScanInfo() {
     'Hold your phone straight, at eye level, and center your face inside the guided area',
   ]
 
+  const handleStart = () => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+      navigate('/scan-qr-bodyscan', { state: { mode: 'face' } })
+    } else {
+      navigate('/face-scan')
+    }
+  }
+
   return (
     <div className={styles.faceScanInfoPage}>
       <Header
@@ -33,7 +41,7 @@ export default function FaceScanInfo() {
         backText="Back"
         actionText="Start Scanning"
         onBack={() => navigate('/avatar-info')}
-        onAction={() => navigate('/face-scan')}
+        onAction={handleStart}
         actionType="primary"
       />
     </div>
