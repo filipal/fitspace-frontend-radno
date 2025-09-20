@@ -56,6 +56,11 @@ $design-w: 430;
   }
 }
 
+.arrowHorizontal {
+  display: block;
+  transform-origin: center;
+}
+
 /* Ikone u srednjem stubcu: 60 | center | 60, 100px visina */
 .iconStrip {
   inline-size: cqw(232);
@@ -88,6 +93,27 @@ $design-w: 430;
   justify-items: center;
 }
 
+
+.colorSwatches {
+  inline-size: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: cqw(6);
+}
+
+.swatch {
+  inline-size: cqw(40);
+  block-size: cqw(40);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.swatchSide { display: none; }
+.swatchCenter { display: flex; }
+
 /* Vertikalne strelice (30 × 22) */
 .vArrow {
   inline-size: cqw(30);
@@ -108,8 +134,130 @@ $design-w: 430;
   }
 }
 
-/* Preview ikonica 40×40 */
+/* Preview ikonica popunjava wrapper */
 .previewIcon {
-  inline-size: cqw(40);
-  block-size: cqw(40);
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+@media (min-width: 1024px) {
+  .container {
+    inline-size: 187px;
+    block-size: 953px;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    margin: 0 auto;
+    padding: 0;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  .left {
+    inline-size: 100%;
+    block-size: 585px;
+    border-right: none;
+    border-bottom: 1px solid #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding-block: 51px;
+  }
+
+  .hArrow {
+    inline-size: 24px;
+    block-size: 32.81px;
+  }
+
+  .arrowHorizontal { display: block; }
+  .left .hArrow:first-of-type .arrowHorizontal {
+    transform: rotate(90deg);
+  }
+
+  .left .hArrow:last-of-type .arrowHorizontal {
+    transform: rotate(90deg);
+  }
+
+  .iconStrip {
+    inline-size: 128px;
+    block-size: 352px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    flex: 0 0 352px;
+  }
+
+  .iconBig {
+    inline-size: 128px;
+    block-size: 128px;
+  }
+
+  .iconSmall {
+    inline-size: 72px;
+    block-size: 72px;
+  }
+
+  .right {
+    inline-size: 100%;
+    block-size: 368px;
+    border-right: none;
+    border-top: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .colorPicker {
+    inline-size: 71.92px;
+    block-size: calc(189px + (2 * 32.81px) + (2 * 42px));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 42px;
+  }
+
+  .vArrow {
+    inline-size: 24px;
+    block-size: 32.81px;
+  }
+
+  .colorSwatches {
+    inline-size: 55px;
+    block-size: 189px;
+    width: 55px;
+    height: 189px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0;
+  }
+
+  .swatch {
+    inline-size: 55px;
+    block-size: 55px;
+  }
+
+  .swatchSide {
+    display: flex;
+    inline-size: 45px;
+    block-size: 45px;
+    width: 45px;
+    height: 45px;
+  }
+
+  .swatchCenter {
+    display: flex;
+    inline-size: 55px;
+    block-size: 55px;
+    width: 55px;
+    height: 55px;
+  }
 }

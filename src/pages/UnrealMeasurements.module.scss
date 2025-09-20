@@ -438,7 +438,7 @@ $design-w: 430; /* jedan izvor istine */
   .accExtras + .accordion { width: 187px; }
   .centralWrapper.accBody { align-items: center; justify-content: center; }
   .centralWrapper.accFace { align-items: flex-start; justify-content: center; }
-  .centralWrapper.accHair { align-items: center; justify-content: center; }
+  .centralWrapper.accHair { align-items: flex-start; justify-content: center; }
   .centralWrapper.accExtras { align-items: center; justify-content: center; }
   .accFace   + .accordion,
   .accHair   + .accordion,
@@ -447,8 +447,8 @@ $design-w: 430; /* jedan izvor istine */
     justify-content: center;
   }
   .accFace   + .accordion > div,
-  .accHair   + .accordion > div,
   .accExtras + .accordion > div { width: 187px; max-width: 100%; height: 311px; max-height: 311px; margin: 0 auto; }
+  .accHair   + .accordion > div { width: 187px; max-width: 100%; height: 953px; max-height: 953px; margin: 0 auto; }
   .accBody .avatarSection,
   .accHair .avatarSection,
   .accExtras .avatarSection { align-items: center; justify-content: center; }

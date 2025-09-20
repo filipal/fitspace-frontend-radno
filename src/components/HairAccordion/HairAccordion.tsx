@@ -46,7 +46,7 @@ export default function HairAccordion() {
     <div className={styles.container}>
       <div className={styles.left}>
         <button type="button" className={styles.hArrow} onClick={prevStyle} aria-label="Previous style">
-          <img src={ArrowLeft} alt="Prev" />
+          <img src={ArrowLeft} alt="Prev" className={styles.arrowHorizontal} />
         </button>
 
         <div className={styles.iconStrip}>
@@ -57,7 +57,7 @@ export default function HairAccordion() {
         </div>
 
         <button type="button" className={styles.hArrow} onClick={nextStyle} aria-label="Next style">
-          <img src={ArrowRight} alt="Next" />
+          <img src={ArrowRight} alt="Next" className={styles.arrowHorizontal} />
         </button>
       </div>
       <div className={styles.right}>
@@ -66,7 +66,17 @@ export default function HairAccordion() {
             <img src={ArrowUp} alt="Up" />
           </button>
 
-          <Skin1Icon className={styles.previewIcon} style={{ color: base }} />
+          <div className={styles.colorSwatches}>
+            <div className={`${styles.swatch} ${styles.swatchSide}`}>
+              <Skin1Icon className={styles.previewIcon} style={{ color: light }} />
+            </div>
+            <div className={`${styles.swatch} ${styles.swatchCenter}`}>
+              <Skin1Icon className={styles.previewIcon} style={{ color: base }} />
+            </div>
+            <div className={`${styles.swatch} ${styles.swatchSide}`}>
+              <Skin1Icon className={styles.previewIcon} style={{ color: dark }} />
+            </div>
+          </div>
 
           <button type="button" className={styles.vArrow} onClick={nextColor} aria-label="Lighter">
             <img src={ArrowDown} alt="Down" />
