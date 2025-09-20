@@ -168,6 +168,11 @@ $design-w: 430;
 .frameG { background-image: url('../../assets/skin-frame-g.svg'); justify-self: center; }
 .frameW { background-image: url('../../assets/skin-frame-w.svg'); justify-self: end; }
 
+.frameTop,
+.frameBottom {
+  display: none;
+}
+
 
 /* ———————————————————
    EXPANDED RIGHT: lijevi dio nestaje, desni preuzima 430×60,
@@ -199,5 +204,166 @@ $design-w: 430;
   .frames {
     inline-size: cqw(363);                 /* 350 + 13 */
     grid-template-columns: cqw(13) 1fr cqw(13);
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    inline-size: 117px;
+    block-size: 953px;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    margin: 0;
+    align-self: flex-start;
+    padding: 0;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  .left {
+    inline-size: 100%;
+    block-size: 364px;
+    border-right: none;
+    border-bottom: 1px solid #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-block: 32.81px;
+  }
+
+  .left p { display: none; }
+
+  .group {
+    inline-size: 55px;
+    block-size: 281px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .iconsThree {
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .iconLarge {
+    inline-size: 55px;
+    block-size: 55px;
+  }
+
+  .iconSmall {
+    inline-size: 45px;
+    block-size: 45px;
+  }
+
+  .arrow {
+    inline-size: 24px;
+    block-size: 32.81px;
+  }
+
+  .group .arrow:first-of-type img, .group .arrow:last-of-type img { transform: rotate(90deg); }
+
+  .right {
+    inline-size: 100%;
+    block-size: 589px;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .rightContent {
+    inline-size: 46.15px;
+    block-size: 504px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0;
+    gap: 0;
+  }
+
+  .frameTop,
+  .frameBottom {
+    display: block;
+    inline-size: 20px;
+    block-size: 26px;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+
+  .frameTop { background-image: url('../../assets/skin-frame-w.svg'); }
+  .frameBottom { background-image: url('../../assets/skin-frame-b.svg'); }
+
+  .frames {
+    display: none;
+  }
+
+  .toneBarGroup {
+    inline-size: 46.15px;
+    block-size: 399px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .toneBar {
+    inline-size: 18.46px;
+    block-size: 399px;
+    border-radius: 18.46px;
+    margin: 0 auto;
+    background: transparent;
+    border: 1.5px solid #000;
+    box-shadow: none;
+  }
+
+  .thumb {
+    inline-size: 46.15px;
+    block-size: 46.15px;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .expandedRight {
+    .left { display: none; }
+
+    .right {
+      inline-size: 100%;
+      block-size: 953px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 45px;
+    }
+
+    .rightContent {
+      inline-size: 46.15px;
+      block-size: 504px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0;
+    }
+
+    .toneBarGroup {
+      inline-size: 46.15px;
+      block-size: 399px;
+    }
+
+    .toneBar {
+      inline-size: 18.46px;
+      block-size: 399px;
+    }
   }
 }

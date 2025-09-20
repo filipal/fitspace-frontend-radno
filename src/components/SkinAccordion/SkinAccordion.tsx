@@ -40,38 +40,47 @@ export default function SkinAccordion({
   }
 
   // Right-side drag bar state
-  const [pos, setPos] = useState<number>(65) // will be updated to actual bar center on mount
+  const [pos, setPos] = useState<number>(0) // updated to center on mount
+  const [isVertical, setIsVertical] = useState(false)
   const barRef = useRef<HTMLDivElement | null>(null)
 
   // Center the thumb based on the real rendered width of the bar
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mediaQuery = window.matchMedia('(min-width: 1024px)')
+    const updateOrientation = () => setIsVertical(mediaQuery.matches)
+    updateOrientation()
+    mediaQuery.addEventListener('change', updateOrientation)
+    return () => mediaQuery.removeEventListener('change', updateOrientation)
+  }, [])
+
+  useEffect(() => {
     const bar = barRef.current
     if (!bar) return
-    // initialize
     const setCenter = () => {
-      const w = bar.offsetWidth
-      setPos(w / 2)
+      const length = isVertical ? bar.offsetHeight : bar.offsetWidth
+      setPos(length / 2)
     }
     setCenter()
-    // keep centered if the bar resizes
     const ro = new ResizeObserver(setCenter)
     ro.observe(bar)
     return () => ro.disconnect()
-  }, [])
+  }, [isVertical])
 
-  const onStartDrag = (clientX: number) => {
+  const onStartDrag = (startEvent: PointerEvent) => {
     const bar = barRef.current
     if (!bar) return
+    startEvent.preventDefault()
     const rect = bar.getBoundingClientRect()
-    const update = (x: number) => {
-      const rel = x - rect.left
-      const width = rect.width
-      const clamped = Math.max(0, Math.min(width, rel))
+    const update = (clientX: number, clientY: number) => {
+      const length = isVertical ? rect.height : rect.width
+      const raw = isVertical ? clientY - rect.top : clientX - rect.left
+      const clamped = Math.max(0, Math.min(length, raw))
       setPos(clamped)
     }
-    update(clientX)
+    update(startEvent.clientX, startEvent.clientY)
     const onMove = (e: PointerEvent) => {
-      update(e.clientX)
+      update(e.clientX, e.clientY)
     }
     const onUp = () => {
       window.removeEventListener('pointermove', onMove)
@@ -124,21 +133,22 @@ export default function SkinAccordion({
         onClick={() => setRightExpanded((v) => !v)}
       >
         <div className={styles.rightContent}>
-          {/* Top: 130x25 (bar 130x10 with 25x25 thumb centered vertically) */}
+          <div className={styles.frameTop} />
+
           <div className={styles.toneBarGroup}>
             <div className={styles.toneBar} ref={barRef}>
               <button
                 type="button"
                 className={styles.thumb}
-                style={{ left: `${pos}px` }}
-                onPointerDown={(e) => { e.stopPropagation(); onStartDrag(e.clientX) }}
+                style={isVertical ? { top: `${pos}px`, left: '50%' } : { left: `${pos}px` }}
+                onPointerDown={(e) => { e.stopPropagation(); onStartDrag(e.nativeEvent) }}
                 aria-label="Adjust tone"
               />
             </div>
           </div>
 
-          {/* Gap 2px built via CSS gap */}
-          {/* Bottom: 143x13 with three frame icons aligned left/center/right */}
+          <div className={styles.frameBottom} />
+
           <div className={styles.frames}>
             <div className={styles.frameB} />
             <div className={styles.frameG} />
