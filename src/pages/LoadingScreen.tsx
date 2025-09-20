@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import styles from './LoadingScreen.module.scss'
 
 export default function LoadingScreen() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [progress, setProgress] = useState(0)
+  const openSkinRight = Boolean((location.state as { openSkinRight?: boolean } | undefined)?.openSkinRight)
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -13,7 +15,11 @@ export default function LoadingScreen() {
           clearInterval(interval)
           // Navigate to UnrealMeasurements with no accordion pre-selected
           setTimeout(() => {
-            navigate('/unreal-measurements')
+            if (openSkinRight) {
+              navigate('/unreal-measurements', { state: { openSkinRight: true } })
+            } else {
+              navigate('/unreal-measurements')
+            }
           }, 500)
           return 100
         }
@@ -22,7 +28,7 @@ export default function LoadingScreen() {
     }, 100)
 
     return () => clearInterval(interval)
-  }, [navigate])
+  }, [navigate, openSkinRight])
 
   const handleExit = () => {
     navigate('/')

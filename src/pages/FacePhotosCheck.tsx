@@ -65,7 +65,7 @@ export default function FacePhotosCheck() {
         <button
           type="button"
           className={styles.blackButton}
-          onClick={() => navigate('/loading')}
+          onClick={() => navigate('/loading', { state: { openSkinRight: true } })}
         >
           Generate 3D Model
         </button>
