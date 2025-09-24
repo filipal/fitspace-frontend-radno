@@ -30,8 +30,8 @@ $design-w: 430;
 }
 
 .left {
-  inline-size: #{cqw(42)};
-  block-size: calc(100% - #{cqw(22)});
+  inline-size: min(cqw(42), 42px);
+  block-size: calc(100% - min(cqw(22), 22px));
   /* margin-left: #{cqw(19)}; */
   display: grid;
   grid-template-rows: #{cqw(25)} 1fr #{cqw(25)};
@@ -42,8 +42,8 @@ $design-w: 430;
 }
 
 .arrowBtn {
-  inline-size: #{cqw(30)};
-  block-size: #{cqw(25)};
+  inline-size: min(cqw(30), 30px);
+  block-size: min(cqw(25), 25px);
   padding: 0;
   border: none;
   background: transparent;
@@ -66,7 +66,7 @@ $design-w: 430;
 }
 
 .stack {
-  inline-size: #{cqw(42)};
+  inline-size: min(cqw(42), 42px);
   display: grid;
   grid-template-rows: #{cqw(14)} #{cqw(16)} #{cqw(20)} #{cqw(16)} #{cqw(14)};
   align-items: center; 
@@ -90,8 +90,8 @@ $design-w: 430;
 .bottomSmall { font-size: fsz(11); opacity: .2; }
 
 .right {
-  inline-size: #{cqw(350)};
-  block-size: #{cqw(171)};
+  inline-size: min(cqw(350), 350px);
+  block-size: min(cqw(171), 171px);
   display:flex; 
   align-items:center; 
   justify-content:center; 
@@ -99,8 +99,8 @@ $design-w: 430;
 }
 
 .rightInner {
-  inline-size: #{cqw(320)};
-  block-size: #{cqw(140)};
+  inline-size: min(cqw(320), 320px);
+  block-size: min(cqw(140), 140px);
   display:flex; 
   flex-direction:column; 
   align-items:stretch; 
@@ -143,8 +143,8 @@ $design-w: 430;
 
 .sliderGroup {
   grid-column: 3;
-  inline-size: #{cqw(170)}; 
-  block-size: #{cqw(25)}; 
+  inline-size: min(cqw(170), 170px);
+  block-size: min(cqw(25), 25px);
   display:flex; 
   align-items:center; 
   justify-content:center;
@@ -152,8 +152,8 @@ $design-w: 430;
 
 .sliderBar {
   position: relative;
-  inline-size: #{cqw(170)};
-  block-size: #{cqw(10)};
+  inline-size: min(cqw(170), 170px);
+  block-size: min(cqw(10), 10px);
   background: transparent;
   border-radius: #{cqw(10)};
   box-shadow: inset 0 0 0 #{cqw(1.5)} #000;
@@ -161,10 +161,10 @@ $design-w: 430;
 }
 
 .sliderThumb {
-  position: absolute; top: 50%; 
+  position: absolute; top: 50%;
   transform: translate(-50%, -50%);
-  inline-size: #{cqw(25)}; 
-  block-size: #{cqw(25)};
+  inline-size: min(cqw(25), 25px);
+  block-size: min(cqw(25), 25px);
   background: transparent; 
   border: none; 
   border-radius: 50%; 
@@ -192,16 +192,16 @@ $design-w: 430;
 
 @media (min-width: 700px) and (max-width: 1023px) {
   .withAccordion {
-    --acc-h: calc(var(--avatar-h) * 0.27);
+    --acc-h: min(calc(var(--avatar-h) * 0.27), 171px);
     --visible-rows-height: calc(5 * 33px + 4 * 4px);
   }
   .container,
   .right,
   .leftSection,
   .left { // <-- dodano
-    block-size: var(--acc-h) !important;
-    height: var(--acc-h) !important;
-    max-height: var(--acc-h) !important;
+    block-size: 171px !important;
+    height: 171px !important;
+    max-height: 171px !important;
   }
   .rows {
     max-height: var(--visible-rows-height);

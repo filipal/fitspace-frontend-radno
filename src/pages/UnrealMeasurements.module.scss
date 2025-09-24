@@ -49,11 +49,11 @@ $design-w: 430; /* jedan izvor istine */
 .withAccordion { height: calc(var(--avatar-h) - var(--acc-h, 0)); }
 
 /* Per-accordion visine na 430 baseline (skaliraju kroz cqw) */
-.accBody   { --acc-h: cqw(171); }
-.accFace   { --acc-h: cqw(80); }
-.accSkin   { --acc-h: cqw(60); }
-.accHair   { --acc-h: cqw(120); }
-.accExtras { --acc-h: cqw(120); }
+.accBody   { --acc-h: min(cqw(171), 171px); }
+.accFace   { --acc-h: min(cqw(80), 80px); }
+.accSkin   { --acc-h: min(cqw(60), 60px); }
+.accHair   { --acc-h: min(cqw(120), 120px); }
+.accExtras { --acc-h: min(cqw(120), 120px); }
 
 .avatarSection {
   width: 100%;
@@ -591,8 +591,8 @@ $design-w: 430; /* jedan izvor istine */
 
 @media (min-width: 600px) {
   .page [data-app-header] {
-    height: 71px !important;
-    min-height: 71px !important;
+    height: var(--header-real-h, calc(var(--header-h, 101) * 1px)) !important;
+    min-height: var(--header-real-h, calc(var(--header-h, 101) * 1px)) !important;
     padding-top: 0 !important;
     padding-bottom: 0 !important;
     align-items: center !important;
@@ -677,13 +677,20 @@ $design-w: 430; /* jedan izvor istine */
     justify-content: center;
   }
 
-  .accFace + .accordion > div,
+  .accFace + .accordion > div {
+    width: 187px;
+    max-width: 100%;
+    height: 80px;
+    max-height: 80px;
+    margin: 0 auto;
+  }
+
   .accHair + .accordion > div,
   .accExtras + .accordion > div {
     width: 187px;
     max-width: 100%;
-    height: 311px;
-    max-height: 311px;
+    height: 120px;
+    max-height: 120px;
     margin: 0 auto;
   }
 
