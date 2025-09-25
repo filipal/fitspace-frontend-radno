@@ -16,7 +16,7 @@ $design-w: 430;
    ——————————————————— */
 .container {
   inline-size: 100%;               /* stane u širinu stranice (max 430) */
-  block-size: cqw(60);
+  block-size: min(cqw(60), 60px);
   display: flex;
   background: #ececec;
   backdrop-filter: blur(cqw(4));
@@ -26,8 +26,8 @@ $design-w: 430;
 
 /* Lijevi dio: 240 × 60 s dividerom */
 .left {
-  inline-size: cqw(240);
-  block-size: cqw(60);
+  inline-size: min(cqw(240), 240px);
+  block-size: min(cqw(60), 60px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -38,8 +38,8 @@ $design-w: 430;
 
 /* Desni dio: 180 × 60 */
 .right {
-  inline-size: cqw(180);
-  block-size: cqw(60);
+  inline-size: min(cqw(180), 180px);
+  block-size: min(cqw(60), 60px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -50,16 +50,16 @@ $design-w: 430;
 
 /* Skup s tri ikone (u lijevom dijelu) */
 .group {
-  inline-size: cqw(220);
-  block-size: cqw(45);
+  inline-size: min(cqw(220), 220px);
+  block-size: min(cqw(45), 45px);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
 .arrow {
-  inline-size: cqw(20);
-  block-size: cqw(20);
+  inline-size: min(cqw(20), 20px);
+  block-size: min(cqw(20), 20px);
   border: none;
   background: transparent;
   padding: 0;
@@ -88,8 +88,8 @@ $design-w: 430;
   cursor: pointer;
 }
 
-.iconLarge { inline-size: cqw(45); block-size: cqw(45); }
-.iconSmall { inline-size: cqw(35); block-size: cqw(35); }
+.iconLarge { inline-size: min(cqw(45), 45px); block-size: min(cqw(45), 45px); }
+.iconSmall { inline-size: min(cqw(35), 35px); block-size: min(cqw(35), 35px); }
 
 .iconOne {
   display: flex;
@@ -109,8 +109,8 @@ $design-w: 430;
 
 /* Tone bar grupa: 130×25 (default) */
 .toneBarGroup {
-  inline-size: cqw(130);
-  block-size: cqw(25);
+  inline-size: min(cqw(130), 130px);
+  block-size: min(cqw(25), 25px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -119,11 +119,11 @@ $design-w: 430;
 /* Bar: 130×10, “stroke” iznutra */
 .toneBar {
   position: relative;
-  inline-size: cqw(130);
-  block-size: cqw(10);
+  inline-size: min(cqw(130), 130px);
+  block-size: min(cqw(10), 10px);
   background: transparent;
-  border-radius: cqw(10);
-  box-shadow: inset 0 0 0 cqw(1.5) #000; /* 1.5px skalirano */
+  border-radius: min(cqw(10), 10px);
+  box-shadow: inset 0 0 0 min(cqw(1.5), 1.5px) #000; /* 1.5px skalirano */
   touch-action: none;
 }
 
@@ -132,8 +132,8 @@ $design-w: 430;
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);
-  inline-size: cqw(25);
-  block-size: cqw(25);
+  inline-size: min(cqw(25), 25px);
+  block-size: min(cqw(25), 25px);
   border-radius: 50%;
   background: transparent;
   border: none;
@@ -148,18 +148,18 @@ $design-w: 430;
 
 /* Frameovi ispod: 143×13, kolone: 13 | 1fr | 13 */
 .frames {
-  inline-size: cqw(143);
-  block-size: cqw(13);
+  inline-size: min(cqw(143), 143px);
+  block-size: min(cqw(13), 13px);
   display: grid;
-  grid-template-columns: cqw(13) 1fr cqw(13);
+  grid-template-columns: min(cqw(13), 13px) 1fr min(cqw(13), 13px);
   align-items: center;
 }
 
 .frameB,
 .frameG,
 .frameW {
-  inline-size: cqw(13);
-  block-size: cqw(13);
+  inline-size: min(cqw(13), 13px);
+  block-size: min(cqw(13), 13px);
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -192,18 +192,18 @@ $design-w: 430;
   }
 
   .toneBarGroup {
-    inline-size: cqw(350);
-    block-size: cqw(25);
+    inline-size: min(cqw(350), 350px);
+    block-size: min(cqw(25), 25px);
   }
 
   .toneBar {
-    inline-size: cqw(350);
-    block-size: cqw(10);
+    inline-size: min(cqw(350), 350px);
+    block-size: min(cqw(10), 10px);
   }
 
   .frames {
-    inline-size: cqw(363);                 /* 350 + 13 */
-    grid-template-columns: cqw(13) 1fr cqw(13);
+    inline-size: min(cqw(363), 363px);                 /* 350 + 13 */
+    grid-template-columns: min(cqw(13), 13px) 1fr min(cqw(13), 13px);
   }
 }
 

@@ -24,6 +24,7 @@ $design-w: 430;
 
 .leftSection {
   inline-size: min(cqw(80), 80px);
+  flex: 0 0 min(cqw(80), 80px);
   display:flex;
   align-items:center;
   justify-content: center;
@@ -32,6 +33,7 @@ $design-w: 430;
 .left {
   inline-size: min(cqw(42), 42px);
   block-size: calc(100% - min(cqw(22), 22px));
+  margin-inline: auto;
   /* margin-left: #{cqw(19)}; */
   display: grid;
   grid-template-rows: min(cqw(25), 25px) 1fr min(cqw(25), 25px);
@@ -104,7 +106,7 @@ $design-w: 430;
   display:flex;
   flex-direction:column;
   align-items:stretch;
-  justify-content:flex-start;
+  justify-content:center;
   gap: min(cqw(8), 8px);
   position:relative;
 }

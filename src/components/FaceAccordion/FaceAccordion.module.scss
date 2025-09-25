@@ -10,7 +10,7 @@ $design-w: 430;
 /* ROOT: uvijek točno širina stranice (ne ovisi o cqw) */
 .container{
   inline-size: var(--page-w-px);
-  block-size: cw(80);
+  block-size: min(cw(80), 80px);
   display: flex;
   background: #ececec;
 
@@ -27,20 +27,20 @@ $design-w: 430;
 
 /* Lijevi blok = 180 @430; desni uzme ostatak do pune širine */
 .left{
-  inline-size: cw(180);
+  inline-size: min(cw(180), 180px);
   block-size: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   border-right: 1px solid #000;
-  padding-inline: cw(10); /* malo zraka da tekst ljepše lomi */
+  padding-inline: min(cw(10), 10px); /* malo zraka da tekst ljepše lomi */
   text-align: center;
 }
 
 .left p{
   /* dizajn: 149×68 @430; centriraj vertikalno i lomi u 4 linije */
-  inline-size: cw(149);
-  block-size: cw(68);
+  inline-size: min(cw(149), 149px);
+  block-size: min(cw(68), 68px);
   margin: 0;
 
   font-size: fsz(13,.85);   /* 13px @430, blago ↓ ispod */
@@ -66,12 +66,12 @@ $design-w: 430;
 
 /* Gumb “Scan” 149×30 @430 */
 .scanButton{
-  inline-size: cw(149);
-  block-size: cw(30);
+  inline-size: min(cw(149), 149px);
+  block-size: min(cw(30), 30px);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: cw(5);
+  gap: min(cw(5), 5px);
   border: none;
   background: none;
   cursor: pointer;
@@ -83,13 +83,13 @@ $design-w: 430;
 }
 
 .scanButton img{
-  inline-size: cw(29.1);
-  block-size:  cw(29.1);
+  inline-size: min(cw(29.1), 29.1px);
+  block-size:  min(cw(29.1), 29.1px);
   aspect-ratio: 1;
   object-fit: contain;
 
   /* spriječi da je flex stisne ispod zadane širine */
-  flex: 0 0 cw(29.1);
+  flex: 0 0 min(cw(29.1), 29.1px);
   display: block;
 }
 

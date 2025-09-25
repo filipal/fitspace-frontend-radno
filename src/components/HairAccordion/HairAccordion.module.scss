@@ -7,7 +7,7 @@ $design-w: 430;
 /* 430×120 @ design; skala preko cqw */
 .container {
   inline-size: 100%;
-  block-size: cqw(120);
+  block-size: min(cqw(120), 120px);
   display: flex;
   background: #ececec;
   backdrop-filter: blur(cqw(4));
@@ -17,7 +17,7 @@ $design-w: 430;
 
 /* LEFT = 350w, grid: 24 | 232 | 24, gap 20, 1px divider ostaje “ošar” */
 .left {
-  inline-size: cqw(350);
+  inline-size: min(cqw(350), 350px);
   block-size: 100%;
   display: grid;
   grid-template-columns: cqw(24) cqw(232) cqw(24);
@@ -29,7 +29,7 @@ $design-w: 430;
 
 /* RIGHT = 80w, centrirano */
 .right {
-  inline-size: cqw(80);
+  inline-size: min(cqw(80), 80px);
   block-size: 100%;
   display: flex;
   justify-content: center;
@@ -38,8 +38,8 @@ $design-w: 430;
 
 /* Horizontalne strelice (24 × 32.8) */
 .hArrow {
-  inline-size: cqw(24);
-  block-size: cqw(32.8);
+  inline-size: min(cqw(24), 24px);
+  block-size: min(cqw(32.8), 32.8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -63,32 +63,32 @@ $design-w: 430;
 
 /* Ikone u srednjem stubcu: 60 | center | 60, 100px visina */
 .iconStrip {
-  inline-size: cqw(232);
-  block-size: cqw(100);
+  inline-size: min(cqw(232), 232px);
+  block-size: min(cqw(100), 100px);
   display: grid;
-  grid-template-columns: cqw(60) 1fr cqw(60);
+  grid-template-columns: min(cqw(60), 60px) 1fr min(cqw(60), 60px);
   align-items: center;
   justify-items: center;
 }
 
 /* Male ikone 60×60 – lijevo i desno */
 .iconSmall {
-  inline-size: cqw(60);
-  block-size: cqw(60);
+  inline-size: min(cqw(60), 60px);
+  block-size: min(cqw(60), 60px);
 }
 
 /* Velika ikona 100×100 – centar */
 .iconBig {
-  inline-size: cqw(100);
-  block-size: cqw(100);
+  inline-size: min(cqw(100), 100px);
+  block-size: min(cqw(100), 100px);
 }
 
 /* Desni “picker” 60×100 s vert. rasporedom 30 | 40 | 30 */
 .colorPicker {
-  inline-size: cqw(60);
-  block-size: cqw(100);
+  inline-size: min(cqw(60), 60px);
+  block-size: min(cqw(100), 100px);
   display: grid;
-  grid-template-rows: cqw(30) cqw(40) cqw(30);
+  grid-template-rows: min(cqw(30), 30px) min(cqw(40), 40px) min(cqw(30), 30px);
   align-items: center;
   justify-items: center;
 }
@@ -104,8 +104,8 @@ $design-w: 430;
 }
 
 .swatch {
-  inline-size: cqw(40);
-  block-size: cqw(40);
+  inline-size: min(cqw(40), 40px);
+  block-size: min(cqw(40), 40px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -116,8 +116,8 @@ $design-w: 430;
 
 /* Vertikalne strelice (30 × 22) */
 .vArrow {
-  inline-size: cqw(30);
-  block-size: cqw(22);
+  inline-size: min(cqw(30), 30px);
+  block-size: min(cqw(22), 22px);
   display: flex;
   align-items: center;
   justify-content: center;

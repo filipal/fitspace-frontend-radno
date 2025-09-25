@@ -7,7 +7,7 @@ $design-w: 430;
 /* 430 × 120 */
 .container {
   inline-size: 100%;
-  block-size: cqw(120);
+  block-size: min(cqw(120), 120px);
   display: grid;
   grid-template-columns: cqw(80) cqw(270) cqw(80); /* left | center | right */
   background: #ececec;
@@ -30,8 +30,8 @@ $design-w: 430;
 }
 
 .vArrow {
-  inline-size: cqw(30);
-  block-size: cqw(22);
+  inline-size: min(cqw(30), 30px);
+  block-size: min(cqw(22), 22px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -49,8 +49,8 @@ $design-w: 430;
 }
 
 .stack {
-  inline-size: cqw(51);
-  block-size: cqw(47);
+  inline-size: min(cqw(51), 51px);
+  block-size: min(cqw(47), 47px);
   display: grid;
   grid-template-rows: 1fr 1fr 1fr;
   align-items: center;
@@ -71,17 +71,17 @@ $design-w: 430;
   justify-content: center;
 }
 .centerInner {
-  inline-size: cqw(230);
+  inline-size: min(cqw(230), 230px);
   block-size: 100%;
   display: grid;
-  grid-template-columns: cqw(24) 1fr cqw(24);
+  grid-template-columns: min(cqw(24), 24px) 1fr min(cqw(24), 24px);
   align-items: center;
   column-gap: cqw(10);
 }
 
 .hArrow {
-  inline-size: cqw(24);
-  block-size: cqw(32.8);
+  inline-size: min(cqw(24), 24px);
+  block-size: min(cqw(32.8), 32.8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -107,44 +107,44 @@ $design-w: 430;
 }
 
 .thumbSmall {
-  inline-size: cqw(46.8);
-  block-size: cqw(46.8);
+  inline-size: min(cqw(46.8), 46.8px);
+  block-size: min(cqw(46.8), 46.8px);
   display: flex;
   align-items: center;
   justify-content: center;
 
   img {
-    inline-size: cqw(40.88);
-    block-size: cqw(14);
+    inline-size: min(cqw(40.88), 40.88px);
+    block-size: min(cqw(14), 14px);
     object-fit: contain;
     opacity: .35;
     display: block;
   }
 }
 .glassesSmallIcon {
-  inline-size: cqw(40.88);
-  block-size: cqw(14);
+  inline-size: min(cqw(40.88), 40.88px);
+  block-size: min(cqw(14), 14px);
   opacity: .35;
   display: block;
 }
 
 /* “ThumbBig”: ikona + broj ispod */
 .thumbBig {
-  inline-size: cqw(78);
-  block-size: cqw(78);
+  inline-size: min(cqw(78), 78px);
+  block-size: min(cqw(78), 78px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: cqw(10);
+  gap: min(cqw(10), 10px);
 }
 .glassesBigIcon {
-  inline-size: cqw(67);
-  block-size: cqw(23);
+  inline-size: min(cqw(67), 67px);
+  block-size: min(cqw(23), 23px);
   display: block;
 }
 .glassesIndex {
-  font-size: cqw(17);
+  font-size: min(cqw(17), 17px);
   line-height: 1;
   color: #000;
 }
@@ -158,22 +158,22 @@ $design-w: 430;
   justify-content: center;
 }
 .colorPicker {
-  inline-size: cqw(60);
-  block-size: cqw(100);
+  inline-size: min(cqw(60), 60px);
+  block-size: min(cqw(100), 100px);
   display: grid;
-  grid-template-rows: cqw(30) cqw(40) cqw(30);
+  grid-template-rows: min(cqw(30), 30px) min(cqw(40), 40px) min(cqw(30), 30px);
   align-items: center;
   justify-items: center;
 }
 .colorPreview {
-  inline-size: cqw(40);
-  block-size: cqw(40);
+  inline-size: min(cqw(40), 40px);
+  block-size: min(cqw(40), 40px);
   border-radius: 50%;
   border: 1px solid rgba(0,0,0,.2);
 }
 .previewIcon {
-  inline-size: cqw(40);
-  block-size: cqw(40);
+  inline-size: min(cqw(40), 40px);
+  block-size: min(cqw(40), 40px);
   display: block;
 }
 
