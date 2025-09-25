@@ -297,7 +297,7 @@ $design-w: 430; /* jedan izvor istine */
 .bottomSection {
   width: 100%;
   max-width: none;
-  --nav-scale: clamp(.75, calc(var(--page-w-px) / 430px), 2);
+  --nav-scale: clamp(.75, calc(var(--page-w-px) / 430px), 1);
   --nav-size: calc(60px * var(--nav-scale));
   --nav-gap: calc(10px * var(--nav-scale));
   --nav-track: calc(5px * var(--nav-scale));
@@ -307,7 +307,8 @@ $design-w: 430; /* jedan izvor istine */
   --nav-icon-max: calc(var(--nav-size) - var(--nav-track) - var(--nav-label-h) - 4px);
   --nav-icon-fallback-h: clamp(16px, min(var(--nav-icon-target), var(--nav-icon-max)), calc(var(--nav-size) * .68));
   --nav-icon-fallback-w: clamp(24px, calc(var(--nav-icon-fallback-h) * 1.35), calc(var(--nav-size) * .85));
-  height: calc(var(--nav-size) + max(env(safe-area-inset-bottom, 0px), calc(21px * var(--nav-scale))));
+  --nav-safe-area: max(env(safe-area-inset-bottom, 0px), 21px);
+  height: calc(var(--nav-size) + var(--nav-safe-area));
   border-top: 1px solid #000; /* border ostavi 1px zbog oštrine */
   display: flex;
   justify-content: center;
@@ -665,10 +666,10 @@ $design-w: 430; /* jedan izvor istine */
     z-index: 2 !important;
   }
 
-  .bottomSection {
+/*   .bottomSection {
     --nav-scale: clamp(.75, calc(var(--page-w-px) / 430px), 1.5);
     --nav-size: calc(60px * var(--nav-scale));
-  }
+  } */
 
   .accFace + .accordion,
   .accHair + .accordion,
