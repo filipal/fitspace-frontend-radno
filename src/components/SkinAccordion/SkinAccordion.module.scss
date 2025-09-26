@@ -207,6 +207,27 @@ $design-w: 430;
   }
 }
 
+@media (min-width: 431px) and (max-width: 1023px) {
+  .container {
+    inline-size: var(--page-w-px, 100%);
+    max-inline-size: 100%;
+  }
+
+  .left,
+  .right {
+    flex: 1 1 50%;
+    inline-size: auto;
+    min-inline-size: 0;
+    justify-content: center;
+  }
+
+  .group,
+  .rightContent {
+    margin: 0 auto;
+  }
+}
+
+
 @media (min-width: 1024px) {
   .container {
     inline-size: 117px;

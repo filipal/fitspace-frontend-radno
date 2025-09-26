@@ -672,6 +672,7 @@ $design-w: 430; /* jedan izvor istine */
   } */
 
   .accFace + .accordion,
+  .accSkin + .accordion,
   .accHair + .accordion,
   .accExtras + .accordion {
     align-items: flex-start;
@@ -682,6 +683,13 @@ $design-w: 430; /* jedan izvor istine */
     inline-size: var(--page-w-px);
     max-inline-size: 100%;
     block-size: min(cqw(80), 80px);
+    margin: 0 auto;
+  }
+
+  .accSkin + .accordion > div {
+    inline-size: var(--page-w-px);
+    max-inline-size: 100%;
+    block-size: min(cqw(60), 60px);
     margin: 0 auto;
   }
 
