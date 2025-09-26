@@ -139,6 +139,31 @@ $design-w: 430;
   block-size: 100%;
 }
 
+@media (min-width: 431px) and (max-width: 1023px) {
+  .container {
+    inline-size: 100%;
+    margin: 0 auto;
+  }
+
+  .left {
+    flex: 1 1 80%;
+    inline-size: auto;
+    min-inline-size: 0;
+    margin: 0 auto;
+  }
+
+  .right {
+    flex: 1 1 20%;
+    inline-size: auto;
+    min-inline-size: 0;
+    margin: 0 auto;
+  }
+
+  .colorPicker {
+    margin: 0 auto;
+  }
+}
+
 @media (min-width: 1024px) {
   .container {
     inline-size: 187px;
