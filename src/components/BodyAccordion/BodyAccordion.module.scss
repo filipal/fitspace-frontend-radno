@@ -205,6 +205,17 @@ $design-w: 430;
     height: 171px !important;
     max-height: 171px !important;
   }
+
+  .container {
+    justify-content: center;
+    gap: 24px;
+  }
+  .leftSection {
+    inline-size: 120px;
+    flex: 0 0 120px;
+    justify-content: center;
+  }
+
   .rows {
     max-height: var(--visible-rows-height);
     overflow-y: auto;

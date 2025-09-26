@@ -8,7 +8,7 @@ $design-w: 430;
 }
 
 /* ROOT: uvijek točno širina stranice (ne ovisi o cqw) */
-.container{
+.container {
   inline-size: var(--page-w-px);
   block-size: min(cw(80), 80px);
   display: flex;
@@ -17,9 +17,6 @@ $design-w: 430;
   /* blur skaliran prema —page-w-px (kompatibilno s iOS) */
   -webkit-backdrop-filter: blur(cw(4));
   backdrop-filter: blur(cw(4));
-
-  box-shadow: 0 cw(4) cw(10) rgba(0,0,0,.25);
-
   /* iOS: ne auto-zoomaj fontove u ovom bloku */
   -webkit-text-size-adjust: none;
   text-size-adjust: none;
@@ -91,6 +88,27 @@ $design-w: 430;
   /* spriječi da je flex stisne ispod zadane širine */
   flex: 0 0 min(cw(29.1), 29.1px);
   display: block;
+}
+
+@media (min-width: 431px) and (max-width: 1023px) {
+  .container {
+    inline-size: 100%;
+    margin: 0;
+  }
+
+  .left, .right {
+    justify-content: center;
+    align-items: center;
+  }
+
+  .left p {
+    line-height: 17px;
+  }
+
+  .right {
+    justify-content: center;
+    align-items: center;
+  }
 }
 
 @media (min-width: 1024px) {

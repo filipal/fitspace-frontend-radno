@@ -679,10 +679,9 @@ $design-w: 430; /* jedan izvor istine */
   }
 
   .accFace + .accordion > div {
-    width: 187px;
-    max-width: 100%;
-    height: 80px;
-    max-height: 80px;
+    inline-size: min(var(--page-w-px), 430px);
+    max-inline-size: 100%;
+    block-size: min(cqw(80), 80px);
     margin: 0 auto;
   }
 
