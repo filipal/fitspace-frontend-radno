@@ -177,6 +177,9 @@ $design-w: 430;
 
 @media (min-width: 431px) and (max-width: 1023px) {
   .container {
+    display: grid;
+    grid-template-columns: 80px 270px 80px;
+    justify-content: center;
     backdrop-filter: blur(4px);
   }
 
