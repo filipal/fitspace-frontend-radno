@@ -19,7 +19,7 @@ $design-w: 430;
   inline-size: min(cqw(350), 350px);
   block-size: 100%;
   display: grid;
-  grid-template-columns: cqw(24) cqw(232) cqw(24);
+  grid-template-columns: min(cqw(24), 24px) min(cqw(232), 232px) min(cqw(24), 24px);
   column-gap: cqw(20);
   justify-content: center;
   align-items: center;
@@ -149,18 +149,19 @@ $design-w: 430;
     flex: 1 1 80%;
     inline-size: auto;
     min-inline-size: 0;
-    margin: 0 auto;
-    column-gap: 0;
+    margin: 0;
+    column-gap: min(cqw(40), 40px);
   }
-
+  
   .left .hArrow:first-of-type {
-    margin-inline-end: min(cqw(40), 40px);
+    margin-inline-end: 0;
   }
 
   .left .hArrow:last-of-type {
-    margin-inline-start: min(cqw(40), 40px);
+    margin-inline-start: 0;
   }
   
+
   .right {
     flex: 1 1 20%;
     inline-size: auto;
