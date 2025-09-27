@@ -12,7 +12,6 @@ $design-w: 430;
   grid-template-columns: cqw(80) cqw(270) cqw(80); /* left | center | right */
   background: #ececec;
   backdrop-filter: blur(cqw(4));
-  box-shadow: 0 cqw(4) cqw(10) rgba(0,0,0,.25);
   overflow: hidden;
 }
 
@@ -21,12 +20,11 @@ $design-w: 430;
   inline-size: 100%;
   block-size: 100%;
   display: grid;
-  grid-template-rows: cqw(25) 1fr cqw(25); /* aproksimacija za 30×22 strelice */
+  grid-template-rows: min(cqw(25), 25px) 1fr min(cqw(25), 25px); /* aproksimacija za 30×22 strelice */
   align-items: center;
   justify-items: center;
-  border-right: 1px solid #000; /* 1px radi oštrine */
   box-sizing: border-box;
-  padding-block: cqw(6);
+  padding-block: min(cqw(6), 6px);
 }
 
 .vArrow {
@@ -49,13 +47,13 @@ $design-w: 430;
 }
 
 .stack {
-  inline-size: min(cqw(51), 51px);
+  inline-size: min(cqw(60), 60px);
   block-size: min(cqw(47), 47px);
   display: grid;
   grid-template-rows: 1fr 1fr 1fr;
   align-items: center;
   justify-items: center;
-  row-gap: cqw(4);
+  row-gap: min(cqw(4), 4px);
 }
 
 .stackItem { inline-size: 100%; text-align: center; color: #000; }
@@ -76,7 +74,7 @@ $design-w: 430;
   display: grid;
   grid-template-columns: min(cqw(24), 24px) 1fr min(cqw(24), 24px);
   align-items: center;
-  column-gap: cqw(10);
+  column-gap: min(cqw(10), 10px);
 }
 
 .hArrow {
@@ -101,7 +99,7 @@ $design-w: 430;
 /* Strip s ikonama: 46.8 | 78 | 46.8 (centar je “thumbBig”) */
 .centerStrip {
   display: grid;
-  grid-template-columns: cqw(46.8) cqw(78) cqw(46.8);
+  grid-template-columns: min(cqw(46.8), 46.8px) min(cqw(78), 78px) min(cqw(46.8), 46.8px);
   align-items: center;
   justify-items: center;
 }
@@ -176,6 +174,41 @@ $design-w: 430;
   block-size: min(cqw(40), 40px);
   display: block;
 }
+
+@media (min-width: 431px) and (max-width: 1023px) {
+  .container {
+    backdrop-filter: blur(4px);
+  }
+
+  .left {
+    grid-template-rows: 25px 1fr 25px;
+    padding-block: 6px;
+  }
+
+  .stack {
+    row-gap: 4px;
+  }
+
+  .stackItem.small {
+    font-size: 10px;
+    line-height: 13px;
+  }
+
+  .stackItem.big {
+    font-size: 15px;
+    line-height: 19px;
+  }
+
+  .centerInner {
+    column-gap: 10px;
+  }
+
+  .centerStrip {
+    grid-template-columns: 46.8px 78px 46.8px;
+  }
+}
+
+
 
 @media (min-width: 1024px) {
   .container {
