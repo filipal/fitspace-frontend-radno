@@ -150,8 +150,17 @@ $design-w: 430;
     inline-size: auto;
     min-inline-size: 0;
     margin: 0 auto;
+    column-gap: 0;
   }
 
+  .left .hArrow:first-of-type {
+    margin-inline-end: min(cqw(40), 40px);
+  }
+
+  .left .hArrow:last-of-type {
+    margin-inline-start: min(cqw(40), 40px);
+  }
+  
   .right {
     flex: 1 1 20%;
     inline-size: auto;

@@ -695,10 +695,12 @@ $design-w: 430; /* jedan izvor istine */
 
   .accHair + .accordion > div,
   .accExtras + .accordion > div {
-    width: 187px;
+/*     width: 187px;
     max-width: 100%;
     height: 120px;
-    max-height: 120px;
+    max-height: 120px; */
+    inline-size: var(--page-w-px, 100%);
+    max-inline-size: 100%;
     margin: 0 auto;
   }
 
