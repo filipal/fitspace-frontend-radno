@@ -113,7 +113,7 @@ $design-w: 430;
   }
 }
 
-@media (min-width: 1440px) {
+@media (min-width: 1024px) {
   .dataPanel {
     position: relative;
     width: 273px;
@@ -174,7 +174,7 @@ $design-w: 430;
     grid-template-columns:
       calc(30.42px * var(--panel-scale, 1))
       minmax(0, 1fr)
-      calc(45.5px * var(--panel-scale, 1));
+      minmax(max(4ch, calc(45.5px * var(--panel-scale, 1))), max-content);
     column-gap: calc(15px * var(--panel-scale, 1));
     align-items: center;
     block-size: calc(15.35px * var(--panel-scale, 1));
@@ -196,27 +196,25 @@ $design-w: 430;
     object-fit: contain;
   }
   .measurementName {
-    width: calc(150px * var(--panel-scale, 1));
     grid-column: 2;
-    height: calc(15.35px * var(--panel-scale, 1));
+    inline-size: min(150px, 100%);
     font-size: clamp(12px, calc(18px * var(--panel-scale, 1)), 18px);
     font-weight: 500;
     color: #000;
-    line-height: calc(15.35px * var(--panel-scale, 1));
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   .measurementValue {
     grid-column: 3;
-    height: calc(15.35px * var(--panel-scale, 1));
     font-size: clamp(12px, calc(18px * var(--panel-scale, 1)), 18px);
     font-weight: 400;
     color: #000;
-    line-height: calc(15.35px * var(--panel-scale, 1));
     text-align: right;
     justify-self: flex-end;
     font-variant-numeric: tabular-nums;
+    min-inline-size: max(4ch, calc(45.5px * var(--panel-scale, 1)));
+    white-space: nowrap;    
   }
 }
 
