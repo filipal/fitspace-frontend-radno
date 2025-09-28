@@ -168,6 +168,19 @@ $design-w: 430;
     align-content: space-between;
   }
 
+  @media (max-height: 559px) {
+    .dataPanelContent {
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .measurementsList {
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+  }
+
+
   .measurementItem {
     margin: 0;
     display: grid;
