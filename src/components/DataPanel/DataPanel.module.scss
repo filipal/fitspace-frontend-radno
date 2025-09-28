@@ -172,11 +172,40 @@ $design-w: 430;
     .dataPanelContent {
       overflow-y: auto;
       overflow-x: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(36, 36, 36, 0.35) transparent;
+
+      &::-webkit-scrollbar {
+        inline-size: 6px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background-color: rgba(36, 36, 36, 0.35);
+        border-radius: 999px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: transparent;
+      }
     }
 
     .measurementsList {
       overflow-y: auto;
-      overflow-x: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(36, 36, 36, 0.35) transparent;
+
+      &::-webkit-scrollbar {
+        inline-size: 6px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background-color: rgba(36, 36, 36, 0.35);
+        border-radius: 999px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: transparent;
+      }
     }
   }
 
