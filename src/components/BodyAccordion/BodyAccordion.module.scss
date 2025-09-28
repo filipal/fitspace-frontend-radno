@@ -246,7 +246,7 @@ $design-w: 430;
   /* Glavni layout: kao na 1440 — left na vrhu, fiksnih 335×129; right ispod fleksibilan */
   .container { width: 335px; height: 100%; display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; }
   .leftSection { width: 100%; flex: 0 0 129px; height: 129px; display: flex; align-items: center; justify-content: center; }
-  .left { width: 100%; height: 100%; display: flex; flex-direction: row; align-items: center; padding: 0 35px; margin: 0; gap: 8px; justify-content: center; box-sizing: border-box; }
+  .left { width: 100%; height: 100%; display: flex; flex-direction: row; align-items: center; padding: 0 30px; margin: 0; gap: 8px; justify-content: center; box-sizing: border-box; }
   .arrowBtn { width: 24px; height: 18px; padding: 0; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
   .arrowBtn img { width: 24px; height: 18px; display: block; }
   .right { width: 100%; flex: 1 1 auto; height: 100%; min-height: 0; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 0; box-sizing: border-box; overflow: hidden; --visible-rows-height: calc(5 * 49px + 4 * 8px); }
@@ -291,11 +291,18 @@ $design-w: 430;
   /* Stack horizontalan, fiksne širine 210px */
   .stack {
     inline-size: 210px !important;
+    flex: 0 0 210px;
     display: grid;
     grid-auto-flow: column;
     grid-auto-columns: max-content;
     column-gap: 8px;
     grid-template-rows: none;
+  }
+
+  .item {
+    max-width: none;
+    overflow: visible;
+    text-overflow: unset;
   }
 
   .topSmall { font-size: 9px; }
