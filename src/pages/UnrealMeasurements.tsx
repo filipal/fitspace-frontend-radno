@@ -243,6 +243,15 @@ export default function UnrealMeasurements() {
     }
   }
 
+  const handleNavClick = (btnKey: NavKey) => {
+    if (btnKey === 'Save') {
+      navigate('/virtual-try-on')
+      return
+    }
+
+    setSelectedNav(prev => (prev === btnKey ? null : btnKey))
+  }
+
   return (
     <div ref={pageRef} className={styles.page}>
       <Header
@@ -329,9 +338,7 @@ export default function UnrealMeasurements() {
               <button
                 key={btn.key}
                 className={`${styles.navButton} ${selectedNav === btn.key ? styles.active : ''}`}
-                onClick={() =>
-                  setSelectedNav(prev => (prev === btn.key ? null : btn.key))
-                }
+                onClick={() => handleNavClick(btn.key)}
                 type="button"
                 style={navButtonVars}
               >
