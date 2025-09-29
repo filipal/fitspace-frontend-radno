@@ -374,12 +374,47 @@ $design-w: 430;
   }
 
   .colorPicker {
-    inline-size: 60px;
-    block-size: 214px;
+    inline-size: 71.92px;
+    block-size: calc(161px + (2 * 32.81px) + (2 * 42px));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 42px;
+    box-sizing: border-box;
+  }
+  .colorSwatches {
+    inline-size: 55px;
+    block-size: 161px;
+    width: 55px;
+    height: 161px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    box-sizing: border-box;
+    gap: 0;
+  }
+
+  .swatch {
+    inline-size: 55px;
+    block-size: 55px;
+  }
+
+  .swatchSide {
+    display: flex;
+    inline-size: 45px;
+    block-size: 45px;
+    width: 45px;
+    height: 45px;
+    align-items: center;
+  }
+
+  .swatchCenter {
+    display: flex;
+    inline-size: 55px;
+    block-size: 55px;
+    width: 55px;
+    height: 55px;
+    align-items: center;
   }
 }

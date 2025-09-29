@@ -137,7 +137,19 @@ export default function ExtrasAccordion() {
           <button type="button" className={styles.vArrow} onClick={prevColor} aria-label="Darker">
             <img src={ArrowUp} alt="Up" />
           </button>
-          <Skin1Icon className={styles.previewIcon} style={{ color: base }} />
+
+          <div className={styles.colorSwatches}>
+            <div className={`${styles.swatch} ${styles.swatchSide}`}>
+              <Skin1Icon className={styles.previewIcon} style={{ color: leftColor }} />
+            </div>
+            <div className={`${styles.swatch} ${styles.swatchCenter}`}>
+              <Skin1Icon className={styles.previewIcon} style={{ color: base }} />
+            </div>
+            <div className={`${styles.swatch} ${styles.swatchSide}`}>
+              <Skin1Icon className={styles.previewIcon} style={{ color: rightColor }} />
+            </div>
+          </div>
+
           <button type="button" className={styles.vArrow} onClick={nextColor} aria-label="Lighter">
             <img src={ArrowDown} alt="Down" />
           </button>
