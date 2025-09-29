@@ -96,6 +96,10 @@ $design-w: 430;
   }
 }
 
+.hArrowVertical img {
+  transform: none !important;
+}
+
 /* Strip s ikonama: 46.8 | 78 | 46.8 (centar je “thumbBig”) */
 .centerStrip {
   display: grid;
@@ -240,14 +244,17 @@ $design-w: 430;
     grid-template-rows: 45px 1fr 45px;
     justify-items: center;
     align-items: center;
-    margin: 32px 0 32px 0;
+    padding: 32px;
   }
 
   .left .vArrow {
-    inline-size: min(cqw(24), 24px);
-    block-size: min(cqw(32.8), 32.8px);
+    inline-size: 32.81px;
+    block-size: 24.01px;
   }
-
+  .right .vArrow {
+    inline-size: 32.81px;
+    block-size: 24.01px;
+  }
   .center {
     inline-size: 100%;
     block-size: 455px;
@@ -266,7 +273,7 @@ $design-w: 430;
     align-items: center;
     justify-content: space-between;
     column-gap: 0;
-    margin: 35px 0 35px 0;
+    margin: 0;
   }
 
   .centerInner {
@@ -275,12 +282,12 @@ $design-w: 430;
 
   .centerInner .hArrow {
     inline-size: 32.81px;
-    block-size: 24px;
+    block-size: 24.01px;
     align-self: center;
   }
 
-  .centerInner .hArrow:first-of-type img { transform: rotate(90deg); }
-  .centerInner .hArrow:last-of-type img { transform: rotate(90deg); }
+  .centerInner .hArrow:not(.hArrowVertical):first-of-type img { transform: rotate(90deg); }
+  .centerInner .hArrow:not(.hArrowVertical):last-of-type img { transform: rotate(-90deg); }
 
   .centerStrip {
     inline-size: 126px;
@@ -360,7 +367,6 @@ $design-w: 430;
     justify-content: center;
     padding: 0;
     border-right: none;
-    margin: 34px 0 34px 0;
   }
 
   .colorPicker {

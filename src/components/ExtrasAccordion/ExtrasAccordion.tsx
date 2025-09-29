@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import ArrowUp from '../../assets/arrow-up.svg'
 import ArrowDown from '../../assets/arrow-down.svg'
 import ArrowLeft from '../../assets/arrow-left.svg'
@@ -50,6 +50,19 @@ export default function ExtrasAccordion() {
   const prevStyle = () => setGlassesIndex((n) => (n - 1 + TOTAL_GLASSES) % TOTAL_GLASSES)
   const nextStyle = () => setGlassesIndex((n) => (n + 1) % TOTAL_GLASSES)
 
+  const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024)
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window !== 'undefined') {
+        setIsDesktop(window.innerWidth >= 1024)
+      }
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   return (
     <div className={styles.container}>
       {/* Left: like BodyAccordion left but 80x120, stack 51x47 with three rows */}
@@ -70,8 +83,13 @@ export default function ExtrasAccordion() {
       {/* Center: 270x120, inner 230x32.8 with horizontal arrows and three icons */}
       <div className={styles.center}>
         <div className={styles.centerInner}>
-          <button type="button" className={styles.hArrow} onClick={prevStyle} aria-label="Prev style">
-            <img src={ArrowLeft} alt="Prev" />
+          <button
+            type="button"
+            className={`${styles.hArrow} ${isDesktop ? styles.hArrowVertical : ''}`}
+            onClick={prevStyle}
+            aria-label="Prev style"
+          >
+            <img src={isDesktop ? ArrowUp : ArrowLeft} alt="Prev" />
           </button>
 
           <div className={styles.centerStrip}>
@@ -90,8 +108,13 @@ export default function ExtrasAccordion() {
             </div>
           </div>
 
-          <button type="button" className={styles.hArrow} onClick={nextStyle} aria-label="Next style">
-            <img src={ArrowRight} alt="Next" />
+          <button
+            type="button"
+            className={`${styles.hArrow} ${isDesktop ? styles.hArrowVertical : ''}`}
+            onClick={nextStyle}
+            aria-label="Next style"
+          >
+            <img src={isDesktop ? ArrowDown : ArrowRight} alt="Next" />
           </button>
         </div>
       </div>
