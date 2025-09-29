@@ -243,26 +243,30 @@ $design-w: 430;
     block-size: 204px;
     border-right: none;
     border-bottom: 1px solid #000;
-    display: grid;
-    grid-template-rows: 45px 1fr 45px;
-    justify-items: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
     align-items: center;
-    margin: 32px 0 32px 0;
+    padding-block: 32px 32px;
+    box-sizing: border-box;
   }
 
   .left .vArrow,
   .right .vArrow {
-    inline-size: 24.01px;
-    block-size: 32.81px;
+    inline-size: 32.81px;
+    block-size: 24.01px;
   }
   .center {
     inline-size: 100%;
     block-size: 455px;
     border-bottom: 1px solid #000;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 0;
+    padding-inline: 0;
+    padding-block: 32px 34px;
+    box-sizing: border-box;
   }
 
   .centerInner {
@@ -276,8 +280,8 @@ $design-w: 430;
   }
 
   .centerInner .hArrow {
-    inline-size: 24.01px;
-    block-size: 32.81px;
+    inline-size: 32.81px;
+    block-size: 24.01px;
     align-self: center;
   }
 
@@ -304,7 +308,7 @@ $design-w: 430;
   .stack {
     inline-size: 89px;
     block-size: 81px;
-    row-gap: 8px;
+    row-gap: 1px;
   }
 
   .stackItem.small {
@@ -360,9 +364,12 @@ $design-w: 430;
     inline-size: 100%;
     block-size: 294px;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 0;
+    padding-inline: 0;
+    padding-block: 34px 34px;
+    box-sizing: border-box;
     border-right: none;
   }
 
@@ -373,5 +380,6 @@ $design-w: 430;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
+    box-sizing: border-box;
   }
 }
