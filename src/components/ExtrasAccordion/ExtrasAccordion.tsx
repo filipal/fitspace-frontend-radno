@@ -1,8 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import ArrowUp from '../../assets/arrow-up.svg'
 import ArrowDown from '../../assets/arrow-down.svg'
-import ArrowLeft from '../../assets/arrow-left.svg'
-import ArrowRight from '../../assets/arrow-right.svg'
 import GlassesBig from '../../assets/glasses-b.svg?react'
 import Skin1Icon from '../../assets/skin1.svg?react'
 import styles from './ExtrasAccordion.module.scss'
@@ -11,11 +9,48 @@ const EXTRAS = ['Earrings', 'Glasses', 'Hats'] as const
 
 const GLASSES_COLORS = [
   '#000000',
+  '#111111',
+  '#1E1E1E',
   '#434343',
+  '#555555',
   '#666666',
-  '#8B4513',
-  '#C0C0C0',
+  '#777777', 
+  '#888888',
   '#FFFFFF',
+  '#F5F5F5', 
+  '#EFEFEF',
+  '#B8B8B8',
+  '#C0C0C0',
+  '#D0D0D0',
+  '#E0E0E0',
+  '#2C3539',
+  '#3A4549',
+  '#4A5559',
+  '#B8870B',
+  '#D4AF37',
+  '#E6C55F',
+  '#B76E79',
+  '#C5837F',
+  '#D9A6A6',
+  '#5A381F',
+  '#7A4A25',
+  '#8B4513',
+  '#A65A2E',
+  '#C0703A',
+  '#4B2E21',
+  '#5C3A27',
+  '#704628',
+  '#8B5A2B',
+  '#A86F3A',
+  '#0B2C4D',
+  '#123A63',
+  '#1B4D7F',
+  '#0F3B21',
+  '#14522C',
+  '#1C6B39',
+  '#4A0E23',
+  '#611630',
+  '#7A1E3D',
 ]
 
 export default function ExtrasAccordion() {
@@ -50,19 +85,6 @@ export default function ExtrasAccordion() {
   const prevStyle = () => setGlassesIndex((n) => (n - 1 + TOTAL_GLASSES) % TOTAL_GLASSES)
   const nextStyle = () => setGlassesIndex((n) => (n + 1) % TOTAL_GLASSES)
 
-  const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024)
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (typeof window !== 'undefined') {
-        setIsDesktop(window.innerWidth >= 1024)
-      }
-    }
-
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-
   return (
     <div className={styles.container}>
       {/* Left: like BodyAccordion left but 80x120, stack 51x47 with three rows */}
@@ -83,13 +105,8 @@ export default function ExtrasAccordion() {
       {/* Center: 270x120, inner 230x32.8 with horizontal arrows and three icons */}
       <div className={styles.center}>
         <div className={styles.centerInner}>
-          <button
-            type="button"
-            className={`${styles.hArrow} ${isDesktop ? styles.hArrowVertical : ''}`}
-            onClick={prevStyle}
-            aria-label="Prev style"
-          >
-            <img src={isDesktop ? ArrowUp : ArrowLeft} alt="Prev" />
+          <button type="button" className={styles.hArrow} onClick={prevStyle} aria-label="Prev style">
+            <img src={ArrowUp} alt="Prev" />
           </button>
 
           <div className={styles.centerStrip}>
@@ -108,13 +125,8 @@ export default function ExtrasAccordion() {
             </div>
           </div>
 
-          <button
-            type="button"
-            className={`${styles.hArrow} ${isDesktop ? styles.hArrowVertical : ''}`}
-            onClick={nextStyle}
-            aria-label="Next style"
-          >
-            <img src={isDesktop ? ArrowDown : ArrowRight} alt="Next" />
+          <button type="button" className={styles.hArrow} onClick={nextStyle} aria-label="Next style">
+            <img src={ArrowDown} alt="Next" />
           </button>
         </div>
       </div>
