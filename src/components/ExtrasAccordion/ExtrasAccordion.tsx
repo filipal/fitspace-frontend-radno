@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import ArrowUp from '../../assets/arrow-up.svg'
 import ArrowDown from '../../assets/arrow-down.svg'
 import GlassesBig from '../../assets/glasses-b.svg?react'
@@ -85,6 +85,16 @@ export default function ExtrasAccordion() {
   const prevStyle = () => setGlassesIndex((n) => (n - 1 + TOTAL_GLASSES) % TOTAL_GLASSES)
   const nextStyle = () => setGlassesIndex((n) => (n + 1) % TOTAL_GLASSES)
 
+  const [isDesktop, setIsDesktop] = useState(false)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mq = window.matchMedia('(min-width: 1024px)')
+    const handler = (event: MediaQueryListEvent) => setIsDesktop(event.matches)
+    setIsDesktop(mq.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+
   return (
     <div className={styles.container}>
       {/* Left: like BodyAccordion left but 80x120, stack 51x47 with three rows */}
@@ -138,17 +148,23 @@ export default function ExtrasAccordion() {
             <img src={ArrowUp} alt="Up" />
           </button>
 
-          <div className={styles.colorSwatches}>
-            <div className={`${styles.swatch} ${styles.swatchSide}`}>
-              <Skin1Icon className={styles.previewIcon} style={{ color: leftColor }} />
+          {isDesktop ? (
+            <div className={styles.colorSwatches}>
+              <div className={`${styles.swatch} ${styles.swatchSide}`}>
+                <Skin1Icon className={styles.previewIcon} style={{ color: leftColor }} />
+              </div>
+              <div className={`${styles.swatch} ${styles.swatchCenter}`}>
+                <Skin1Icon className={styles.previewIcon} style={{ color: base }} />
+              </div>
+              <div className={`${styles.swatch} ${styles.swatchSide}`}>
+                <Skin1Icon className={styles.previewIcon} style={{ color: rightColor }} />
+              </div>
             </div>
-            <div className={`${styles.swatch} ${styles.swatchCenter}`}>
+          ) : (
+            <div className={styles.colorPreview}>
               <Skin1Icon className={styles.previewIcon} style={{ color: base }} />
             </div>
-            <div className={`${styles.swatch} ${styles.swatchSide}`}>
-              <Skin1Icon className={styles.previewIcon} style={{ color: rightColor }} />
-            </div>
-          </div>
+          )}
 
           <button type="button" className={styles.vArrow} onClick={nextColor} aria-label="Lighter">
             <img src={ArrowDown} alt="Down" />

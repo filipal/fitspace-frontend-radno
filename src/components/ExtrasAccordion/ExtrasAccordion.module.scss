@@ -173,12 +173,17 @@ $design-w: 430;
 .colorPreview {
   inline-size: min(cqw(40), 40px);
   block-size: min(cqw(40), 40px);
-  border-radius: 50%;
-  border: 1px solid rgba(0,0,0,.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
+
+.colorSwatches { display: none; }
+
 .previewIcon {
-  inline-size: min(cqw(40), 40px);
-  block-size: min(cqw(40), 40px);
+  inline-size: 100%;
+  block-size: 100%;
   display: block;
 }
 
@@ -265,7 +270,7 @@ $design-w: 430;
     align-items: center;
     justify-content: center;
     padding-inline: 0;
-    padding-block: 32px 34px;
+    padding-block: 34px 34px;
     box-sizing: border-box;
   }
 
@@ -383,6 +388,11 @@ $design-w: 430;
     gap: 42px;
     box-sizing: border-box;
   }
+  
+  .colorPreview {
+    display: none;
+  }
+
   .colorSwatches {
     inline-size: 55px;
     block-size: 161px;
@@ -398,6 +408,9 @@ $design-w: 430;
   .swatch {
     inline-size: 55px;
     block-size: 55px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .swatchSide {
@@ -416,5 +429,15 @@ $design-w: 430;
     width: 55px;
     height: 55px;
     align-items: center;
+  }
+
+  .swatchSide .previewIcon {
+    inline-size: 45px;
+    block-size: 45px;
+  }
+
+  .swatchCenter .previewIcon {
+    inline-size: 55px;
+    block-size: 55px;
   }
 }
