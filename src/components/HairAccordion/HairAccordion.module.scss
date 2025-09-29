@@ -201,10 +201,10 @@ $design-w: 430;
     justify-content: space-between;
     padding-block: 51px;
   }
-
-  .hArrow {
-    inline-size: 24px;
-    block-size: 32.81px;
+  .left .vArrow,
+  .right .vArrow {
+    inline-size: 32.81px;
+    block-size: 24.01px;
   }
 
   .arrowHorizontal { display: block; }
@@ -213,7 +213,7 @@ $design-w: 430;
   }
 
   .left .hArrow:last-of-type .arrowHorizontal {
-    transform: rotate(-90deg);
+    transform: rotate(90deg);
   }
 
   .iconStrip {

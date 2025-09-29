@@ -449,11 +449,7 @@ $design-w: 430; /* jedan izvor istine */
     align-items: flex-start;
     justify-content: center;
   }
-  .accFace   + .accordion > div,
-/*   .accExtras + .accordion > div { width: 187px; max-width: 100%; height: 311px; max-height: 311px; margin: 0 auto; }
-  .accSkin   + .accordion > div { width: 117px; max-width: 100%; height: 953px; max-height: 953px; margin: 0 auto; }
-  .accHair   + .accordion > div { width: 187px; max-width: 100%; height: 953px; max-height: 953px; margin: 0 auto; } */
-  .accExtras + .accordion > div {
+  .accFace   + .accordion > div {
     width: 187px;
     max-width: 100%;
     height: auto;
@@ -461,6 +457,17 @@ $design-w: 430; /* jedan izvor istine */
     margin: 0 auto;
     display: flex;
     flex-direction: column;
+    overflow: auto;
+  }
+  .accExtras + .accordion > div {
+    width: 187px;
+    max-width: 100%;
+    height: min(953px, var(--avatar-h));
+    max-height: min(953px, var(--avatar-h));
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
     overflow: auto;
   }
   .accSkin   + .accordion > div {
