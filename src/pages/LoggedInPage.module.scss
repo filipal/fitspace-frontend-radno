@@ -39,7 +39,6 @@
   height: 14px;
   display: block;
   object-fit: contain;
-  margin: 0 auto;
 }
 .loggedInPage {
   width: var(--page-width);
@@ -59,13 +58,17 @@
 
 .iconButton {
   background: none;
-  width: 14px;
+  width: 40px;
+  height: 40px;
   border: none;
   line-height: 1;
-  padding-left: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   color: #000;
   left: 426px;
+  margin-left: 15px;
   outline: none;
   transition: none
 }
