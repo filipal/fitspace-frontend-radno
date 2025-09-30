@@ -209,8 +209,8 @@ $design-w: 430;
   }
 
   .hArrow {
-    inline-size: 32.81px;
-    block-size: 24.01px;
+    inline-size: 24.01px;
+    block-size: 32.81px;
   }
 
   .arrowHorizontal { display: block; }
@@ -256,12 +256,12 @@ $design-w: 430;
 
   .colorPicker {
     inline-size: 71.92px;
-    block-size: calc(189px + (2 * 32.81px) + (2 * 42px));
+    block-size: calc(189px + (4 * 22px) + (2 * 43px));
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 42px;
+    gap: 22px;
   }
 
   .vArrow {
