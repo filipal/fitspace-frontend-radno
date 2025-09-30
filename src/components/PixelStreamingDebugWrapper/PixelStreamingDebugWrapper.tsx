@@ -33,60 +33,77 @@ export const PixelStreamingWrapper = ({
     sendFittingRoomCommand
   } = usePixelStreaming();
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [showCustomControls, setShowCustomControls] = useState(false); // Default to false = native UI
+  const initialSettingsAppliedRef = useRef(false);
+  const initialSettingsRef = useRef<Partial<AllSettings> | null>(null);
+  const [showCustomControls, setShowCustomControls] = useState(true); // Default to true = custom controls (don't steal the main UI)
   const [commandInput, setCommandInput] = useState('');
   const [commandData, setCommandData] = useState('');
   const [signallingUrl, setSignallingUrl] = useState(settings.ss || 'ws://localhost:80');
 
-  // Apply initial debug settings if provided
-  useEffect(() => {
-    if (initialDebugSettings) {
-      setDebugSettings(initialDebugSettings);
-      onDebugSettingsChange?.(initialDebugSettings);
-    }
-  }, [initialDebugSettings, setDebugSettings, onDebugSettingsChange]);
+  // Store initial settings on first render
+  if (!initialSettingsRef.current && initialDebugSettings) {
+    initialSettingsRef.current = initialDebugSettings;
+  }
 
-  // Enable debug mode when debug wrapper is mounted
+  // Apply initial debug settings if provided, but only once
   useEffect(() => {
-    setDebugMode(true);
+    if (initialSettingsRef.current && !initialSettingsAppliedRef.current) {
+      initialSettingsAppliedRef.current = true;
+      setDebugSettings(initialSettingsRef.current);
+      onDebugSettingsChange?.(initialSettingsRef.current);
+    }
+  }, []); // Empty dependency array - only run once
+
+  // Enable debug mode when debug wrapper is mounted, but only if not already enabled
+  useEffect(() => {
+    let mounted = true;
+    if (!debugMode && mounted) {
+      setDebugMode(true);
+    }
     return () => {
-      setDebugMode(false);
+      mounted = false;
+      // Don't automatically disable debug mode on unmount
+      // Let the user control it via the UI
     };
-  }, [setDebugMode]);
+  }, []); // Empty dependency array prevents infinite re-renders
 
   // Mount the main application's UI when available and in native mode
-  useEffect(() => {
-    if (containerRef.current && !showCustomControls && application) {
-      // Clear any existing content
-      containerRef.current.innerHTML = '';
+  // DISABLED: Don't move the application.rootElement to debug panel as it breaks the main app
+  // useEffect(() => {
+  //   if (containerRef.current && !showCustomControls && application) {
+  //     // Clear any existing content
+  //     containerRef.current.innerHTML = '';
 
-      // Mount the main application's UI
-      if (application.rootElement && application.rootElement.parentNode !== containerRef.current) {
-        containerRef.current.appendChild(application.rootElement);
-      }
-    }
-  }, [showCustomControls, application]);
+  //     // Mount the main application's UI
+  //     if (application.rootElement && application.rootElement.parentNode !== containerRef.current) {
+  //       containerRef.current.appendChild(application.rootElement);
+  //     }
+  //   }
+  // }, [showCustomControls, application]);
 
   const handleDebugModeToggle = () => {
     const next = !debugMode;
-    setDebugMode(next)
+    setDebugMode(next);
+    
     if (next) {
-      const init = initialDebugSettings || {};
-      setDebugSettings(init)
-      onDebugSettingsChange?.(init)
+      // Entering debug mode - apply initial settings
+      const init = initialSettingsRef.current || {};
+      setDebugSettings(init);
+      onDebugSettingsChange?.(init);
     } else {
+      // Exiting debug mode - clear debug settings
       setDebugSettings(null);
+      onDebugSettingsChange?.({});
     }
-  }
+  };
 
   const handleSignallingUrlChange = (newUrl: string) => {
     setSignallingUrl(newUrl);
     // Update debug settings to override main app settings
-    const next = { ss: newUrl } as Partial<AllSettings>
-    setDebugSettings(next)
-    onDebugSettingsChange?.(next)
-  }
+    const next = { ss: newUrl } as Partial<AllSettings>;
+    setDebugSettings(next);
+    onDebugSettingsChange?.(next);
+  };
 
   const handleConnect = () => {
     // Ensure URL is set in debug settings before connecting
@@ -135,12 +152,12 @@ export const PixelStreamingWrapper = ({
       <div style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
         <h3 style={{ margin: 0 }}>🔧 Pixel Streaming Debug</h3>
 
-        {/* Toggle between native PS UI and custom controls */}
+        {/* Toggle between debug controls and connection info */}
         <button 
           onClick={() => setShowCustomControls(!showCustomControls)}
           style={{ fontSize: '11px', padding: '4px 8px' }}
         >
-          {showCustomControls ? 'Show Native UI' : 'Show Command Playground'}
+          {showCustomControls ? 'Show Connection Info' : 'Show Debug Controls'}
         </button>
 
         {/* Debug Mode Toggle */}
@@ -166,6 +183,15 @@ export const PixelStreamingWrapper = ({
         }}>
           MAIN: {connectionState.toUpperCase()}
         </div>
+
+        {/* Exit instructions */}
+        <div style={{ 
+          fontSize: '10px',
+          color: '#666',
+          marginLeft: 'auto'
+        }}>
+          Press Escape or Ctrl+Shift+D to exit
+        </div>
       </div>
 
       {debugMode && (
@@ -185,6 +211,76 @@ export const PixelStreamingWrapper = ({
         // Command Playground - Focus on emit interactions
         <div>
           <h4 style={{ margin: '0 0 12px 0', color: '#333' }}>🎮 Command Playground</h4>
+          
+          {/* Connection Controls - Always visible */}
+          <div style={{ 
+            marginBottom: '15px', 
+            padding: '10px',
+            backgroundColor: '#f8f9fa',
+            borderRadius: '4px',
+            border: '1px solid #dee2e6'
+          }}>
+            <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', color: '#333' }}>
+              Connection
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <div style={{ fontSize: '11px', color: '#666' }}>
+                Signalling URL:
+              </div>
+              <input 
+                type="text" 
+                value={signallingUrl}
+                onChange={(e) => handleSignallingUrlChange(e.target.value)}
+                style={{ 
+                  flex: 1,
+                  minWidth: '200px',
+                  fontSize: '11px', 
+                  padding: '4px 6px',
+                  border: '1px solid #ccc',
+                  borderRadius: '3px'
+                }}
+                placeholder="ws://localhost:80"
+              />
+              <button 
+                onClick={handleConnect}
+                disabled={connectionState === 'connecting'}
+                style={{ 
+                  fontSize: '11px', 
+                  padding: '4px 8px',
+                  backgroundColor: connectionState === 'connected' ? '#28a745' : '#007bff',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '3px'
+                }}
+              >
+                {connectionState === 'connected' ? 'Connected' : 'Connect'}
+              </button>
+              <button 
+                onClick={disconnect}
+                disabled={connectionState === 'disconnected'}
+                style={{ 
+                  fontSize: '11px', 
+                  padding: '4px 8px',
+                  backgroundColor: '#dc3545',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '3px'
+                }}
+              >
+                Disconnect
+              </button>
+            </div>
+            <div style={{ 
+              fontSize: '10px', 
+              marginTop: '5px',
+              color: connectionState === 'connected' ? '#28a745' : 
+                     connectionState === 'error' ? '#dc3545' : '#6c757d'
+            }}>
+              Status: {connectionState.toUpperCase()}
+              {connectionError && ` - ${connectionError}`}
+            </div>
+          </div>
+          
           <div style={{ 
             fontSize: '11px', 
             color: '#666', 
@@ -264,14 +360,14 @@ export const PixelStreamingWrapper = ({
                 disabled={connectionState !== 'connected'}
                 style={{ padding: '6px 8px', fontSize: '10px', borderRadius: '3px' }}
               >
-                Zoom In
+                Zoom
               </button>
               <button 
-                onClick={() => handleSendFittingRoomCommand('zoomCamera', { direction: 'out', amount: 0.1 })}
+                onClick={() => handleSendFittingRoomCommand('moveCamera', { direction: 'up', amount: 0.1 })}
                 disabled={connectionState !== 'connected'}
                 style={{ padding: '6px 8px', fontSize: '10px', borderRadius: '3px' }}
               >
-                Zoom Out
+                Move Cam
               </button>
               <button 
                 onClick={() => handleSendFittingRoomCommand('resetAvatar')}
@@ -367,9 +463,11 @@ export const PixelStreamingWrapper = ({
           </div>
         </div>
       ) : (
-        // Native Pixel Streaming UI Container with URL Control
+        // Connection Information Display
         <div>
-          <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <h4 style={{ margin: '0 0 12px 0', color: '#333' }}>📊 Connection Information</h4>
+          
+          <div style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ fontSize: '11px', color: '#666' }}>
               Signalling URL:
             </div>
@@ -415,26 +513,41 @@ export const PixelStreamingWrapper = ({
               Disconnect
             </button>
           </div>
-          <div 
-            ref={containerRef}
-            style={{
-              width: '100%',
-              height: '500px', // Fixed height for the native UI
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              backgroundColor: '#000'
-            }}
-          />
-          {!application && (
-            <div style={{ 
-              textAlign: 'center', 
-              padding: '20px', 
-              color: '#666',
-              fontSize: '11px'
-            }}>
-              Enter signalling URL and click Connect to see the interface
+          
+          {/* Connection Status Display */}
+          <div style={{
+            padding: '15px',
+            border: '1px solid #ddd',
+            borderRadius: '4px',
+            backgroundColor: '#f8f9fa'
+          }}>
+            <div style={{ fontSize: '12px', marginBottom: '8px' }}>
+              <strong>Status:</strong> <span style={{
+                color: connectionState === 'connected' ? '#28a745' : 
+                       connectionState === 'error' ? '#dc3545' : '#6c757d'
+              }}>
+                {connectionState.toUpperCase()}
+              </span>
             </div>
-          )}
+            
+            {connectionError && (
+              <div style={{ fontSize: '11px', color: '#dc3545', marginBottom: '8px' }}>
+                <strong>Error:</strong> {connectionError}
+              </div>
+            )}
+            
+            {application && (
+              <div style={{ fontSize: '11px', color: '#28a745' }}>
+                ✅ Pixel Streaming application is running on the main page
+              </div>
+            )}
+            
+            {!application && (
+              <div style={{ fontSize: '11px', color: '#6c757d' }}>
+                ⏳ No active Pixel Streaming application
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

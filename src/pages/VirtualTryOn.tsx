@@ -1,6 +1,8 @@
 import { useState, type ComponentType, type SVGProps, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header/Header'
+import { usePixelStreaming } from '../context/PixelStreamingContext'
+import { PixelStreamingView } from '../components/PixelStreamingView/PixelStreamingView'
 // Using ?react variants for unified styling
 import avatarBg from '../assets/male-avatar.png'
 import avatarsButton from '../assets/avatar-button.svg'
@@ -53,6 +55,7 @@ interface ControlButton {
 
 export default function VirtualTryOn() {
   const navigate = useNavigate()
+  const { sendFittingRoomCommand, connectionState, application } = usePixelStreaming()
   const [view, setView] = useState<ViewState>({ focus: 'top', detail: false })
   const [selectedControl, setSelectedControl] = useState<string | null>(null)
   const [topOpen, setTopOpen] = useState(false)
@@ -63,8 +66,30 @@ export default function VirtualTryOn() {
   const [fullBodyDetail, setFullBodyDetail] = useState(false)
   const [topOptionIndex, setTopOptionIndex] = useState(0) // Option 1..5 => indices 0..4
   const topOptions = ['with armor', 'option 2', 'option 3', 'option 4', 'option 5']
-  const cycleTopPrev = () => setTopOptionIndex(i => (i + 5 - 1) % 5)
-  const cycleTopNext = () => setTopOptionIndex(i => (i + 1) % 5)
+  const cycleTopPrev = () => {
+    setTopOptionIndex(i => {
+      const newIndex = (i + 5 - 1) % 5
+      // Send selectClothing command for tops (map to 0-2 range)
+      if (connectionState === 'connected') {
+        const itemId = (newIndex % 3).toString()
+        sendFittingRoomCommand('selectClothing', { itemId, category: 'top' })
+        console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
+      }
+      return newIndex
+    })
+  }
+  const cycleTopNext = () => {
+    setTopOptionIndex(i => {
+      const newIndex = (i + 1) % 5
+      // Send selectClothing command for tops (map to 0-2 range)
+      if (connectionState === 'connected') {
+        const itemId = (newIndex % 3).toString()
+        sendFittingRoomCommand('selectClothing', { itemId, category: 'top' })
+        console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
+      }
+      return newIndex
+    })
+  }
   // Color group behaves like SkinAccordion iconsThree (light/base/dark) with center selectable enlargement
   const basePalette = ['#f5e0d0', '#eac3a6', '#d7a381', '#b47b57', '#8a573b', '#5d3b2a']
   const [baseColorIndex, setBaseColorIndex] = useState(2)
@@ -79,8 +104,30 @@ export default function VirtualTryOn() {
   const lowerCategories = ['Shorts', 'Jeans', 'Base Layer']
   const [upperCenterIdx, setUpperCenterIdx] = useState(1) // 'Jackets'
   const [lowerCenterIdx, setLowerCenterIdx] = useState(1) // 'Jeans'
-  const cycleUpper = (dir: 1 | -1) => setUpperCenterIdx(i => (i + dir + upperCategories.length) % upperCategories.length)
-  const cycleLower = (dir: 1 | -1) => setLowerCenterIdx(i => (i + dir + lowerCategories.length) % lowerCategories.length)
+  const cycleUpper = (dir: 1 | -1) => {
+    setUpperCenterIdx(i => {
+      const newIndex = (i + dir + upperCategories.length) % upperCategories.length
+      // Send selectClothing command for tops (use index directly as it's already 0-2)
+      if (connectionState === 'connected') {
+        const itemId = newIndex.toString()
+        sendFittingRoomCommand('selectClothing', { itemId, category: 'top' })
+        console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
+      }
+      return newIndex
+    })
+  }
+  const cycleLower = (dir: 1 | -1) => {
+    setLowerCenterIdx(i => {
+      const newIndex = (i + dir + lowerCategories.length) % lowerCategories.length
+      // Send selectClothing command for bottoms (use index directly as it's already 0-2)
+      if (connectionState === 'connected') {
+        const itemId = newIndex.toString()
+        sendFittingRoomCommand('selectClothing', { itemId, category: 'bottom' })
+        console.log(`Sent selectClothing command: itemId=${itemId}, category=bottom`)
+      }
+      return newIndex
+    })
+  }
   const upperTop = upperCategories[(upperCenterIdx - 1 + upperCategories.length) % upperCategories.length]
   const upperMain = upperCategories[upperCenterIdx]
   const upperBottom = upperCategories[(upperCenterIdx + 1) % upperCategories.length]
@@ -110,8 +157,30 @@ export default function VirtualTryOn() {
   const pantsImages = [BossDyn01Img, Pants1Img, Pants2Img, Pants3Img, Pants4Img, Pants5Img]
   const [jacketIndex, setJacketIndex] = useState(0)
   const [pantsIndex, setPantsIndex] = useState(0)
-  const cycleJackets = (dir: 1 | -1) => setJacketIndex(i => (i + dir + jacketImages.length) % jacketImages.length)
-  const cyclePants = (dir: 1 | -1) => setPantsIndex(i => (i + dir + pantsImages.length) % pantsImages.length)
+  const cycleJackets = (dir: 1 | -1) => {
+    setJacketIndex(i => {
+      const newIndex = (i + dir + jacketImages.length) % jacketImages.length
+      // Send selectClothing command for tops (map to 0-2 range)
+      if (connectionState === 'connected') {
+        const itemId = (newIndex % 3).toString()
+        sendFittingRoomCommand('selectClothing', { itemId, category: 'top' })
+        console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
+      }
+      return newIndex
+    })
+  }
+  const cyclePants = (dir: 1 | -1) => {
+    setPantsIndex(i => {
+      const newIndex = (i + dir + pantsImages.length) % pantsImages.length
+      // Send selectClothing command for bottoms (map to 0-2 range)
+      if (connectionState === 'connected') {
+        const itemId = (newIndex % 2).toString()
+        sendFittingRoomCommand('selectClothing', { itemId, category: 'bottom' })
+        console.log(`Sent selectClothing command: itemId=${itemId}, category=bottom`)
+      }
+      return newIndex
+    })
+  }
 
   // Size selector (shown in right upper arrows when topExpandedFooter)
   const sizeSequence = ['SX', 'S', 'M', 'L', 'XL', 'XXL']
@@ -201,7 +270,16 @@ export default function VirtualTryOn() {
       />
 
   <div className={`${styles.canvasWrapper} ${accordionOpen ? styles.withAccordion : ''} ${(topOpen && !(fullBodyMode && fullBodyDetail)) ? styles.topZoom : ''} ${(bottomOpen && !(fullBodyMode && fullBodyDetail)) ? styles.bottomZoom : ''} ${topExpandedFooter ? styles.footerTopExpanded : ''} ${bottomExpandedFooter ? styles.footerBotExpanded : ''} ${(fullBodyMode && fullBodyDetail) ? styles.fullBodyDetail : ''}`}>
-        <img src={avatarBg} alt="Avatar" className={styles.avatarImage} />
+        
+        {/* Conditional render: PixelStreaming when connected, fallback image otherwise */}
+        {connectionState === 'connected' && application ? (
+          <PixelStreamingView 
+            className={styles.avatarImage}
+            autoConnect={false}
+          />
+        ) : (
+          <img src={avatarBg} alt="Avatar" className={styles.avatarImage} />
+        )}
 
         <button
           type="button"
@@ -487,6 +565,26 @@ export default function VirtualTryOn() {
                 className={`${styles.controlButton} ${selectable && selectedControl === control.key ? styles.selected : ''}`}
                 style={styleMargins}
                 onClick={() => {
+                  // Send pixel streaming commands for rotate buttons
+                  if (control.key === 'rotate-left' && connectionState === 'connected') {
+                    sendFittingRoomCommand('rotateCamera', { direction: 'left', speed: 1 })
+                    console.log('Sent rotate left command')
+                  }
+                  if (control.key === 'rotate-right' && connectionState === 'connected') {
+                    sendFittingRoomCommand('rotateCamera', { direction: 'right', speed: 1 })
+                    console.log('Sent rotate right command')
+                  }
+
+                  // Send pixel streaming commands for middle buttons
+                  if (control.key === 'top-zoom' && connectionState === 'connected') {
+                    sendFittingRoomCommand('zoomCamera', { direction: 'in', amount: 0.1 })
+                    console.log('Sent zoom camera command')
+                  }
+                  if (control.key === 'bottom-zoom' && connectionState === 'connected') {
+                    sendFittingRoomCommand('moveCamera', { direction: 'up', amount: 0.1 })
+                    console.log('Sent move camera command')
+                  }
+
                   // Enter full body detailed via left outer circle (rotate-left) when in simple full body
                   if (fullBodyMode && !fullBodyDetail && control.key === 'rotate-left') {
                     setFullBodyDetail(true)

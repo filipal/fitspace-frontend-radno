@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { usePixelStreaming } from '../../context/PixelStreamingContext'
 import styles from './BottomAccordion.module.scss'
 import ArrowLeft from '../../assets/arrow-left.svg'
 import ArrowRight from '../../assets/arrow-right.svg'
@@ -12,9 +13,32 @@ import Pants5 from '../../assets/pants-5.png'
 const carouselItems: string[] = [BossDyn01, Pants1, Pants2, Pants3, Pants4, Pants5]
 
 export default function BottomAccordion() {
+  const { sendFittingRoomCommand, connectionState } = usePixelStreaming()
   const [index, setIndex] = useState(0)
-  const prev = () => setIndex(i => (i + carouselItems.length - 1) % carouselItems.length)
-  const next = () => setIndex(i => (i + 1) % carouselItems.length)
+  const prev = () => {
+    setIndex(i => {
+      const newIndex = (i + carouselItems.length - 1) % carouselItems.length
+      // Send selectClothing command for bottoms (map to 0-2 range)
+      if (connectionState === 'connected') {
+        const itemId = (newIndex % 2).toString()
+        sendFittingRoomCommand('selectClothing', { itemId, category: 'bottom' })
+        console.log(`Sent selectClothing command: itemId=${itemId}, category=bottom`)
+      }
+      return newIndex
+    })
+  }
+  const next = () => {
+    setIndex(i => {
+      const newIndex = (i + 1) % carouselItems.length
+      // Send selectClothing command for bottoms (map to 0-2 range)  
+      if (connectionState === 'connected') {
+        const itemId = (newIndex % 2).toString()
+        sendFittingRoomCommand('selectClothing', { itemId, category: 'bottom' })
+        console.log(`Sent selectClothing command: itemId=${itemId}, category=bottom`)
+      }
+      return newIndex
+    })
+  }
   const len = carouselItems.length
   const leftIdx = (index + len - 1) % len
   const rightIdx = (index + 1) % len

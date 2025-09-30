@@ -88,8 +88,101 @@
     max-width: 400px;
     height: 10px;
   }
+}
+
+// New styles for instance provisioning UI
+.progressPercent {
+  font-size: 14px;
+  color: #666;
+  margin-top: 8px;
+}
+
+.statusInfo {
+  margin-top: 20px;
+  text-align: center;
+  min-height: 30px;
+}
+
+.errorStatus {
+  color: #dc3545;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 12px;
+  background: rgba(220, 53, 69, 0.1);
+  border-radius: 4px;
+}
+
+.connectingStatus {
+  color: #ffc107;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 12px;
+  background: rgba(255, 193, 7, 0.1);
+  border-radius: 4px;
+}
+
+.successStatus {
+  color: #28a745;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 12px;
+  background: rgba(40, 167, 69, 0.1);
+  border-radius: 4px;
+}
+
+.debugControls {
+  margin-top: 20px;
+}
+
+.debugToggle {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
   
-  .loadingText {
-    font-size: 20px;
+  &:hover {
+    background: #545b62;
   }
+}
+
+.debugMessages {
+  margin-top: 20px;
+  width: 100%;
+  max-width: 500px;
+  
+  h4 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+}
+
+.messageList {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.debugMessage {
+  font-size: 11px;
+  font-family: monospace;
+  color: #495057;
+  margin-bottom: 4px;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.noMessages {
+  font-size: 12px;
+  color: #6c757d;
+  font-style: italic;
+  text-align: center;
 }

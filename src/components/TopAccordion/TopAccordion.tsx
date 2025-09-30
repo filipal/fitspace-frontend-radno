@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { usePixelStreaming } from '../../context/PixelStreamingContext'
 import styles from './TopAccordion.module.scss'
 import ArrowLeft from '../../assets/arrow-left.svg'
 import ArrowRight from '../../assets/arrow-right.svg'
@@ -11,9 +12,32 @@ import Hoodie from '../../assets/hoodie.png'
 const carouselItems: string[] = [FalconIcon, ShellIcon, MilitaryJacket, Hoodie]
 
 export default function TopAccordion() {
+  const { sendFittingRoomCommand, connectionState } = usePixelStreaming()
   const [index, setIndex] = useState(0)
-  const prev = () => setIndex(i => (i + carouselItems.length - 1) % carouselItems.length)
-  const next = () => setIndex(i => (i + 1) % carouselItems.length)
+  const prev = () => {
+    setIndex(i => {
+      const newIndex = (i + carouselItems.length - 1) % carouselItems.length
+      // Send selectClothing command for tops (map to 0-2 range)
+      if (connectionState === 'connected') {
+        const itemId = (newIndex % 3).toString()
+        sendFittingRoomCommand('selectClothing', { itemId, category: 'top' })
+        console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
+      }
+      return newIndex
+    })
+  }
+  const next = () => {
+    setIndex(i => {
+      const newIndex = (i + 1) % carouselItems.length
+      // Send selectClothing command for tops (map to 0-2 range)
+      if (connectionState === 'connected') {
+        const itemId = (newIndex % 3).toString()
+        sendFittingRoomCommand('selectClothing', { itemId, category: 'top' })
+        console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
+      }
+      return newIndex
+    })
+  }
   const len = carouselItems.length
   const leftIdx = (index + len - 1) % len
   const rightIdx = (index + 1) % len

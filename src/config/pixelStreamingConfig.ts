@@ -8,7 +8,9 @@ export const pixelStreamingConfig: Partial<AllSettings> = {
   StartVideoMuted: true,
   HoveringMouse: true,
   SuppressBrowserKeys: false, 
-  WaitForStreamer: true
+  WaitForStreamer: true,
+  MatchViewportRes: true, // Enable match viewport resolution by default
+  WebRTCFPS: 30 // Set max FPS to 30
 };
 
 // Debug-specific overrides (if needed)

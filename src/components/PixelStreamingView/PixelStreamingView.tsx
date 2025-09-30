@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { usePixelStreaming } from '../../hooks/usePixelStreamingSettings';
+import { usePixelStreaming } from '../../context/PixelStreamingContext';
 
 interface PixelStreamingViewProps {
   style?: React.CSSProperties;

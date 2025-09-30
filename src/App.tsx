@@ -18,9 +18,14 @@ import FaceScan from './pages/FaceScan.tsx'
 import FacePhotosCheck from './pages/FacePhotosCheck.tsx'
 import PixelStreamingDemo from './pages/PixelStreamingDemo.tsx'
 import DebugOverlay from './components/DebugOverlay/DebugOverlay.tsx'
+import BeforeUnloadHandler from './components/BeforeUnloadHandler/BeforeUnloadHandler.tsx'
 import { PixelStreamingProvider } from './context/PixelStreamingContext'
-import './App.module.scss'
+import { AuthDataProvider } from './context/AuthDataContext'
+import { UserSettingsProvider } from './context/UserSettingsContext'
+import { AvatarConfigurationProvider } from './context/AvatarConfigurationContext'
+import { InstanceManagementProvider } from './context/InstanceManagementContext'
 import ScrollToTop from './components/ScrollToTop'
+import './App.module.scss'
 
 
 export default function App() {
@@ -52,31 +57,40 @@ export default function App() {
   }, [location.pathname])
 
   return (
-    <PixelStreamingProvider>
-      <ScrollToTop />
-      <Routes>
-        <Route path="/" element={<StartPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/avatar-info" element={<AvatarInfoPage />} />
-        <Route path="/logged-in" element={<LoggedInPage />} />
-        <Route path="/use-of-data" element={<UseOfData />} />
-        <Route path="/body-scan-info" element={<BodyScanInfo />} />
-        <Route path="/face-scan-info" element={<FaceScanInfo />} />
-        <Route path="/quickmode" element={<QuickMode />} />
-        <Route path="/body-scan" element={<BodyScan />} />
-        <Route path="/face-scan" element={<FaceScan />} />
-        <Route path="/unreal-measurements" element={<UnrealMeasurements />} />
-        <Route path="/virtual-try-on" element={<VirtualTryOn />} />
-        <Route path="/scan-qr-bodyscan" element={<ScanQRBodyscan />} />
-        <Route path="/body-photos-check" element={<BodyPhotosCheck />} />
-        <Route path="/face-photos-check" element={<FacePhotosCheck />} />
-        <Route path="/loading" element={<LoadingScreen />} />
-        <Route path="/pixel-streaming-demo" element={<PixelStreamingDemo />} />
+    <UserSettingsProvider>
+      <AuthDataProvider>
+        <AvatarConfigurationProvider>
+          <InstanceManagementProvider>
+            <PixelStreamingProvider>
+              <ScrollToTop />
+              <BeforeUnloadHandler />
+              <Routes>
+                <Route path="/" element={<StartPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/avatar-info" element={<AvatarInfoPage />} />
+                <Route path="/logged-in" element={<LoggedInPage />} />
+                <Route path="/use-of-data" element={<UseOfData />} />
+                <Route path="/body-scan-info" element={<BodyScanInfo />} />
+                <Route path="/face-scan-info" element={<FaceScanInfo />} />
+                <Route path="/quickmode" element={<QuickMode />} />
+                <Route path="/body-scan" element={<BodyScan />} />
+                <Route path="/face-scan" element={<FaceScan />} />
+                <Route path="/unreal-measurements" element={<UnrealMeasurements />} />
+                <Route path="/virtual-try-on" element={<VirtualTryOn />} />
+                <Route path="/scan-qr-bodyscan" element={<ScanQRBodyscan />} />
+                <Route path="/body-photos-check" element={<BodyPhotosCheck />} />
+                <Route path="/face-photos-check" element={<FacePhotosCheck />} />
+                <Route path="/loading" element={<LoadingScreen />} />
+                <Route path="/pixel-streaming-demo" element={<PixelStreamingDemo />} />
 
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-      
-      <DebugOverlay />
-    </PixelStreamingProvider>
+                <Route path="*" element={<Navigate to="/" />} />
+              </Routes>
+            
+              <DebugOverlay />
+            </PixelStreamingProvider>
+          </InstanceManagementProvider>
+        </AvatarConfigurationProvider>
+      </AuthDataProvider>
+    </UserSettingsProvider>
   )
 }

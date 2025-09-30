@@ -84,7 +84,7 @@ export default function PixelStreamingDemo() {
           )}
           
           <div style={{ marginBottom: '20px' }}>
-            <button onClick={connect} disabled={connectionState !== 'disconnected'}>
+            <button onClick={() => connect()} disabled={connectionState !== 'disconnected'}>
               Connect
             </button>
             <button onClick={disconnect} disabled={connectionState !== 'connected'}>
