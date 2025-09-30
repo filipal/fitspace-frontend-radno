@@ -1,9 +1,11 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import Header from '../components/Header/Header'
 import Footer from '../components/Footer/Footer'
 import deleteIcon from '../assets/delete-avatar.svg'
 import styles from './LoggedInPage.module.scss'
+import { useAvatarLoader } from '../hooks/useAvatarLoader'
+import { LAST_LOADED_AVATAR_STORAGE_KEY, useAvatarApi } from '../services/avatarApi'
 
 interface Avatar {
   id: number
@@ -13,6 +15,10 @@ interface Avatar {
 
 export default function LoggedInPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { loadAvatar, loaderState } = useAvatarLoader()
+  const { fetchAvatarById } = useAvatarApi()
+  const locationState = location.state as { nextRoute?: string } | null
 
   const [avatars, setAvatars] = useState<Avatar[]>([
     { id: 1, name: 'Avatar Name 1' },
@@ -23,15 +29,38 @@ export default function LoggedInPage() {
   const [loadedAvatarId, setLoadedAvatarId] = useState<number | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<null | number>(null)
   const [confirmPos, setConfirmPos] = useState<{ top: number; height: number } | null>(null)
+  const [fetchError, setFetchError] = useState<string | null>(null)
   const loadButtonRef = useRef<HTMLButtonElement | null>(null)
 
   const handleSelect = (id: number) => setSelectedAvatarId(id)
-  const handleLoad = () => {
-    if (selectedAvatarId === null) return
+  const handleLoad = useCallback(async () => {
+    if (selectedAvatarId === null || loaderState.isLoading) return
 
-    setLoadedAvatarId(selectedAvatarId)
-    navigate('/virtual-try-on')
-  }
+    try {
+      setFetchError(null)
+      const avatarData = await fetchAvatarById(selectedAvatarId)
+      const result = await loadAvatar(avatarData)
+
+      if (!result.success) {
+        throw new Error(result.error ?? 'Failed to load avatar configuration')
+      }
+
+      setLoadedAvatarId(selectedAvatarId)
+
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, String(selectedAvatarId))
+      }
+
+      const targetRoute = locationState?.nextRoute ?? '/virtual-try-on'
+
+      navigate(targetRoute, { state: { avatarId: selectedAvatarId } })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load avatar'
+      setFetchError(message)
+      console.error('Failed to load avatar', error)
+    }
+  }, [fetchAvatarById, loadAvatar, loaderState.isLoading, locationState?.nextRoute, navigate, selectedAvatarId])
+    
   const handleDelete = (id: number) => setShowDeleteConfirm(id)
 
   const confirmDelete = () => {
@@ -84,6 +113,27 @@ export default function LoggedInPage() {
     }
   }, [showDeleteConfirm, positionConfirm])
 
+  const loaderMessage = useMemo(() => {
+    if (!loaderState.isLoading) {
+      return null
+    }
+
+    switch (loaderState.stage) {
+      case 'validation':
+        return 'Validating avatar data…'
+      case 'transformation':
+        return 'Preparing avatar morphs…'
+      case 'command_generation':
+        return 'Generating avatar commands…'
+      case 'unreal_communication':
+        return 'Sending avatar to Unreal Engine…'
+      case 'complete':
+        return 'Avatar ready!'
+      default:
+        return 'Loading avatar…'
+    }
+  }, [loaderState.isLoading, loaderState.stage])
+
   return (
     <div className={styles.loggedInPage}>
       <Header
@@ -114,10 +164,31 @@ export default function LoggedInPage() {
         ))}
       </ul>
 
+      {loaderState.isLoading && (
+        <div className={styles.loaderBanner}>
+          <span>{loaderMessage}</span>
+          {typeof loaderState.progress === 'number' && (
+            <span className={styles.loaderProgress}>
+              {` ${Math.round(loaderState.progress)}%`}
+            </span>
+          )}
+        </div>
+      )}
+
+      {(loaderState.error || fetchError) && (
+        <div className={styles.errorBanner}>
+          {loaderState.error ?? fetchError}
+        </div>
+      )}
+
       <Footer
         topButtonText="Load Avatar"
         onTopButton={handleLoad}
-        topButtonDisabled={selectedAvatarId === null || selectedAvatarId === loadedAvatarId}
+        topButtonDisabled={
+          selectedAvatarId === null ||
+          selectedAvatarId === loadedAvatarId ||
+          loaderState.isLoading
+        }
         topButtonType="primary"
         backText={showDeleteConfirm ? 'Cancel' : 'Back'}
         actionText={showDeleteConfirm ? 'Delete Avatar' : 'Create New Avatar'}

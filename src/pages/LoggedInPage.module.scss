@@ -92,6 +92,35 @@
   margin-inline: auto;
 }
 
+.loaderBanner {
+  margin: 0 auto 16px;
+  padding: 8px 12px;
+  max-width: 320px;
+  text-align: center;
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  color: #000;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.loaderProgress {
+  font-weight: 600;
+}
+
+.errorBanner {
+  margin: 0 auto 16px;
+  padding: 10px 14px;
+  max-width: 320px;
+  text-align: center;
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  color: #fff;
+  background: #d44b3e;
+  border-radius: 8px;
+}
+
 .avatar-name {
   flex: 1 1 320px;
   min-width: 0;

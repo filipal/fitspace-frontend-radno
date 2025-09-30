@@ -77,6 +77,36 @@ $design-w: 430; /* jedan izvor istine */
   place-items: center;
   flex: 0 0 auto; /* ne rasteži u header flexu */
 }
+
+.avatarLoaderBanner {
+  margin: 16px auto 0;
+  padding: 10px 14px;
+  inline-size: min(90%, 640px);
+  text-align: center;
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(14px, 3.6cqw, 18px);
+  color: #000;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.avatarLoaderProgress {
+  font-weight: 600;
+}
+
+.avatarErrorBanner {
+  margin: 12px auto 0;
+  padding: 12px 16px;
+  inline-size: min(90%, 640px);
+  text-align: center;
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(14px, 3.6cqw, 18px);
+  color: #fff;
+  background: rgba(212, 75, 62, 0.95);
+  border-radius: 10px;
+}
+
 .avatarButton img{
   inline-size: 100%;
   block-size:  100%;

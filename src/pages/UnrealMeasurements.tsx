@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback, type ComponentType, type SVGProps, type CSSProperties } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo, type ComponentType, type SVGProps, type CSSProperties } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import Header from '../components/Header/Header'
 import { usePixelStreaming } from '../context/PixelStreamingContext'
@@ -6,6 +6,8 @@ import { PixelStreamingView } from '../components/PixelStreamingView/PixelStream
 import { useAvatarConfiguration } from '../context/AvatarConfigurationContext'
 import { convertSliderValueToUnrealValue } from '../services/avatarCommandService'
 import { morphAttributes } from '../data/morphAttributes'
+import { useAvatarLoader } from '../hooks/useAvatarLoader'
+import { LAST_LOADED_AVATAR_STORAGE_KEY, useAvatarApi } from '../services/avatarApi'
 
 import avatarsButton from '../assets/avatars-button.png'
 import RLeft from '../assets/r-left.svg?react'
@@ -67,6 +69,8 @@ export default function UnrealMeasurements() {
   const [selectedControl, setSelectedControl] = useState<string | null>(null)
   const [selectedNav, setSelectedNav] = useState<NavKey | null>(null)
   const [avatarSrc] = useState<string>(avatarMeasure)
+  const [autoLoadError, setAutoLoadError] = useState<string | null>(null)
+  const lastAutoLoadedIdRef = useRef<string | null>(null)
 
   useLayoutEffect(() => {
     const el = pageRef.current
@@ -164,6 +168,8 @@ export default function UnrealMeasurements() {
   const location = useLocation()
   const { sendFittingRoomCommand, connectionState, application } = usePixelStreaming()
   const { updateMorphValue, currentAvatar } = useAvatarConfiguration()
+  const { loadAvatar, loaderState } = useAvatarLoader()
+  const { fetchAvatarById } = useAvatarApi()
 
   const pendingMorphUpdatesRef = useRef<PendingMorphUpdate[]>([])
 
@@ -188,6 +194,60 @@ export default function UnrealMeasurements() {
       value: unrealValue
     })
   }, [findMorphAttribute, sendFittingRoomCommand])
+
+  const locationState = location.state as { avatarId?: number | string } | null
+  const avatarIdFromState = locationState?.avatarId
+
+  useEffect(() => {
+    if (currentAvatar || loaderState.isLoading) {
+      return
+    }
+
+    const storedAvatarId = avatarIdFromState != null
+      ? String(avatarIdFromState)
+      : typeof window !== 'undefined'
+        ? sessionStorage.getItem(LAST_LOADED_AVATAR_STORAGE_KEY)
+        : null
+
+    if (!storedAvatarId) {
+      return
+    }
+
+    if (lastAutoLoadedIdRef.current === storedAvatarId) {
+      return
+    }
+
+    let cancelled = false
+    lastAutoLoadedIdRef.current = storedAvatarId
+
+    const load = async () => {
+      try {
+        setAutoLoadError(null)
+        const avatarData = await fetchAvatarById(storedAvatarId)
+        const result = await loadAvatar(avatarData)
+
+        if (!result.success) {
+          throw new Error(result.error ?? 'Failed to load avatar configuration')
+        }
+
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, storedAvatarId)
+        }
+      } catch (error) {
+        if (cancelled) return
+        lastAutoLoadedIdRef.current = null
+        const message = error instanceof Error ? error.message : 'Failed to load avatar'
+        setAutoLoadError(message)
+        console.error('Failed to auto-load avatar', error)
+      }
+    }
+
+    void load()
+
+    return () => {
+      cancelled = true
+    }
+  }, [avatarIdFromState, currentAvatar, fetchAvatarById, loadAvatar, loaderState.isLoading])
 
   // TODO: Consider debouncing or batching updates via generateUnrealMorphUpdateCommand for performance.
   useEffect(() => {
@@ -326,6 +386,27 @@ export default function UnrealMeasurements() {
     setSelectedNav(prev => (prev === btnKey ? null : btnKey))
   }
 
+  const loaderMessage = useMemo(() => {
+    if (!loaderState.isLoading) {
+      return null
+    }
+
+    switch (loaderState.stage) {
+      case 'validation':
+        return 'Validating avatar data…'
+      case 'transformation':
+        return 'Preparing avatar morphs…'
+      case 'command_generation':
+        return 'Generating avatar commands…'
+      case 'unreal_communication':
+        return 'Sending avatar to Unreal Engine…'
+      case 'complete':
+        return 'Avatar ready!'
+      default:
+        return 'Loading avatar…'
+    }
+  }, [loaderState.isLoading, loaderState.stage])
+
   return (
     <div ref={pageRef} className={styles.page}>
       <Header
@@ -340,9 +421,26 @@ export default function UnrealMeasurements() {
         )}
       />
 
+      {loaderState.isLoading && (
+        <div className={styles.avatarLoaderBanner}>
+          <span>{loaderMessage}</span>
+          {typeof loaderState.progress === 'number' && (
+            <span className={styles.avatarLoaderProgress}>
+              {` ${Math.round(loaderState.progress)}%`}
+            </span>
+          )}
+        </div>
+      )}
+
+      {(loaderState.error || autoLoadError) && (
+        <div className={styles.avatarErrorBanner}>
+          {loaderState.error ?? autoLoadError}
+        </div>
+      )}
+
       <div className={`${styles.centralWrapper} ${selectedNav ? styles.withAccordion : ''} ${selectedNav === 'Body' ? styles.accBody : ''} ${selectedNav === 'Face' ? styles.accFace : ''} ${selectedNav === 'Skin' ? styles.accSkin : ''} ${selectedNav === 'Hair' ? styles.accHair : ''} ${selectedNav === 'Extras' ? styles.accExtras : ''}`}>
         <div className={`${styles.avatarSection} ${selectedNav ? styles.avatarShifted : ''} ${selectedNav === 'Body' ? styles.bodySelected : ''} ${selectedNav === 'Face' ? styles.faceSelected : ''} ${selectedNav === 'Skin' ? styles.skinSelected : ''} ${selectedNav === 'Hair' ? styles.hairSelected : ''} ${selectedNav === 'Extras' ? styles.extrasSelected : ''}`}>
-          
+
           {/* Conditional render: PixelStreaming when connected, fallback image otherwise */}
           {connectionState === 'connected' && application ? (
             <PixelStreamingView
