@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import Header from '../components/Header/Header'
 import { usePixelStreaming } from '../context/PixelStreamingContext'
 import { PixelStreamingView } from '../components/PixelStreamingView/PixelStreamingView'
-import { useAvatarConfiguration } from '../context/AvatarConfigurationContext'
+import { useAvatarConfiguration, type BasicMeasurements, type BodyMeasurements } from '../context/AvatarConfigurationContext'
 import { convertSliderValueToUnrealValue } from '../services/avatarCommandService'
 import { morphAttributes } from '../data/morphAttributes'
 import { useAvatarLoader } from '../hooks/useAvatarLoader'
@@ -50,9 +50,25 @@ interface NavButton {
 
 interface Measurement {
   name: string
-  value: number
+  value: string
   icon: string // Može biti tekst ikona ili slika path
 }
+
+type MeasurementDescriptor =
+  | {
+    source: 'basic'
+    key: keyof Pick<BasicMeasurements, 'height' | 'weight'>
+    label: string
+    unit?: string
+    icon: string
+  }
+  | {
+    source: 'body'
+    key: keyof BodyMeasurements
+    label: string
+    unit?: string
+    icon: string
+  }
 
 interface PendingMorphUpdate {
   morphId: number
@@ -272,31 +288,67 @@ export default function UnrealMeasurements() {
     }
   }, [openSkinRight])
 
-  const measurements: Measurement[] = [
-    { name: 'Shoulder', value: 33.3, icon: lengthIcon },
-    { name: 'Chest', value: 97.1, icon: girthIcon },
-    { name: 'Underchest', value: 88.9, icon: girthIcon },
-    { name: 'Waist', value: 79.1, icon: girthIcon },
-    { name: 'High Hip', value: 82, icon: girthIcon },
-    { name: 'Low Hip', value: 91.8, icon: girthIcon },
-    { name: 'Inseam', value: 72.6, icon: lengthIcon },
-    { name: 'High Thigh', value: 53.6, icon: girthIcon },
-    { name: 'Mid Thigh', value: 49.5, icon: girthIcon },
-    { name: 'Knee', value: 35, icon: girthIcon },
-    { name: 'Calf', value: 36.1, icon: girthIcon },
-    { name: 'Ankle', value: 19.9, icon: girthIcon },
-    { name: 'Foot Length', value: 24.4, icon: lengthIcon },
-    { name: 'Foot Breadth', value: 8.9, icon: lengthIcon },
-    { name: 'Bicep', value: 32.1, icon: girthIcon },
-    { name: 'Forearm', value: 26.5, icon: girthIcon },
-    { name: 'Wrist', value: 15.9, icon: girthIcon },
-    { name: 'Shoulder to Wrist', value: 56.7, icon: lengthIcon },
-    { name: 'Hand Length', value: 18.3, icon: lengthIcon },
-    { name: 'Hand Breadth', value: 8.1, icon: lengthIcon },
-    { name: 'Neck', value: 37.3, icon: girthIcon },
-    { name: 'Head', value: 54.5, icon: girthIcon },
-    { name: 'Height', value: 170.5, icon: lengthIcon }
-  ]
+  const formatMeasurementValue = useCallback((value: number, unit?: string) => {
+    const formatter = new Intl.NumberFormat(undefined, {
+      minimumFractionDigits: Number.isInteger(value) ? 0 : 1,
+      maximumFractionDigits: 1
+    })
+
+    const formatted = formatter.format(value)
+    return unit ? `${formatted} ${unit}` : formatted
+  }, [])
+
+  const measurementDescriptors = useMemo<MeasurementDescriptor[]>(() => [
+    { source: 'basic', key: 'height', label: 'Height', icon: lengthIcon, unit: 'cm' },
+    { source: 'basic', key: 'weight', label: 'Weight', icon: girthIcon, unit: 'kg' },
+    { source: 'body', key: 'shoulder', label: 'Shoulder', icon: lengthIcon, unit: 'cm' },
+    { source: 'body', key: 'chest', label: 'Chest', icon: girthIcon, unit: 'cm' },
+    { source: 'body', key: 'underchest', label: 'Underchest', icon: girthIcon, unit: 'cm' },
+    { source: 'body', key: 'waist', label: 'Waist', icon: girthIcon, unit: 'cm' },
+    { source: 'body', key: 'highHip', label: 'High Hip', icon: girthIcon, unit: 'cm' },
+    { source: 'body', key: 'lowHip', label: 'Low Hip', icon: girthIcon, unit: 'cm' },
+    { source: 'body', key: 'inseam', label: 'Inseam', icon: lengthIcon, unit: 'cm' },
+    { source: 'body', key: 'highThigh', label: 'High Thigh', icon: girthIcon, unit: 'cm' },
+    { source: 'body', key: 'midThigh', label: 'Mid Thigh', icon: girthIcon, unit: 'cm' },
+    { source: 'body', key: 'knee', label: 'Knee', icon: girthIcon, unit: 'cm' },
+    { source: 'body', key: 'calf', label: 'Calf', icon: girthIcon, unit: 'cm' },
+    { source: 'body', key: 'ankle', label: 'Ankle', icon: girthIcon, unit: 'cm' },
+    { source: 'body', key: 'footLength', label: 'Foot Length', icon: lengthIcon, unit: 'cm' },
+    { source: 'body', key: 'footBreadth', label: 'Foot Breadth', icon: lengthIcon, unit: 'cm' },
+    { source: 'body', key: 'bicep', label: 'Bicep', icon: girthIcon, unit: 'cm' },
+    { source: 'body', key: 'forearm', label: 'Forearm', icon: girthIcon, unit: 'cm' },
+    { source: 'body', key: 'wrist', label: 'Wrist', icon: girthIcon, unit: 'cm' },
+    { source: 'body', key: 'shoulderToWrist', label: 'Shoulder to Wrist', icon: lengthIcon, unit: 'cm' },
+    { source: 'body', key: 'handLength', label: 'Hand Length', icon: lengthIcon, unit: 'cm' },
+    { source: 'body', key: 'handBreadth', label: 'Hand Breadth', icon: lengthIcon, unit: 'cm' },
+    { source: 'body', key: 'neck', label: 'Neck', icon: girthIcon, unit: 'cm' },
+    { source: 'body', key: 'head', label: 'Head', icon: girthIcon, unit: 'cm' }
+  ], [])
+
+  const measurements = useMemo<Measurement[] | null>(() => {
+    if (!currentAvatar?.basicMeasurements && !currentAvatar?.bodyMeasurements) {
+      return null
+    }
+
+    return measurementDescriptors.map(descriptor => {
+      const rawValue = descriptor.source === 'basic'
+        ? currentAvatar?.basicMeasurements?.[descriptor.key]
+        : currentAvatar?.bodyMeasurements?.[descriptor.key]
+
+      const value = typeof rawValue === 'number'
+        ? formatMeasurementValue(rawValue, descriptor.unit)
+        : '—'
+
+      return {
+        name: descriptor.label,
+        value,
+        icon: descriptor.icon
+      }
+    })
+  }, [currentAvatar, formatMeasurementValue, measurementDescriptors])
+
+  const isLoadingMeasurements = !measurements
+  const skeletonRowCount = measurementDescriptors.length
 
   const controls: ControlButton[] = [
     { key: 'rotate-left', width: 60, Icon: RLeft, marginRight: 50 },
@@ -472,7 +524,19 @@ export default function UnrealMeasurements() {
 
         {selectedNav === 'Body' && (
           <div className={styles.dataPanelWrapper}>
-            <DataPanel title="Body Measurements (cm)" measurements={measurements} />
+            <DataPanel title="Body Measurements" measurements={measurements ?? undefined}>
+              {isLoadingMeasurements && (
+                <div className={styles.measurementsSkeleton} aria-busy="true" aria-live="polite">
+                  {Array.from({ length: skeletonRowCount }).map((_, idx) => (
+                    <div key={idx} className={styles.measurementsSkeletonRow}>
+                      <span className={styles.measurementsSkeletonIcon} />
+                      <span className={styles.measurementsSkeletonLabel} />
+                      <span className={styles.measurementsSkeletonValue} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </DataPanel>
           </div>
         )}
       </div>

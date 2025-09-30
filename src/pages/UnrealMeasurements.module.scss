@@ -142,6 +142,71 @@ $design-w: 430; /* jedan izvor istine */
   z-index: 2;
 }
 
+.measurementsSkeleton {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: #{cqw(12)};
+  padding: #{cqw(12)} #{cqw(10)};
+  inline-size: 100%;
+  block-size: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.measurementsSkeletonRow {
+  display: grid;
+  grid-template-columns: #{cqw(20)} 1fr #{cqw(60)};
+  align-items: center;
+  column-gap: #{cqw(10)};
+}
+
+@keyframes measurementsSkeletonShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.measurementsSkeletonIcon,
+.measurementsSkeletonLabel,
+.measurementsSkeletonValue {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.35) 0%,
+    rgba(255, 255, 255, 0.65) 50%,
+    rgba(255, 255, 255, 0.35) 100%
+  );
+  background-size: 200% 100%;
+  animation: measurementsSkeletonShimmer 1.4s ease-in-out infinite;
+}
+
+.measurementsSkeletonIcon {
+  inline-size: #{cqw(20)};
+  block-size: #{cqw(10)};
+  border-radius: #{cqw(5)};
+}
+
+.measurementsSkeletonLabel,
+.measurementsSkeletonValue {
+  block-size: #{cqw(12)};
+  border-radius: #{cqw(6)};
+}
+
+.measurementsSkeletonLabel {
+  inline-size: 100%;
+}
+
+.measurementsSkeletonValue {
+  justify-self: stretch;
+  inline-size: 70%;
+  margin-inline-start: auto;
+}
+
 .bodySelected {
   height: min(var(--avatar-h), cqw(579));
   justify-content: flex-end;
@@ -153,6 +218,37 @@ $design-w: 430; /* jedan izvor istine */
     top: calc(var(--header-h, 0) * 1px + (-3 / 430) * var(--page-w-px));
     /* po želji: i lijevi odmak mrvu manji */
     /* left: calc((8 / 430) * var(--page-w-px)); */
+  }
+}
+
+@media (min-width: 1024px) {
+  .measurementsSkeleton {
+    gap: calc(18px * var(--panel-scale, 1));
+    padding: calc(20px * var(--panel-scale, 1));
+  }
+
+  .measurementsSkeletonRow {
+    grid-template-columns:
+      calc(32px * var(--panel-scale, 1))
+      1fr
+      calc(96px * var(--panel-scale, 1));
+    column-gap: calc(18px * var(--panel-scale, 1));
+  }
+
+  .measurementsSkeletonIcon {
+    inline-size: calc(32px * var(--panel-scale, 1));
+    block-size: calc(16px * var(--panel-scale, 1));
+    border-radius: calc(8px * var(--panel-scale, 1));
+  }
+
+  .measurementsSkeletonLabel,
+  .measurementsSkeletonValue {
+    block-size: calc(16px * var(--panel-scale, 1));
+    border-radius: calc(8px * var(--panel-scale, 1));
+  }
+
+  .measurementsSkeletonValue {
+    inline-size: 60%;
   }
 }
 

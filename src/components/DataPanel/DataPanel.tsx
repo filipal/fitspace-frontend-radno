@@ -4,7 +4,7 @@ import styles from './DataPanel.module.scss'
 interface DataPanelProps {
   title: string
   children?: ReactNode
-  measurements?: Array<{ name: string; value: number; icon: string }>
+  measurements?: Array<{ name: string; value: string; icon: string }>
 }
 
 export default function DataPanel({ title, children, measurements }: DataPanelProps) {
