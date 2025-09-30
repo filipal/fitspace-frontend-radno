@@ -310,6 +310,7 @@ $design-w: 430;
     justify-content: flex-start;
     padding-inline: 0;
     gap: 27px;
+    margin-inline: auto;
   }
 
   .frameTop,
@@ -377,8 +378,9 @@ $design-w: 430;
       align-items: center;
       justify-content: space-between;
       padding-inline: 0;
-      justify-content: center;
+      justify-content: flex-start;
       gap: 27px;
+      margin-inline: auto;
     }
 
     .toneBarGroup {
