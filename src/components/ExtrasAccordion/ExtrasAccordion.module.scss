@@ -283,7 +283,10 @@ $design-w: 430;
     justify-content: space-between;
     margin: 0;
   }
-
+  .hArrow {
+    inline-size: 32.81px;
+    block-size: 24.01px;
+  }
   .centerInner .hArrow {
     inline-size: 32.81px;
     block-size: 24.01px;
@@ -360,7 +363,6 @@ $design-w: 430;
     bottom: 4px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(255,255,255,0.8);
     padding: 2px 8px;
     border-radius: 12px;
   }

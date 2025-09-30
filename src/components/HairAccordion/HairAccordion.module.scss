@@ -208,6 +208,11 @@ $design-w: 430;
     block-size: 24.01px;
   }
 
+  .hArrow {
+    inline-size: 32.81px;
+    block-size: 24.01px;
+  }
+
   .arrowHorizontal { display: block; }
   .left .hArrow:first-of-type .arrowHorizontal {
     transform: rotate(90deg);
