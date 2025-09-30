@@ -1,8 +1,11 @@
-import { useState, useEffect, useLayoutEffect, useRef, type ComponentType, type SVGProps, type CSSProperties } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, type ComponentType, type SVGProps, type CSSProperties } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import Header from '../components/Header/Header'
 import { usePixelStreaming } from '../context/PixelStreamingContext'
 import { PixelStreamingView } from '../components/PixelStreamingView/PixelStreamingView'
+import { useAvatarConfiguration } from '../context/AvatarConfigurationContext'
+import { convertSliderValueToUnrealValue } from '../services/avatarCommandService'
+import { morphAttributes } from '../data/morphAttributes'
 
 import avatarsButton from '../assets/avatars-button.png'
 import RLeft from '../assets/r-left.svg?react'
@@ -47,6 +50,11 @@ interface Measurement {
   name: string
   value: number
   icon: string // Može biti tekst ikona ili slika path
+}
+
+interface PendingMorphUpdate {
+  morphId: number
+  sliderValue: number
 }
 
 type NavKey = 'Body' | 'Face' | 'Skin' | 'Hair' | 'Extras' | 'Save'
@@ -155,6 +163,44 @@ export default function UnrealMeasurements() {
   const navigate = useNavigate()
   const location = useLocation()
   const { sendFittingRoomCommand, connectionState, application } = usePixelStreaming()
+  const { updateMorphValue, currentAvatar } = useAvatarConfiguration()
+
+  const pendingMorphUpdatesRef = useRef<PendingMorphUpdate[]>([])
+
+  const findMorphAttribute = useCallback((morphId: number) => {
+    return currentAvatar?.morphValues.find(morph => morph.morphId === morphId)
+      ?? morphAttributes.find(morph => morph.morphId === morphId)
+      ?? null
+  }, [currentAvatar])
+
+  const dispatchMorphUpdate = useCallback((morphId: number, sliderPercentage: number) => {
+    const morphAttribute = findMorphAttribute(morphId)
+
+    if (!morphAttribute) {
+      console.warn('Unable to find morph attribute for update', { morphId })
+      return
+    }
+
+    const unrealValue = convertSliderValueToUnrealValue(sliderPercentage, morphAttribute)
+
+    sendFittingRoomCommand('updateMorph', {
+      morphId: String(morphId),
+      value: unrealValue
+    })
+  }, [findMorphAttribute, sendFittingRoomCommand])
+
+  // TODO: Consider debouncing or batching updates via generateUnrealMorphUpdateCommand for performance.
+  useEffect(() => {
+    if (connectionState !== 'connected') return
+    if (!pendingMorphUpdatesRef.current.length) return
+
+    const queuedUpdates = [...pendingMorphUpdatesRef.current]
+    pendingMorphUpdatesRef.current = []
+
+    queuedUpdates.forEach(({ morphId, sliderValue }) => {
+      dispatchMorphUpdate(morphId, sliderValue)
+    })
+  }, [connectionState, dispatchMorphUpdate])
 
   const openSkinRight = (
     location.state as { openSkinRight?: boolean } | undefined
@@ -211,8 +257,30 @@ export default function UnrealMeasurements() {
 
   const avatarImage = selectedNav === 'Body' ? unrealFBBodyButton : avatarSrc
 
-  const updateMorph = (morphId: number, morphName: string, value: number) => {
-    console.log('updateMorph', { morphId, morphName, value })
+  const updateMorph = (morphId: number, morphName: string, sliderPercentage: number) => {
+    updateMorphValue(morphId, sliderPercentage)
+
+    if (connectionState === 'connected') {
+      dispatchMorphUpdate(morphId, sliderPercentage)
+      return
+    }
+
+    const queue = pendingMorphUpdatesRef.current
+    const existingIndex = queue.findIndex(update => update.morphId === morphId)
+    const queuedUpdate: PendingMorphUpdate = { morphId, sliderValue: sliderPercentage }
+
+    if (existingIndex >= 0) {
+      queue[existingIndex] = queuedUpdate
+    } else {
+      queue.push(queuedUpdate)
+    }
+
+    console.info('Queued morph update until connection resumes', {
+      morphId,
+      morphName,
+      sliderPercentage,
+      connectionState
+    })
   }
 
   const handleControlClick = (controlKey: string) => {

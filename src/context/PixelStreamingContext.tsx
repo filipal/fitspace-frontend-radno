@@ -33,6 +33,7 @@ export interface FittingRoomCommand {
     | 'saveLook'
     | 'morphAdjustment'
     | 'configureAvatar'
+    | 'updateMorph'
     | 'updateMorphs';
   data?: Record<string, unknown>;
 }
