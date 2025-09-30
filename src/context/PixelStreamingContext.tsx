@@ -24,7 +24,16 @@ const defaultSettings: Partial<AllSettings> = {
 
 // Fitting room specific command types
 export interface FittingRoomCommand {
-  type: 'selectClothing' | 'rotateCamera' | 'zoomCamera' | 'moveCamera' | 'resetAvatar' | 'saveLook' | 'morphAdjustment' | 'configureAvatar';
+  type:
+    | 'selectClothing'
+    | 'rotateCamera'
+    | 'zoomCamera'
+    | 'moveCamera'
+    | 'resetAvatar'
+    | 'saveLook'
+    | 'morphAdjustment'
+    | 'configureAvatar'
+    | 'updateMorphs';
   data?: Record<string, unknown>;
 }
 
