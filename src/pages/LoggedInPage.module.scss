@@ -68,15 +68,14 @@
   cursor: pointer;
   color: #000;
   left: 426px;
-  margin-left: 15px;
   outline: none;
   transition: none
 }
 
 .avatarList {
   list-style: none;
-  padding: 24px 16px;
-  margin: 0;
+  padding: 24px 0;
+  margin-left: 55px;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -85,16 +84,18 @@
 
 .avatarItem {
   width: 100%;
-  max-width: 349px;
+  max-width: calc(320px + 15px + 14px);
   height: 40px;
   display: flex;
   align-items: center;
+  gap: 15px;
   margin-bottom: 24px;
   margin-inline: auto;
 }
 
 .avatar-name {
-  width: 100%;
+  flex: 0 0 320px;
+  width: 320px;
   max-width: 320px;
   height: 40px;
   display: flex;
@@ -198,12 +199,13 @@
     width: 17px;
   }
   .avatar-name {
-    width: 100%;
-    max-width: 422px;
+    flex: 0 0 320px;
+    width: 320px;
+    max-width: 320px;
   }
   .avatarItem {
     width: 100%;
-    max-width: 459px;
+    max-width: calc(320px + 15px + 17px);
   }
 }
 
