@@ -296,20 +296,20 @@ $design-w: 430;
     border: none;
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 0;
+    justify-content: flex-start;
+    padding-inline: 0;
+    padding-block: 44px;
   }
 
   .rightContent {
     inline-size: 46.15px;
-    block-size: 504px;
+    block-size: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     padding-inline: 0;
-    padding-block: 44px;
-    gap: 0;
+    gap: 27px;
   }
 
   .frameTop,
@@ -331,7 +331,7 @@ $design-w: 430;
 
   .toneBarGroup {
     inline-size: 46.15px;
-    block-size: 399px;
+    block-size: 395px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -341,7 +341,7 @@ $design-w: 430;
 
   .toneBar {
     inline-size: 18.46px;
-    block-size: 399px;
+    block-size: 395px;
     border-radius: 18.46px;
     margin: 0 auto;
     background: transparent;
@@ -364,28 +364,31 @@ $design-w: 430;
       block-size: 953px;
       display: flex;
       align-items: flex-start;
-      justify-content: center;
-      padding-top: 45px;
+      justify-content: flex-start;
+      padding-inline: 0;
+      padding-block: 45px 44px;
     }
 
     .rightContent {
       inline-size: 46.15px;
-      block-size: 504px;
+      block-size: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: space-between;
-      gap: 0;
+      padding-inline: 0;
+      justify-content: center;
+      gap: 27px;
     }
 
     .toneBarGroup {
       inline-size: 46.15px;
-      block-size: 399px;
+      block-size: 395px;
     }
 
     .toneBar {
       inline-size: 18.46px;
-      block-size: 399px;
+      block-size: 395px;
     }
   }
 }
