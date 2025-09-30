@@ -367,7 +367,7 @@ $design-w: 430;
 
   .right {
     inline-size: 100%;
-    block-size: 294px !important;
+    block-size: 294px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -380,7 +380,7 @@ $design-w: 430;
 
   .colorPicker {
     inline-size: 71.92px;
-    block-size: calc(161px + (2 * 24.01px));
+    block-size: calc(294px - (2 * 34px));
     display: flex;
     flex-direction: column;
     align-items: center;
