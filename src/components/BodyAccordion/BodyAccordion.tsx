@@ -6,7 +6,7 @@ import styles from './BodyAccordion.module.scss'
 
 
 export interface BodyAccordionProps {
-  updateMorph?: (morphId: number, morphName: string, value: number) => void
+  updateMorph?: (morphId: number, morphName: string, percentage: number) => void
 }
 
 
@@ -178,11 +178,6 @@ export default function BodyAccordion({ updateMorph }: BodyAccordionProps) {
   // Mobile: prikaži cijeli popis i oslanjaj se na nativni scroll (.rows overflow-y: auto)
   const view = list
   // Slider row component
-  // Function to convert slider percentage into morph value
-
-  function sliderToMorphValue(pct: number, min: number, max: number): number {
-    return min + (pct / 100) * (max - min)
-  }
 
 
   function SliderRow({ attr }: { attr: MorphAttribute }) {
@@ -210,7 +205,7 @@ export default function BodyAccordion({ updateMorph }: BodyAccordionProps) {
         updateMorph?.(
           attr.morphId,
           attr.morphName,
-          sliderToMorphValue(pct, attr.min, attr.max)
+          pct
         )
       }
       update(clientX);

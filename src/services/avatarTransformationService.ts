@@ -82,13 +82,9 @@ export function convertBackendValueToMorphValue(
   backendValue: number,
   morphAttribute: MorphAttribute
 ): number {
-  // Backend sends 0-100, we need to convert to morph's min-max range
-  // 50 = neutral (middle of min-max range)
-  const { min, max } = morphAttribute;
-  const range = max - min;
-  const normalizedValue = backendValue / 100; // Convert to 0-1
-  
-  return min + (normalizedValue * range);
+  void morphAttribute;
+  // Backend sends values in 0-100 range already. Store as percentage.
+  return Math.max(0, Math.min(100, backendValue));
 }
 
 /**
@@ -98,11 +94,9 @@ export function convertMorphValueToBackendValue(
   morphValue: number,
   morphAttribute: MorphAttribute
 ): number {
-  const { min, max } = morphAttribute;
-  const range = max - min;
-  const normalizedValue = (morphValue - min) / range; // Convert to 0-1
-  
-  return Math.round(normalizedValue * 100); // Convert to 0-100
+  void morphAttribute;
+  // Morph values are stored as percentages, so just clamp to backend range
+  return Math.round(Math.max(0, Math.min(100, morphValue)));
 }
 
 /**
@@ -128,10 +122,10 @@ export function transformBackendDataToMorphs(
         const morphAttribute = updatedMorphs[morphIndex];
         const convertedValue = convertBackendValueToMorphValue(backendValue, morphAttribute);
         
-        // Update the morph with the converted value
+        // Update the morph with the converted percentage value
         updatedMorphs[morphIndex] = {
           ...morphAttribute,
-          value: Math.max(morphAttribute.min, Math.min(morphAttribute.max, convertedValue))
+          value: Math.max(0, Math.min(100, convertedValue))
         };
         
         console.log(`Applied ${backendKey} (${backendValue}) -> ${morphAttribute.morphName} (${convertedValue})`);

@@ -18,7 +18,7 @@ export interface UnrealAvatarCommand {
 /**
  * Convert morph attribute value (0-100 slider value) to Unreal Engine value (min-max range)
  */
-function convertSliderValueToUnrealValue(sliderValue: number, morphAttribute: MorphAttribute): number {
+export function convertSliderValueToUnrealValue(sliderValue: number, morphAttribute: MorphAttribute): number {
   // sliderValue is 0-100, we need to convert to morph's min-max range
   const { min, max } = morphAttribute;
   const range = max - min;
