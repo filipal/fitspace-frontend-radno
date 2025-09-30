@@ -2,6 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef, type ComponentType, type 
 import { useNavigate, useLocation } from 'react-router-dom'
 import Header from '../components/Header/Header'
 import { usePixelStreaming } from '../context/PixelStreamingContext'
+import { PixelStreamingView } from '../components/PixelStreamingView/PixelStreamingView'
 
 import avatarsButton from '../assets/avatars-button.png'
 import RLeft from '../assets/r-left.svg?react'
@@ -60,51 +61,48 @@ export default function UnrealMeasurements() {
   const [avatarSrc] = useState<string>(avatarMeasure)
 
   useLayoutEffect(() => {
-    const el = pageRef.current;
-    if (!el) return;
+    const el = pageRef.current
+    if (!el) return
 
     const update = () => {
-      // 1) najrobustnije:
-      const w = el.clientWidth;                   // stvarna širina .page
-      // 2) ili, ako baš želiš docEl, bar klampaj:
-      // const w = Math.min(document.documentElement.clientWidth, el.clientWidth);
-      el.style.setProperty('--page-w-px', `${w}px`);
-    };
+      const w = el.clientWidth
+      el.style.setProperty('--page-w-px', `${w}px`)
+    }
 
-    update();
-    const onResize = () => update();
-    window.addEventListener('resize', onResize);
-    window.visualViewport?.addEventListener('resize', onResize);
+    update()
+    const onResize = () => update()
+    window.addEventListener('resize', onResize)
+    window.visualViewport?.addEventListener('resize', onResize)
     return () => {
-      window.removeEventListener('resize', onResize);
-      window.visualViewport?.removeEventListener('resize', onResize);
-    };
-  }, []);
+      window.removeEventListener('resize', onResize)
+      window.visualViewport?.removeEventListener('resize', onResize)
+    }
+  }, [])
 
   useLayoutEffect(() => {
-    const page = pageRef.current;
-    const header = document.querySelector('[data-app-header]') as HTMLElement | null;
-    if (!page || !header) return;
+    const page = pageRef.current
+    const header = document.querySelector('[data-app-header]') as HTMLElement | null
+    if (!page || !header) return
 
     const set = () => {
       // uključuje sve paddinge/bordere (i safe-area) jer je to realna visina u layoutu
-      const h = Math.round(header.getBoundingClientRect().height);
-      page.style.setProperty('--header-real-h', `${h}px`);
-    };
+      const h = Math.round(header.getBoundingClientRect().height)
+      page.style.setProperty('--header-real-h', `${h}px`)
+    }
 
-    set();
-    const ro = new ResizeObserver(set);
-    ro.observe(header);
+    set()
+    const ro = new ResizeObserver(set)
+    ro.observe(header)
 
-    window.addEventListener('resize', set);
-    window.addEventListener('orientationchange', set);
+    window.addEventListener('resize', set)
+    window.addEventListener('orientationchange', set)
 
     return () => {
-      ro.disconnect();
-      window.removeEventListener('resize', set);
-      window.removeEventListener('orientationchange', set);
-    };
-  }, []);
+      ro.disconnect()
+      window.removeEventListener('resize', set)
+      window.removeEventListener('orientationchange', set)
+    }
+  }, [])
 
   useLayoutEffect(() => {
     const page = pageRef.current
@@ -156,9 +154,7 @@ export default function UnrealMeasurements() {
 
   const navigate = useNavigate()
   const location = useLocation()
-  const { sendFittingRoomCommand, connectionState } = usePixelStreaming()
-
-
+  const { sendFittingRoomCommand, connectionState, application } = usePixelStreaming()
 
   const openSkinRight = (
     location.state as { openSkinRight?: boolean } | undefined
@@ -169,7 +165,6 @@ export default function UnrealMeasurements() {
       setSelectedNav('Skin')
     }
   }, [openSkinRight])
-
 
   const measurements: Measurement[] = [
     { name: 'Shoulder', value: 33.3, icon: lengthIcon },
@@ -231,6 +226,17 @@ export default function UnrealMeasurements() {
           sendFittingRoomCommand('rotateCamera', { direction: 'left', speed: 1 })
           console.log('Sent rotate left command')
           break
+        case 'upload': // Second button - now sends zoom command
+          sendFittingRoomCommand('zoomCamera', { direction: 'in', amount: 0.1 })
+          console.log('Sent zoom command')
+          break
+        case 'fullscreen': // Middle button - pass for now
+          console.log('Fullscreen button clicked - no command defined yet')
+          break
+        case 'download': // Fourth button - now sends moveCamera command
+          sendFittingRoomCommand('moveCamera', { direction: 'up', amount: 0.1 })
+          console.log('Sent move camera command')
+          break
         case 'rotate-right':
           sendFittingRoomCommand('rotateCamera', { direction: 'right', speed: 1 })
           console.log('Sent rotate right command')
@@ -268,7 +274,16 @@ export default function UnrealMeasurements() {
 
       <div className={`${styles.centralWrapper} ${selectedNav ? styles.withAccordion : ''} ${selectedNav === 'Body' ? styles.accBody : ''} ${selectedNav === 'Face' ? styles.accFace : ''} ${selectedNav === 'Skin' ? styles.accSkin : ''} ${selectedNav === 'Hair' ? styles.accHair : ''} ${selectedNav === 'Extras' ? styles.accExtras : ''}`}>
         <div className={`${styles.avatarSection} ${selectedNav ? styles.avatarShifted : ''} ${selectedNav === 'Body' ? styles.bodySelected : ''} ${selectedNav === 'Face' ? styles.faceSelected : ''} ${selectedNav === 'Skin' ? styles.skinSelected : ''} ${selectedNav === 'Hair' ? styles.hairSelected : ''} ${selectedNav === 'Extras' ? styles.extrasSelected : ''}`}>
-          <img src={avatarImage} alt="Avatar" className={styles.avatarImage} />
+          
+          {/* Conditional render: PixelStreaming when connected, fallback image otherwise */}
+          {connectionState === 'connected' && application ? (
+            <PixelStreamingView
+              className={styles.avatarImage}
+              autoConnect={false}
+            />
+          ) : (
+            <img src={avatarImage} alt="Avatar" className={styles.avatarImage} />
+          )}
 
           {/* Body measurements panel positioned separately */}
 
@@ -279,7 +294,6 @@ export default function UnrealMeasurements() {
               <button
                 key={control.key}
                 className={`${styles.controlButton} ${styles[control.key.replace('-', '')]} ${selectedControl === control.key ? styles.selected : ''}`}
-                /* style={{ width: control.width, marginRight: control.marginRight, height: control.width }} */
                 onClick={() => handleControlClick(control.key)}
                 type="button"
               >
