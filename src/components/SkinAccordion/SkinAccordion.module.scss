@@ -307,7 +307,8 @@ $design-w: 430;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    padding: 0;
+    padding-inline: 0;
+    padding-block: 44px;
     gap: 0;
   }
 
@@ -319,7 +320,6 @@ $design-w: 430;
     background-size: 100% 100%;
     background-repeat: no-repeat;
     background-position: center;
-    padding-block: 44px;
   }
 
   .frameTop { background-image: url('../../assets/skin-frame-w.svg'); }
