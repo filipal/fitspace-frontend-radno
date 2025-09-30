@@ -19,14 +19,16 @@ export default function LoggedInPage() {
     { id: 2, name: 'Avatar Name 2' },
     { id: 3, name: 'Avatar Name 3' },
   ])
-  const [selectedAvatarId, setSelectedAvatarId] = useState<number>(1)
-  const [loadedAvatarId, setLoadedAvatarId] = useState<number>(1)
+  const [selectedAvatarId, setSelectedAvatarId] = useState<number | null>(null)
+  const [loadedAvatarId, setLoadedAvatarId] = useState<number | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<null | number>(null)
   const [confirmPos, setConfirmPos] = useState<{ top: number; height: number } | null>(null)
   const loadButtonRef = useRef<HTMLButtonElement | null>(null)
 
   const handleSelect = (id: number) => setSelectedAvatarId(id)
   const handleLoad = () => {
+    if (selectedAvatarId === null) return
+
     setLoadedAvatarId(selectedAvatarId)
     navigate('/virtual-try-on')
   }
@@ -34,8 +36,26 @@ export default function LoggedInPage() {
 
   const confirmDelete = () => {
     setAvatars(avatars.filter(a => a.id !== showDeleteConfirm))
-    if (selectedAvatarId === showDeleteConfirm) setSelectedAvatarId(avatars[0]?.id || 0)
-    if (loadedAvatarId === showDeleteConfirm) setLoadedAvatarId(avatars[0]?.id || 0)
+    setAvatars(prevAvatars => {
+      const updatedAvatars = prevAvatars.filter(a => a.id !== showDeleteConfirm)
+      const firstAvatarId = updatedAvatars[0]?.id ?? null
+
+      setSelectedAvatarId(prevSelected => {
+        if (prevSelected === null) return null
+        if (prevSelected === showDeleteConfirm) return firstAvatarId
+        if (!updatedAvatars.some(a => a.id === prevSelected)) return firstAvatarId
+        return prevSelected
+      })
+
+      setLoadedAvatarId(prevLoaded => {
+        if (prevLoaded === null) return null
+        if (prevLoaded === showDeleteConfirm) return firstAvatarId
+        if (!updatedAvatars.some(a => a.id === prevLoaded)) return firstAvatarId
+        return prevLoaded
+      })
+
+      return updatedAvatars
+    })
     setShowDeleteConfirm(null)
     setConfirmPos(null)
   }
@@ -97,7 +117,7 @@ export default function LoggedInPage() {
       <Footer
         topButtonText="Load Avatar"
         onTopButton={handleLoad}
-        topButtonDisabled={selectedAvatarId === loadedAvatarId}
+        topButtonDisabled={selectedAvatarId === null || selectedAvatarId === loadedAvatarId}
         topButtonType="primary"
         backText={showDeleteConfirm ? 'Cancel' : 'Back'}
         actionText={showDeleteConfirm ? 'Delete Avatar' : 'Create New Avatar'}
