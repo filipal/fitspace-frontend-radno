@@ -183,16 +183,27 @@
 }
 
 @include s.respond(tablet) {
-  .avatar-name {
-    flex: 0 0 422px;
-    width: 422px;
-    max-width: 422px;
-  }
   .avatarItem {
-    max-width: calc(422px + 15px + 17px);
-    gap: calc(15px + (40px - 17px) / 2);
+    width: 100%;
+    max-width: 422px;
+    position: relative;
+    padding-right: calc(15px + 40px);
+    box-sizing: border-box;
+  }
+
+  .avatar-name {
+    flex: 0 0 100%;
+    width: 100%;
+  }
+
+  .iconButton {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
   }
 }
+
 
 @include s.respond(xxl) {
   .appHeader {
@@ -209,21 +220,24 @@
     width: 17px;
     height: 17px;
   }
-  .iconButton {
-    width: 17px;
-  }
   .avatarItem {
     width: 100%;
-    max-width: calc(422px + 15px + 17px);
-    gap: calc(15px + (40px - 17px) / 2);
+    max-width: 422px;
+    position: relative;
+    padding-right: calc(15px + 40px);
+    box-sizing: border-box;
   }
   .avatar-name {
-    flex: 0 0 422px;
-    width: 422px;
-    max-width: 422px;
+    flex: 0 0 100%;
+    width: 100%;
+    max-width: none;
   }
-  .avatarItem .iconButton {
-    flex: 0 0 auto;
+  .iconButton {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
   }
 }
 
