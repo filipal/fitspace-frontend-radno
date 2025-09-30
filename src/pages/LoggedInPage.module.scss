@@ -84,19 +84,18 @@
 
 .avatarItem {
   width: 100%;
-  max-width: calc(320px + 15px + 14px);
   height: 40px;
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: calc(15px - (40px - 14px) / 2);
   margin-bottom: 24px;
   margin-inline: auto;
 }
 
 .avatar-name {
-  flex: 0 0 320px;
-  width: 320px;
-  max-width: 320px;
+  flex: 1 1 320px;
+  min-width: 0;
+  width: min(100%, 320px);
   height: 40px;
   display: flex;
   align-items: center;
@@ -111,6 +110,9 @@
   transition: background 0.2s, color 0.2s;
 }
 
+.avatarItem .iconButton {
+  flex: 0 0 auto;
+}
 .avatar-name.selected {
   background: #000;
   color: #fff;
@@ -180,6 +182,18 @@
   border: none;
 }
 
+@include s.respond(tablet) {
+  .avatar-name {
+    flex: 0 0 422px;
+    width: 422px;
+    max-width: 422px;
+  }
+  .avatarItem {
+    max-width: calc(422px + 15px + 17px);
+    gap: calc(15px + (40px - 17px) / 2);
+  }
+}
+
 @include s.respond(xxl) {
   .appHeader {
     height: 70px;
@@ -198,14 +212,18 @@
   .iconButton {
     width: 17px;
   }
-  .avatar-name {
-    flex: 0 0 320px;
-    width: 320px;
-    max-width: 320px;
-  }
   .avatarItem {
     width: 100%;
-    max-width: calc(320px + 15px + 17px);
+    max-width: calc(422px + 15px + 17px);
+    gap: calc(15px + (40px - 17px) / 2);
+  }
+  .avatar-name {
+    flex: 0 0 422px;
+    width: 422px;
+    max-width: 422px;
+  }
+  .avatarItem .iconButton {
+    flex: 0 0 auto;
   }
 }
 
