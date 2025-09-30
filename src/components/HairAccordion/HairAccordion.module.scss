@@ -198,7 +198,8 @@ $design-w: 430;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
+    gap: 40px;
     padding-block: 51px;
   }
   .left .vArrow,
@@ -224,6 +225,7 @@ $design-w: 430;
     align-items: center;
     justify-content: space-between;
     flex: 0 0 352px;
+
   }
 
   .iconBig {
