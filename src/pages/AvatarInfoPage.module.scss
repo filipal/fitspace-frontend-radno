@@ -54,6 +54,14 @@
   gap: 20px;
 }
 
+.errorMessage {
+  margin: 12px auto 0;
+  max-width: 320px;
+  color: #d32f2f;
+  font-size: 14px;
+  text-align: center;
+}
+
 .genderButton {
   flex: 1 1 0;
   height: 40px;

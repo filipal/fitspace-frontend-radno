@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header/Header'
 import Footer from '../components/Footer/Footer'
@@ -13,6 +13,16 @@ import athleticThin from '../assets/athletic-thin.svg'
 import athleticNormal from '../assets/athletic-normal.svg'
 import athleticMuscular from '../assets/athletic-muscular.svg'
 import styles from './QuickMode.module.scss'
+import {
+  LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
+  LAST_LOADED_AVATAR_STORAGE_KEY,
+  useAvatarApi,
+} from '../services/avatarApi'
+import { useAvatars } from '../context/AvatarContext'
+import {
+  useAvatarConfiguration,
+  type BasicMeasurements,
+} from '../context/AvatarConfigurationContext'
 
 const bodyShapes = [
   { id: 1, Icon: BodyShape1, label: 'Shape 1', width: 33, height: 55 },
@@ -26,12 +36,58 @@ const measurementOptions = Array.from({ length: 100 }, (_, i) => (60 + i).toStri
 
 export default function QuickMode() {
   const navigate = useNavigate()
+  const { updateAvatarMeasurements } = useAvatarApi()
+  const { avatars, maxAvatars, updateAvatars } = useAvatars()
+  const { currentAvatar, loadAvatarFromBackend } = useAvatarConfiguration()
 
   const [selectedBodyShape, setSelectedBodyShape] = useState(3)
   const [athleticLevel, setAthleticLevel] = useState(1) // 0, 1, 2
   const [bustCircumference, setBustCircumference] = useState('')
   const [waistCircumference, setWaistCircumference] = useState('')
   const [lowHipCircumference, setLowHipCircumference] = useState('')
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [storedAvatarId, setStoredAvatarId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null
+    return window.sessionStorage.getItem(LAST_LOADED_AVATAR_STORAGE_KEY)
+  })
+
+  type StoredAvatarMetadata = {
+    avatarId?: string
+    avatarName?: string
+    gender?: 'male' | 'female'
+    ageRange?: string
+    basicMeasurements?: Partial<BasicMeasurements>
+    bodyMeasurements?: Record<string, number>
+    morphTargets?: Record<string, number>
+  }
+
+  const storedMetadata = useMemo<StoredAvatarMetadata | null>(() => {
+    if (typeof window === 'undefined') return null
+    const raw = window.sessionStorage.getItem(LAST_CREATED_AVATAR_METADATA_STORAGE_KEY)
+    if (!raw) return null
+    try {
+      return JSON.parse(raw) as StoredAvatarMetadata
+    } catch (err) {
+      console.warn('Failed to parse stored avatar metadata', err)
+      return null
+    }
+  }, [])
+
+  const effectiveAvatarId = useMemo(() => {
+    return (
+      currentAvatar?.avatarId ||
+      storedAvatarId ||
+      storedMetadata?.avatarId ||
+      null
+    )
+  }, [currentAvatar?.avatarId, storedAvatarId, storedMetadata?.avatarId])
+
+  const parseMeasurement = (value: string) => {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : undefined
+  }
 
   // Helper to get slider value from X position
   const getSliderValue = (clientX: number, slider: HTMLDivElement | null) => {
@@ -86,6 +142,139 @@ export default function QuickMode() {
     window.removeEventListener('touchmove', handleSliderTouchMove)
     window.removeEventListener('touchend', handleSliderTouchEnd)
   }
+
+  const handleGenerateAvatar = useCallback(async () => {
+    if (isSubmitting) return
+    if (!effectiveAvatarId) {
+      setError('Please create an avatar before continuing')
+      return
+    }
+
+    const bust = parseMeasurement(bustCircumference)
+    const waist = parseMeasurement(waistCircumference)
+    const hip = parseMeasurement(lowHipCircumference)
+
+    const bodyMeasurements: Record<string, number> = {
+      ...(storedMetadata?.bodyMeasurements ?? {}),
+    }
+    if (typeof bust === 'number') bodyMeasurements.chest = bust
+    if (typeof waist === 'number') bodyMeasurements.waist = waist
+    if (typeof hip === 'number') bodyMeasurements.lowHip = hip
+
+    const bodyShapeMorphValue = Math.round(
+      ((selectedBodyShape - 1) / Math.max(1, bodyShapes.length - 1)) * 100,
+    )
+    const athleticMorphValue = Math.round((athleticLevel / 2) * 100)
+
+    const morphTargets = {
+      ...(storedMetadata?.morphTargets ?? {}),
+      quickModeBodyShape: bodyShapeMorphValue,
+      quickModeAthleticLevel: athleticMorphValue,
+    }
+
+    const avatarName = storedMetadata?.avatarName
+      ?? (effectiveAvatarId ? avatars.find(avatar => avatar.id === effectiveAvatarId)?.name : undefined)
+      ?? currentAvatar?.avatarName
+      ?? 'Avatar'
+
+    const gender = storedMetadata?.gender ?? currentAvatar?.gender ?? 'male'
+    const ageRange = storedMetadata?.ageRange ?? currentAvatar?.ageRange ?? '20-29'
+    const basicMeasurements =
+      storedMetadata?.basicMeasurements ??
+      (currentAvatar?.basicMeasurements as Partial<BasicMeasurements> | undefined) ??
+      { creationMode: 'quickMode' as const }
+
+    const payload = {
+      avatarName,
+      gender,
+      ageRange,
+      basicMeasurements,
+      bodyMeasurements,
+      morphTargets,
+    }
+
+    setIsSubmitting(true)
+    setError(null)
+    try {
+      const result = await updateAvatarMeasurements(effectiveAvatarId, payload)
+
+      if (result.avatarId) {
+        setStoredAvatarId(result.avatarId)
+        if (typeof window !== 'undefined') {
+          window.sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, result.avatarId)
+        }
+      }
+
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem(
+          LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
+          JSON.stringify({
+            avatarId: result.avatarId ?? effectiveAvatarId,
+            ...payload,
+          }),
+        )
+      }
+
+      if (result.backendAvatar) {
+        await loadAvatarFromBackend(result.backendAvatar)
+      }
+
+      if (result.avatarId ?? effectiveAvatarId) {
+        const avatarIdToPersist = result.avatarId ?? effectiveAvatarId
+        updateAvatars(prev => {
+          const next = [...prev]
+          const existingIndex = next.findIndex(avatar => avatar.id === avatarIdToPersist)
+          const record = {
+            id: avatarIdToPersist,
+            name: payload.avatarName,
+            createdAt:
+              existingIndex >= 0 ? next[existingIndex].createdAt : new Date().toISOString(),
+          }
+          if (existingIndex >= 0) {
+            next[existingIndex] = { ...record }
+            return next
+          }
+          if (next.length >= maxAvatars) {
+            return next
+          }
+          next.push(record)
+          return next
+        })
+      }
+
+      navigate('/unreal-measurements')
+    } catch (err) {
+      console.error('Failed to update avatar measurements', err)
+      setError(err instanceof Error ? err.message : 'Failed to update avatar measurements')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }, [
+    athleticLevel,
+    bustCircumference,
+    avatars,
+    currentAvatar?.ageRange,
+    currentAvatar?.avatarName,
+    currentAvatar?.basicMeasurements,
+    currentAvatar?.gender,
+    effectiveAvatarId,
+    loadAvatarFromBackend,
+    lowHipCircumference,
+    maxAvatars,
+    navigate,
+    selectedBodyShape,
+    storedMetadata?.morphTargets,
+    storedMetadata?.ageRange,
+    storedMetadata?.avatarId,
+    storedMetadata?.avatarName,
+    storedMetadata?.basicMeasurements,
+    storedMetadata?.bodyMeasurements,
+    storedMetadata?.gender,
+    updateAvatarMeasurements,
+    updateAvatars,
+    waistCircumference,
+    isSubmitting,
+  ])
 
   return (
     <div className={styles.quickmodePage}>
@@ -198,20 +387,22 @@ export default function QuickMode() {
               <span className={styles.measureUnit}>cm</span>
             </div>
           </div>
+          {error ? <div className={styles.errorMessage}>{error}</div> : null}
         </div>
 
         {/* Bottom Buttons */}
         <div className={styles.footerSlot}>
           <Footer
             backText="Back"
-            actionText="Generate Avatar"
+            actionText={isSubmitting ? 'Generating…' : 'Generate Avatar'}
             onBack={() => navigate('/avatar-info')}
-            onAction={() => navigate('/unreal-measurements')}
+            onAction={handleGenerateAvatar}
             actionDisabled={
               !selectedBodyShape ||
               bustCircumference === '' ||
               waistCircumference === '' ||
-              lowHipCircumference === ''
+              lowHipCircumference === '' ||
+              isSubmitting
             }
             actionType="primary"
           />

@@ -193,6 +193,14 @@ $design-w: 430;
   display: flex; flex-direction: column; align-items: center; gap: cqw(10);
 }
 
+.errorMessage{
+  margin: cqw(20) auto 0;
+  max-width: cqw(320);
+  color: #d32f2f;
+  font-size: fsz(14);
+  text-align: center;
+}
+
 /* red mjere (label + select + unit) */
 .measureRow{ width: cqw(320); height: cqw(40); display: flex; align-items: center; gap: 0; margin: 0 auto; }
 .measureLabel{
