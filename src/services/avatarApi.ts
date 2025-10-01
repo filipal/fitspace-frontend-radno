@@ -41,6 +41,11 @@ interface UpdateAvatarMeasurementsRequest extends AvatarApiAuth {
   payload: AvatarPayload;
 }
 
+interface UpdateAvatarMorphTargetsRequest extends AvatarApiAuth {
+  avatarId: string | number;
+  payload: Record<string, number>;
+}
+
 export interface AvatarApiResult {
   avatarId?: string;
   backendAvatar?: BackendAvatarData | null;
@@ -100,6 +105,16 @@ function resolveAvatarMeasurementsUrl(
   return avatarUrl.endsWith('/measurements')
     ? avatarUrl
     : `${avatarUrl.replace(/\/+$/, '')}/measurements`;
+}
+
+function resolveAvatarMorphTargetsUrl(
+  baseUrl: string,
+  avatarId: string | number,
+): string {
+  const avatarUrl = resolveAvatarUrl(baseUrl, avatarId);
+  return avatarUrl.endsWith('/morph-targets')
+    ? avatarUrl
+    : `${avatarUrl.replace(/\/+$/, '')}/morph-targets`;
 }
 
 async function readErrorResponse(response: Response): Promise<string | undefined> {
@@ -272,6 +287,40 @@ async function updateAvatarMeasurementsRequest({
   };
 }
 
+async function updateAvatarMorphTargetsRequest({
+  accessToken,
+  userId,
+  avatarId,
+  baseUrl = DEFAULT_AVATAR_API_BASE_URL,
+  payload,
+}: UpdateAvatarMorphTargetsRequest): Promise<AvatarApiResult> {
+  const url = resolveAvatarMorphTargetsUrl(baseUrl, avatarId);
+
+  const response = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'X-User-Id': userId,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  await ensureOk(response);
+
+  const body = await readJsonBody(response);
+  const backendAvatar = extractBackendAvatar(body) ?? null;
+  const nextAvatarId =
+    extractAvatarId(body) ?? (typeof avatarId === 'string' ? avatarId : String(avatarId));
+
+  return {
+    avatarId: nextAvatarId,
+    backendAvatar,
+    responseBody: body,
+  };
+}
+
 export async function fetchAvatarByIdRequest({
   avatarId,
   accessToken,
@@ -386,9 +435,30 @@ export function useAvatarApi(config?: { baseUrl?: string }) {
     [accessToken, authData.isAuthenticated, config?.baseUrl, userId],
   );
 
+  const updateMorphTargets = useCallback(
+    async (
+      avatarId: string | number,
+      morphTargets: Record<string, number>,
+    ): Promise<AvatarApiResult> => {
+      if (!authData.isAuthenticated || !accessToken || !userId) {
+        throw new AvatarApiError('User is not authenticated to update avatar morph targets');
+      }
+
+      return updateAvatarMorphTargetsRequest({
+        accessToken,
+        userId,
+        avatarId,
+        baseUrl: config?.baseUrl,
+        payload: morphTargets,
+      });
+    },
+    [accessToken, authData.isAuthenticated, config?.baseUrl, userId],
+  );
+
   return {
     fetchAvatarById,
     createAvatar,
-    updateAvatarMeasurements,    
+    updateAvatarMeasurements,
+    updateMorphTargets, 
   };
 }

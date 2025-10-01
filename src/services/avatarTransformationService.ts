@@ -75,6 +75,15 @@ const BACKEND_TO_MORPH_MAPPING: Record<string, number> = {
   // This is a foundation that can be extended as needed
 };
 
+const MORPH_ID_TO_BACKEND_MAPPING: Record<number, string> = Object.entries(
+  BACKEND_TO_MORPH_MAPPING,
+).reduce<Record<number, string>>((acc, [backendKey, morphId]) => {
+  if (!(morphId in acc)) {
+    acc[morphId] = backendKey;
+  }
+  return acc;
+}, {});
+
 /**
  * Converts a backend value (0-100 range) to the morph target's actual range
  */
@@ -198,6 +207,10 @@ function applyGenderBaseMorphs(
  */
 export function getAvailableBackendMorphKeys(): string[] {
   return Object.keys(BACKEND_TO_MORPH_MAPPING);
+}
+
+export function getBackendKeyForMorphId(morphId: number): string | undefined {
+  return MORPH_ID_TO_BACKEND_MAPPING[morphId];
 }
 
 /**

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import cn from 'classnames'
 import { useNavigate } from 'react-router-dom'
 import leftArrow from '../assets/arrow-left.svg'
@@ -7,6 +7,9 @@ import cameraIcon from '../assets/camera.png'
 import quickIcon from '../assets/quick.png'
 import Header from '../components/Header/Header'
 import styles from './AvatarInfoPage.module.scss'
+import { useAvatarApi, LAST_CREATED_AVATAR_METADATA_STORAGE_KEY, LAST_LOADED_AVATAR_STORAGE_KEY } from '../services/avatarApi'
+import { useAvatars } from '../context/AvatarContext'
+import { useAvatarConfiguration } from '../context/AvatarConfigurationContext'
 
 const ages = ['15-19', ...Array.from({ length: 8 }, (_, i) => {
   const start = 20 + i * 10
@@ -25,11 +28,20 @@ function usePicker(initial: number, values: string[]) {
 
 export default function AvatarInfoPage() {
   const navigate = useNavigate()
+  const { createAvatar } = useAvatarApi()
+  const { loadAvatarFromBackend } = useAvatarConfiguration()
+  const { avatars, maxAvatars, updateAvatars, setPendingAvatarName } = useAvatars()
   const age = usePicker(1, ages)
   const height = usePicker(2, heights)
   const weight = usePicker(2, weights)
   const [gender, setGender] = useState<'male' | 'female'>('male')
   const [name, setName] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const ageRange = useMemo(() => ages[age.index] ?? ages[0], [age.index])
+  const heightValue = useMemo(() => Number(heights[height.index] ?? heights[0]), [height.index])
+  const weightValue = useMemo(() => Number(weights[weight.index] ?? weights[0]), [weight.index])
 
   const Ghost = ({ className }: { className?: string }) => (
     // sadrži “dummy” tekst širine slične realnom, ali je nevidljiv
@@ -132,7 +144,10 @@ export default function AvatarInfoPage() {
             type="text"
             placeholder="Avatar’s Name"
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={e => {
+              setName(e.target.value)
+              setPendingAvatarName(e.target.value)
+            }}
           />
           <div className={styles.genderChoice}>
             <button
@@ -150,6 +165,7 @@ export default function AvatarInfoPage() {
               Female
             </button>
           </div>
+          {error ? <div className={styles.errorMessage}>{error}</div> : null}
         </div>
 
         {/* PANEL – mob: stack; web: uokvireni panel */}
@@ -181,9 +197,89 @@ export default function AvatarInfoPage() {
               </div>
             </div>
             <div className={styles.action}>
-            <button className={styles.quickButton} onClick={() => navigate('/quickmode')}>
+            <button
+              className={styles.quickButton}
+              onClick={async () => {
+                if (isSubmitting) return
+                if (avatars.length >= maxAvatars) {
+                  setError('Maximum number of avatars reached')
+                  return
+                }
+                setIsSubmitting(true)
+                setError(null)
+                try {
+                  const trimmedName = name.trim()
+                  const fallbackName = trimmedName || `Avatar ${avatars.length + 1}`
+                  const payload = {
+                    avatarName: fallbackName,
+                    gender,
+                    ageRange,
+                    basicMeasurements: {
+                      height: heightValue,
+                      weight: weightValue,
+                      creationMode: 'quickMode' as const,
+                    },
+                    bodyMeasurements: {},
+                    morphTargets: {},
+                  }
+
+                  const result = await createAvatar(payload)
+
+                  if (typeof window !== 'undefined' && result.avatarId) {
+                    window.sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, result.avatarId)
+                    window.sessionStorage.setItem(
+                      LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
+                      JSON.stringify({
+                        avatarId: result.avatarId,
+                        avatarName: fallbackName,
+                        gender,
+                        ageRange,
+                        basicMeasurements: payload.basicMeasurements,
+                        bodyMeasurements: payload.bodyMeasurements,
+                        morphTargets: payload.morphTargets,
+                      }),
+                    )
+                  }
+
+                  if (result.avatarId) {
+                    updateAvatars(prev => {
+                      const next = [...prev]
+                      const existingIndex = next.findIndex(avatar => avatar.id === result.avatarId)
+                      const record = {
+                        id: result.avatarId!,
+                        name: fallbackName,
+                        createdAt: new Date().toISOString(),
+                      }
+                      if (existingIndex >= 0) {
+                        next[existingIndex] = { ...next[existingIndex], name: fallbackName }
+                        return next
+                      }
+                      if (next.length >= maxAvatars) {
+                        return next
+                      }
+                      next.push(record)
+                      return next
+                    })
+                  }
+
+                  if (result.backendAvatar) {
+                    await loadAvatarFromBackend(result.backendAvatar)
+                  }
+
+                  setPendingAvatarName(null)
+                  setIsSubmitting(false)
+                  navigate('/quickmode')
+                } catch (err) {
+                  console.error('Failed to create avatar', err)
+                  setIsSubmitting(false)
+                  setError(err instanceof Error ? err.message : 'Failed to create avatar')
+                }
+              }}
+              disabled={isSubmitting}
+              type="button"
+            >
               <img src={quickIcon} alt="" className={styles.buttonIcon} />
-              Quick Mode
+              {isSubmitting ? 'Creating...' : 'Quick Mode'}
             </button>
             <div className={styles.quickDesc}>
               Fastest, but may not be as accurate.<br />
