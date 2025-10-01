@@ -71,17 +71,26 @@ export class AvatarApiError extends Error {
   }
 }
 
+function ensureTrailingSlash(url: string): string {
+  return url.endsWith('/') ? url : `${url}/`;
+}
+
+function stripTrailingSlash(url: string): string {
+  return url.replace(/\/+$/, '');
+}
+
 function resolveAvatarUrl(baseUrl: string, avatarId: string | number): string {
   if (!baseUrl) {
     throw new AvatarApiError('Avatar API base URL is not configured');
   }
 
+  const normalizedBase = ensureTrailingSlash(baseUrl);
+
   try {
-    return new URL(`/avatars/${avatarId}`, baseUrl).toString();
+    return new URL(`avatars/${avatarId}`, normalizedBase).toString();
   } catch {
     // Fallback for cases where baseUrl might already contain path segments
-    const trimmedBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-    return `${trimmedBase}/avatars/${avatarId}`;
+    return `${stripTrailingSlash(baseUrl)}/avatars/${avatarId}`;
   }
 }
 
@@ -90,11 +99,12 @@ function resolveAvatarCollectionUrl(baseUrl: string): string {
     throw new AvatarApiError('Avatar API base URL is not configured');
   }
 
+  const normalizedBase = ensureTrailingSlash(baseUrl);
+
   try {
-    return new URL('/avatars', baseUrl).toString();
+    return new URL('avatars', normalizedBase).toString();
   } catch {
-    const trimmedBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-    return `${trimmedBase}/avatars`;
+    return `${stripTrailingSlash(baseUrl)}/avatars`;
   }
 }
 
