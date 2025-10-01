@@ -216,7 +216,11 @@ export default function QuickMode() {
       }
 
       if (result.backendAvatar) {
-        await loadAvatarFromBackend(result.backendAvatar)
+        await loadAvatarFromBackend(
+          result.backendAvatar,
+          undefined,
+          result.avatarId ?? effectiveAvatarId,
+        )
       }
 
       if (result.avatarId ?? effectiveAvatarId) {

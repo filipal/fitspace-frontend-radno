@@ -263,7 +263,7 @@ export default function AvatarInfoPage() {
                   }
 
                   if (result.backendAvatar) {
-                    await loadAvatarFromBackend(result.backendAvatar)
+                    await loadAvatarFromBackend(result.backendAvatar, undefined, result.avatarId)
                   }
 
                   setPendingAvatarName(null)

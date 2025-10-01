@@ -70,7 +70,8 @@ export interface AvatarConfigurationContextType {
   // Avatar management
   loadAvatarFromBackend: (
     backendData: BackendAvatarData,
-    transformedMorphs?: MorphAttribute[]
+    transformedMorphs?: MorphAttribute[],
+    avatarId?: string
   ) => Promise<AvatarConfiguration>;
   updateMorphValue: (morphId: number, value: number) => void;
   resetAvatar: () => void;
@@ -114,7 +115,8 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
   // Load avatar from backend JSON
   const loadAvatarFromBackend = useCallback(async (
     backendData: BackendAvatarData,
-    transformedMorphs?: MorphAttribute[]
+    transformedMorphs?: MorphAttribute[],
+    avatarId?: string
   ) => {
     try {
       setIsLoading(true);
@@ -129,7 +131,7 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
       // Apply backend morph values (this will be handled by transformation service)
       // For now, we'll just store the data as-is
       const avatarConfig: AvatarConfiguration = {
-        avatarId: `avatar_${Date.now()}`,
+        avatarId: avatarId ?? `avatar_${Date.now()}`,
         avatarName: backendData.data.avatarName,
         gender: backendData.data.gender,
         ageRange: backendData.data.ageRange,
