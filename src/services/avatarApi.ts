@@ -6,6 +6,7 @@ import type {
   BodyMeasurements,
 } from '../context/AvatarConfigurationContext';
 
+// VITE_AVATAR_API_BASE_URL must be defined; otherwise resolveAvatarUrl throws an AvatarApiError.
 const DEFAULT_AVATAR_API_BASE_URL =
   (import.meta.env.VITE_AVATAR_API_BASE_URL as string | undefined) ??
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ??

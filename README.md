@@ -17,6 +17,26 @@ npm run dev
 ```
 The dev server runs on Vite's default port, usually `http://localhost:5173/`.
 
+### Configure environment variables
+
+The frontend expects the avatar backend URL to be provided through
+`VITE_AVATAR_API_BASE_URL` (for example `https://backend.example.com/api`). Add
+this key to a local `.env` file by copying `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` so that it contains at least:
+
+```dotenv
+VITE_AVATAR_API_BASE_URL=https://backend.example.com/api
+```
+
+After updating the environment file, restart the Vite development server so the
+new value is picked up in `import.meta.env`.
+
+
 ### Build for production
 ```bash
 npm run build
