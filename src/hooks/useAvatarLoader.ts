@@ -72,14 +72,13 @@ export function useAvatarLoader() {
 
       // Step 3: Load avatar in context and get the returned configuration
       console.log('Step 3: Loading avatar in configuration context...');
-      const updatedAvatarConfig = await avatarConfig.loadAvatarFromBackend(backendData);
-      
-      console.log('Avatar configuration loaded successfully:', updatedAvatarConfig);
-      console.log('Initial morphValues length:', updatedAvatarConfig.morphValues.length);
+      const updatedAvatarConfig = await avatarConfig.loadAvatarFromBackend(
+        backendData,
+        transformedMorphs
+      );
 
-      // Update the morphs with transformed values
-      updatedAvatarConfig.morphValues = transformedMorphs;
-      console.log('After transformation, morphValues length:', updatedAvatarConfig.morphValues.length);
+      console.log('Avatar configuration loaded successfully:', updatedAvatarConfig);
+      console.log('Transformed morphValues length:', updatedAvatarConfig.morphValues.length);
       console.log('Sample transformed morphs:', transformedMorphs.slice(0, 5));
 
       setLoaderState({ isLoading: true, error: null, stage: 'unreal_communication', progress: 70 });

@@ -1,5 +1,6 @@
 import React, { createContext, useState, useCallback, useMemo } from 'react';
 import { morphAttributes, type MorphAttribute } from '../data/morphAttributes';
+import { transformBackendDataToMorphs } from '../services/avatarTransformationService';
 
 // Types matching your backend JSON structure
 export interface BasicMeasurements {
@@ -67,7 +68,10 @@ export interface AvatarConfigurationContextType {
   error: string | null;
   
   // Avatar management
-  loadAvatarFromBackend: (backendData: BackendAvatarData) => Promise<AvatarConfiguration>;
+  loadAvatarFromBackend: (
+    backendData: BackendAvatarData,
+    transformedMorphs?: MorphAttribute[]
+  ) => Promise<AvatarConfiguration>;
   updateMorphValue: (morphId: number, value: number) => void;
   resetAvatar: () => void;
   
@@ -108,16 +112,20 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
   }, []);
 
   // Load avatar from backend JSON
-  const loadAvatarFromBackend = useCallback(async (backendData: BackendAvatarData) => {
+  const loadAvatarFromBackend = useCallback(async (
+    backendData: BackendAvatarData,
+    transformedMorphs?: MorphAttribute[]
+  ) => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       console.log('Loading avatar from backend data:', backendData);
       
-      // Start with default morphs
-      const morphValues = initializeDefaultMorphs();
-      
+      // Start with provided morphs or transform backend data
+      const morphValues = transformedMorphs ??
+        transformBackendDataToMorphs(backendData, initializeDefaultMorphs());
+
       // Apply backend morph values (this will be handled by transformation service)
       // For now, we'll just store the data as-is
       const avatarConfig: AvatarConfiguration = {
@@ -131,10 +139,15 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
         lastUpdated: new Date()
       };
       
-      setCurrentAvatar(avatarConfig);
-      console.log('Avatar loaded successfully:', avatarConfig);
-      
-      return avatarConfig; // Return the config for immediate use
+      const nextAvatarConfig: AvatarConfiguration = {
+        ...avatarConfig,
+        morphValues: morphValues.map(morph => ({ ...morph })),
+      };
+
+      setCurrentAvatar(nextAvatarConfig);
+      console.log('Avatar loaded successfully:', nextAvatarConfig);
+
+      return nextAvatarConfig; // Return the config for immediate use
       
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load avatar';
