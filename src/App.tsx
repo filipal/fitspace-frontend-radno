@@ -24,6 +24,7 @@ import { PixelStreamingProvider } from './context/PixelStreamingContext'
 import { AuthDataProvider } from './context/AuthDataContext'
 import { UserSettingsProvider } from './context/UserSettingsContext'
 import { AvatarConfigurationProvider } from './context/AvatarConfigurationContext'
+import { AvatarProvider } from './context/AvatarContext'
 import { InstanceManagementProvider } from './context/InstanceManagementContext'
 import ScrollToTop from './components/ScrollToTop'
 import './App.module.scss'
@@ -60,114 +61,116 @@ export default function App() {
   return (
     <UserSettingsProvider>
       <AuthDataProvider>
-        <AvatarConfigurationProvider>
-          <InstanceManagementProvider>
-            <PixelStreamingProvider>
-              <ScrollToTop />
-              <BeforeUnloadHandler />
-              <Routes>
-                <Route path="/" element={<StartPage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/avatar-info" element={<AvatarInfoPage />} />
-                <Route
-                  path="/logged-in"
-                  element={(
-                    <PrivateRoute>
-                      <LoggedInPage />
-                    </PrivateRoute>
-                  )}
-                />
-                <Route path="/use-of-data" element={<UseOfData />} />
-                <Route path="/body-scan-info" element={<BodyScanInfo />} />
-                <Route path="/face-scan-info" element={<FaceScanInfo />} />
-                <Route
-                  path="/quickmode"
-                  element={(
-                    <PrivateRoute>
-                      <QuickMode />
-                    </PrivateRoute>
-                  )}
-                />
-                <Route
-                  path="/body-scan"
-                  element={(
-                    <PrivateRoute>
-                      <BodyScan />
-                    </PrivateRoute>
-                  )}
-                />
-                <Route
-                  path="/face-scan"
-                  element={(
-                    <PrivateRoute>
-                      <FaceScan />
-                    </PrivateRoute>
-                  )}
-                />
-                <Route
-                  path="/unreal-measurements"
-                  element={(
-                    <PrivateRoute>
-                      <UnrealMeasurements />
-                    </PrivateRoute>
-                  )}
-                />
-                <Route
-                  path="/virtual-try-on"
-                  element={(
-                    <PrivateRoute>
-                      <VirtualTryOn />
-                    </PrivateRoute>
-                  )}
-                />
-                <Route
-                  path="/scan-qr-bodyscan"
-                  element={(
-                    <PrivateRoute>
-                      <ScanQRBodyscan />
-                    </PrivateRoute>
-                  )}
-                />
-                <Route
-                  path="/body-photos-check"
-                  element={(
-                    <PrivateRoute>
-                      <BodyPhotosCheck />
-                    </PrivateRoute>
-                  )}
-                />
-                <Route
-                  path="/face-photos-check"
-                  element={(
-                    <PrivateRoute>
-                      <FacePhotosCheck />
-                    </PrivateRoute>
-                  )}
-                />
-                <Route
-                  path="/loading"
-                  element={(
-                    <PrivateRoute>
-                      <LoadingScreen />
-                    </PrivateRoute>
-                  )}
-                />
-                <Route
-                  path="/pixel-streaming-demo"
-                  element={(
-                    <PrivateRoute>
-                      <PixelStreamingDemo />
-                    </PrivateRoute>
-                  )}
-                />
+        <AvatarProvider>
+          <AvatarConfigurationProvider>
+            <InstanceManagementProvider>
+              <PixelStreamingProvider>
+                <ScrollToTop />
+                <BeforeUnloadHandler />
+                <Routes>
+                  <Route path="/" element={<StartPage />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/avatar-info" element={<AvatarInfoPage />} />
+                  <Route
+                    path="/logged-in"
+                    element={(
+                      <PrivateRoute>
+                        <LoggedInPage />
+                      </PrivateRoute>
+                    )}
+                  />
+                  <Route path="/use-of-data" element={<UseOfData />} />
+                  <Route path="/body-scan-info" element={<BodyScanInfo />} />
+                  <Route path="/face-scan-info" element={<FaceScanInfo />} />
+                  <Route
+                    path="/quickmode"
+                    element={(
+                      <PrivateRoute>
+                        <QuickMode />
+                      </PrivateRoute>
+                    )}
+                  />
+                  <Route
+                    path="/body-scan"
+                    element={(
+                      <PrivateRoute>
+                        <BodyScan />
+                      </PrivateRoute>
+                    )}
+                  />
+                  <Route
+                    path="/face-scan"
+                    element={(
+                      <PrivateRoute>
+                        <FaceScan />
+                      </PrivateRoute>
+                    )}
+                  />
+                  <Route
+                    path="/unreal-measurements"
+                    element={(
+                      <PrivateRoute>
+                        <UnrealMeasurements />
+                      </PrivateRoute>
+                    )}
+                  />
+                  <Route
+                    path="/virtual-try-on"
+                    element={(
+                      <PrivateRoute>
+                        <VirtualTryOn />
+                      </PrivateRoute>
+                    )}
+                  />
+                  <Route
+                    path="/scan-qr-bodyscan"
+                    element={(
+                      <PrivateRoute>
+                        <ScanQRBodyscan />
+                      </PrivateRoute>
+                    )}
+                  />
+                  <Route
+                    path="/body-photos-check"
+                    element={(
+                      <PrivateRoute>
+                        <BodyPhotosCheck />
+                      </PrivateRoute>
+                    )}
+                  />
+                  <Route
+                    path="/face-photos-check"
+                    element={(
+                      <PrivateRoute>
+                        <FacePhotosCheck />
+                      </PrivateRoute>
+                    )}
+                  />
+                  <Route
+                    path="/loading"
+                    element={(
+                      <PrivateRoute>
+                        <LoadingScreen />
+                      </PrivateRoute>
+                    )}
+                  />
+                  <Route
+                    path="/pixel-streaming-demo"
+                    element={(
+                      <PrivateRoute>
+                        <PixelStreamingDemo />
+                      </PrivateRoute>
+                    )}
+                  />
 
-                <Route path="*" element={<Navigate to="/" />} />
-              </Routes>
-            
-              <DebugOverlay />
-            </PixelStreamingProvider>
-          </InstanceManagementProvider>
-        </AvatarConfigurationProvider>
+                  <Route path="*" element={<Navigate to="/" />} />
+                </Routes>
+
+                <DebugOverlay />
+              </PixelStreamingProvider>
+            </InstanceManagementProvider>
+          </AvatarConfigurationProvider>
+        </AvatarProvider>
       </AuthDataProvider>
     </UserSettingsProvider>
   )
