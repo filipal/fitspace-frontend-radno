@@ -1,0 +1,33 @@
+{
+  "name": "fitspace-fullstack",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "18" },
+    "ghcr.io/devcontainers/features/python:1": { "version": "3.11" }
+  },
+  "remoteEnv": {
+    "AWS_DEFAULT_REGION": "eu-central-1",
+    "MOCK_DB": "1",
+    "VITE_AVATAR_API_BASE_URL": "/api/v1"
+  },
+  "forwardPorts": [5173, 3000],
+  "portsAttributes": {
+    "5173": { "label": "Frontend (Vite)", "onAutoForward": "openPreview" },
+    "3000": { "label": "Backend (Flask)", "onAutoForward": "openBrowser" }
+  },
+  "postCreateCommand": "git clone https://github.com/e-kipica/fitspace-backend.git backend && cd backend && python -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt && cd .. && npm ci",
+  "postStartCommand": "bash .devcontainer/start-all.sh",
+  "customizations": {
+    "codespaces": {
+      "repositories": {
+        "e-kipica/fitspace-backend": { "permissions": "read-all" }
+      }
+    },
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-azuretools.vscode-docker",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  }
+}
