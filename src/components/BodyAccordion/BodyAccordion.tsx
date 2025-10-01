@@ -1,8 +1,11 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import ArrowRight from '../../assets/arrow-right.svg'
 import { morphAttributes } from '../../data/morphAttributes';
 import type { MorphAttribute } from '../../data/morphAttributes';
+import { useAvatarConfiguration } from '../../context/AvatarConfigurationContext';
 import styles from './BodyAccordion.module.scss'
+
+const EMPTY_MORPH_VALUES: MorphAttribute[] = []
 
 
 export interface BodyAccordionProps {
@@ -11,6 +14,7 @@ export interface BodyAccordionProps {
 
 
 export default function BodyAccordion({ updateMorph }: BodyAccordionProps) {
+  const { currentAvatar } = useAvatarConfiguration()
   // Categories grouped for body editing; values wiring will come later
   const categories = useMemo(
     () => [
@@ -183,15 +187,20 @@ export default function BodyAccordion({ updateMorph }: BodyAccordionProps) {
   function SliderRow({ attr }: { attr: MorphAttribute }) {
     // Always show thumb and value, start centered at 50%
     const barRef = useRef<HTMLDivElement | null>(null);
-    const [val, setVal] = useState(50);
+    const morphValues = currentAvatar?.morphValues ?? EMPTY_MORPH_VALUES
+    const getMorphValue = useCallback(() => {
+      const morph = morphValues.find(item => item.morphId === attr.morphId)
+      return morph?.value ?? 50
+    }, [attr.morphId, morphValues])
+    const [val, setVal] = useState(() => getMorphValue());
     const [barWidth, setBarWidth] = useState(0);
     useLayoutEffect(() => {
       setBarWidth(barRef.current?.clientWidth ?? 0);
     }, []);
-    // Reset slider to midpoint when attribute changes
+    // Sync slider with backend values when avatar or attribute changes
     useEffect(() => {
-      setVal(50);
-    }, [attr.morphId]);
+      setVal(getMorphValue());
+    }, [getMorphValue]);
     const onStart = (clientX: number) => {
       const bar = barRef.current;
       if (!bar) return;
