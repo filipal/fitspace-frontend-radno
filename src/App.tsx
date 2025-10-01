@@ -19,6 +19,7 @@ import FacePhotosCheck from './pages/FacePhotosCheck.tsx'
 import PixelStreamingDemo from './pages/PixelStreamingDemo.tsx'
 import DebugOverlay from './components/DebugOverlay/DebugOverlay.tsx'
 import BeforeUnloadHandler from './components/BeforeUnloadHandler/BeforeUnloadHandler.tsx'
+import PrivateRoute from './components/PrivateRoute'
 import { PixelStreamingProvider } from './context/PixelStreamingContext'
 import { AuthDataProvider } from './context/AuthDataContext'
 import { UserSettingsProvider } from './context/UserSettingsContext'
@@ -68,20 +69,97 @@ export default function App() {
                 <Route path="/" element={<StartPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/avatar-info" element={<AvatarInfoPage />} />
-                <Route path="/logged-in" element={<LoggedInPage />} />
+                <Route
+                  path="/logged-in"
+                  element={(
+                    <PrivateRoute>
+                      <LoggedInPage />
+                    </PrivateRoute>
+                  )}
+                />
                 <Route path="/use-of-data" element={<UseOfData />} />
                 <Route path="/body-scan-info" element={<BodyScanInfo />} />
                 <Route path="/face-scan-info" element={<FaceScanInfo />} />
-                <Route path="/quickmode" element={<QuickMode />} />
-                <Route path="/body-scan" element={<BodyScan />} />
-                <Route path="/face-scan" element={<FaceScan />} />
-                <Route path="/unreal-measurements" element={<UnrealMeasurements />} />
-                <Route path="/virtual-try-on" element={<VirtualTryOn />} />
-                <Route path="/scan-qr-bodyscan" element={<ScanQRBodyscan />} />
-                <Route path="/body-photos-check" element={<BodyPhotosCheck />} />
-                <Route path="/face-photos-check" element={<FacePhotosCheck />} />
-                <Route path="/loading" element={<LoadingScreen />} />
-                <Route path="/pixel-streaming-demo" element={<PixelStreamingDemo />} />
+                <Route
+                  path="/quickmode"
+                  element={(
+                    <PrivateRoute>
+                      <QuickMode />
+                    </PrivateRoute>
+                  )}
+                />
+                <Route
+                  path="/body-scan"
+                  element={(
+                    <PrivateRoute>
+                      <BodyScan />
+                    </PrivateRoute>
+                  )}
+                />
+                <Route
+                  path="/face-scan"
+                  element={(
+                    <PrivateRoute>
+                      <FaceScan />
+                    </PrivateRoute>
+                  )}
+                />
+                <Route
+                  path="/unreal-measurements"
+                  element={(
+                    <PrivateRoute>
+                      <UnrealMeasurements />
+                    </PrivateRoute>
+                  )}
+                />
+                <Route
+                  path="/virtual-try-on"
+                  element={(
+                    <PrivateRoute>
+                      <VirtualTryOn />
+                    </PrivateRoute>
+                  )}
+                />
+                <Route
+                  path="/scan-qr-bodyscan"
+                  element={(
+                    <PrivateRoute>
+                      <ScanQRBodyscan />
+                    </PrivateRoute>
+                  )}
+                />
+                <Route
+                  path="/body-photos-check"
+                  element={(
+                    <PrivateRoute>
+                      <BodyPhotosCheck />
+                    </PrivateRoute>
+                  )}
+                />
+                <Route
+                  path="/face-photos-check"
+                  element={(
+                    <PrivateRoute>
+                      <FacePhotosCheck />
+                    </PrivateRoute>
+                  )}
+                />
+                <Route
+                  path="/loading"
+                  element={(
+                    <PrivateRoute>
+                      <LoadingScreen />
+                    </PrivateRoute>
+                  )}
+                />
+                <Route
+                  path="/pixel-streaming-demo"
+                  element={(
+                    <PrivateRoute>
+                      <PixelStreamingDemo />
+                    </PrivateRoute>
+                  )}
+                />
 
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
