@@ -17,7 +17,11 @@ export default function PrivateRoute({ children }: PrivateRouteProps): ReactElem
     throw new Error('PrivateRoute must be used within an AuthDataProvider')
   }
 
-  if (auth.isLoading) {
+  const isAuthDataLoading = authDataContext.authData === null
+  const isAuthenticated = auth.isAuthenticated || authDataContext.isAuthenticated
+  const isLoading = auth.isLoading || isAuthDataLoading
+
+  if (isLoading) {
     return (
       <div className={styles.loadingContainer} role="status" aria-live="polite">
         <div className={styles.spinner} aria-hidden="true" />
@@ -26,7 +30,7 @@ export default function PrivateRoute({ children }: PrivateRouteProps): ReactElem
     )
   }
 
-  if (!authDataContext.isAuthenticated) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: location }} />
   }
 
