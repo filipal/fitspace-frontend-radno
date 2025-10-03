@@ -5,6 +5,7 @@ import { usePixelStreaming } from '../context/PixelStreamingContext'
 import { PixelStreamingView } from '../components/PixelStreamingView/PixelStreamingView'
 import { useAvatarConfiguration, type BasicMeasurements, type BodyMeasurements } from '../context/AvatarConfigurationContext'
 import { convertSliderValueToUnrealValue } from '../services/avatarCommandService'
+import { convertMorphValueToBackendValue, getBackendKeyForMorphId } from '../services/avatarTransformationService'
 import { morphAttributes } from '../data/morphAttributes'
 import { useAvatarLoader } from '../hooks/useAvatarLoader'
 import { LAST_LOADED_AVATAR_STORAGE_KEY, useAvatarApi } from '../services/avatarApi'
@@ -86,7 +87,13 @@ export default function UnrealMeasurements() {
   const [selectedNav, setSelectedNav] = useState<NavKey | null>(null)
   const [avatarSrc] = useState<string>(avatarMeasure)
   const [autoLoadError, setAutoLoadError] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [hasDirtyMorphs, setHasDirtyMorphs] = useState(false)
+  const [isSavingMorphs, setIsSavingMorphs] = useState(false)
   const lastAutoLoadedIdRef = useRef<string | null>(null)
+  const hasDirtyMorphsRef = useRef(false)
+  const isSavingMorphsRef = useRef(false)
+  const isMountedRef = useRef(true)
 
   useLayoutEffect(() => {
     const el = pageRef.current
@@ -185,7 +192,7 @@ export default function UnrealMeasurements() {
   const { sendFittingRoomCommand, connectionState, application } = usePixelStreaming()
   const { updateMorphValue, currentAvatar } = useAvatarConfiguration()
   const { loadAvatar, loaderState } = useAvatarLoader()
-  const { fetchAvatarById } = useAvatarApi()
+  const { fetchAvatarById, updateMorphTargets } = useAvatarApi()
 
   const pendingMorphUpdatesRef = useRef<PendingMorphUpdate[]>([])
 
@@ -213,6 +220,100 @@ export default function UnrealMeasurements() {
 
   const locationState = location.state as { avatarId?: number | string } | null
   const avatarIdFromState = locationState?.avatarId
+
+  const getActiveAvatarId = useCallback((): string | null => {
+    if (avatarIdFromState != null) {
+      return String(avatarIdFromState)
+    }
+
+    if (typeof window === 'undefined') {
+      return null
+    }
+
+    return sessionStorage.getItem(LAST_LOADED_AVATAR_STORAGE_KEY)
+  }, [avatarIdFromState])
+
+  const persistMorphTargets = useCallback(async (): Promise<boolean> => {
+    if (!currentAvatar) {
+      console.warn('No avatar available to persist morph targets')
+      return false
+    }
+
+    if (!hasDirtyMorphsRef.current) {
+      return true
+    }
+
+    if (isSavingMorphsRef.current) {
+      return false
+    }
+
+    const activeAvatarId = getActiveAvatarId()
+
+    if (!activeAvatarId) {
+      console.warn('Cannot persist morph targets without an avatar identifier')
+      return false
+    }
+
+    try {
+      if (isMountedRef.current) {
+        setIsSavingMorphs(true)
+        setSaveError(null)
+      }
+      isSavingMorphsRef.current = true
+
+      const morphTargets = currentAvatar.morphValues.reduce<Record<string, number>>((acc, morph) => {
+        const backendKey = getBackendKeyForMorphId(morph.morphId)
+
+        if (!backendKey) {
+          return acc
+        }
+
+        acc[backendKey] = convertMorphValueToBackendValue(morph.value, morph)
+        return acc
+      }, {})
+
+      await updateMorphTargets(activeAvatarId, morphTargets)
+
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, String(activeAvatarId))
+      }
+
+      if (isMountedRef.current) {
+        try {
+          const backendAvatar = await fetchAvatarById(activeAvatarId)
+          const result = await loadAvatar(backendAvatar)
+
+          if (!result.success) {
+            throw new Error(result.error ?? 'Failed to refresh avatar configuration')
+          }
+        } catch (refreshError) {
+          console.error('Failed to refresh avatar after saving morph targets', refreshError)
+          if (isMountedRef.current) {
+            setSaveError(refreshError instanceof Error
+              ? refreshError.message
+              : 'Failed to refresh avatar after saving morph targets')
+          }
+          return false
+        }
+
+        setHasDirtyMorphs(false)
+      }
+
+      hasDirtyMorphsRef.current = false
+      return true
+    } catch (error) {
+      console.error('Failed to persist morph targets', error)
+      if (isMountedRef.current) {
+        setSaveError(error instanceof Error ? error.message : 'Failed to save morph changes')
+      }
+      return false
+    } finally {
+      isSavingMorphsRef.current = false
+      if (isMountedRef.current) {
+        setIsSavingMorphs(false)
+      }
+    }
+  }, [currentAvatar, fetchAvatarById, getActiveAvatarId, loadAvatar, updateMorphTargets])
 
   useEffect(() => {
     if (currentAvatar || loaderState.isLoading) {
@@ -371,6 +472,10 @@ export default function UnrealMeasurements() {
 
   const updateMorph = (morphId: number, morphName: string, sliderPercentage: number) => {
     updateMorphValue(morphId, sliderPercentage)
+    if (!hasDirtyMorphsRef.current) {
+      hasDirtyMorphsRef.current = true
+      setHasDirtyMorphs(true)
+    }
 
     if (connectionState === 'connected') {
       dispatchMorphUpdate(morphId, sliderPercentage)
@@ -429,14 +534,49 @@ export default function UnrealMeasurements() {
     }
   }
 
-  const handleNavClick = (btnKey: NavKey) => {
+  const handleNavClick = useCallback(async (btnKey: NavKey) => {
     if (btnKey === 'Save') {
-      navigate('/virtual-try-on')
+      const saved = await persistMorphTargets()
+
+      if (saved) {
+        navigate('/virtual-try-on')
+      }
       return
     }
 
     setSelectedNav(prev => (prev === btnKey ? null : btnKey))
-  }
+    }, [navigate, persistMorphTargets])
+
+  useEffect(() => {
+    if (!hasDirtyMorphs) {
+      return
+    }
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!hasDirtyMorphsRef.current) {
+        return
+      }
+
+      void persistMorphTargets()
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [hasDirtyMorphs, persistMorphTargets])
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false
+      if (hasDirtyMorphsRef.current) {
+        void persistMorphTargets()
+      }
+    }
+  }, [persistMorphTargets])
 
   const loaderMessage = useMemo(() => {
     if (!loaderState.isLoading) {
@@ -484,9 +624,9 @@ export default function UnrealMeasurements() {
         </div>
       )}
 
-      {(loaderState.error || autoLoadError) && (
+      {(loaderState.error || autoLoadError || saveError) && (
         <div className={styles.avatarErrorBanner}>
-          {loaderState.error ?? autoLoadError}
+          {loaderState.error ?? autoLoadError ?? saveError}
         </div>
       )}
 
@@ -582,15 +722,18 @@ export default function UnrealMeasurements() {
               <button
                 key={btn.key}
                 className={`${styles.navButton} ${selectedNav === btn.key ? styles.active : ''}`}
-                onClick={() => handleNavClick(btn.key)}
+                onClick={() => { void handleNavClick(btn.key) }}
                 type="button"
                 style={navButtonVars}
+                disabled={btn.key === 'Save' && isSavingMorphs}
               >
                 <div className={styles.navIndicator} />
                 <div className={styles.navIcon}>
                   <img src={btn.icon} alt={btn.label} />
                 </div>
-                <span className={styles.navLabel}>{btn.label}</span>
+                <span className={styles.navLabel}>
+                  {btn.key === 'Save' && isSavingMorphs ? 'Saving…' : btn.label}
+                </span>
               </button>
             )
           })}

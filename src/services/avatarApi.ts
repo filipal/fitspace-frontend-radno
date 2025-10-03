@@ -71,61 +71,75 @@ export class AvatarApiError extends Error {
   }
 }
 
-function ensureTrailingSlash(url: string): string {
-  return url.endsWith('/') ? url : `${url}/`;
-}
+const ensureTrailingSlash = (value: string): string =>
+  value.endsWith('/') ? value : `${value}/`;
 
-function stripTrailingSlash(url: string): string {
-  return url.replace(/\/+$/, '');
-}
+const trimTrailingSlashes = (value: string): string => value.replace(/\/+$/u, '');
 
-function resolveAvatarUrl(baseUrl: string, avatarId: string | number): string {
+const encodePathSegment = (segment: string | number): string =>
+  encodeURIComponent(String(segment));
+
+const resolveUserRootUrl = (baseUrl: string, userId: string): string => {
+  const normalisedBase = ensureTrailingSlash(trimTrailingSlashes(baseUrl));
+  return `${normalisedBase}${encodePathSegment(userId)}`;
+};
+
+const buildAvatarScopedUrl = (
+  baseUrl: string,
+  userId: string,
+  ...segments: Array<string | number>
+): string => {
+  const avatarRoot = `${ensureTrailingSlash(resolveUserRootUrl(baseUrl, userId))}avatars`;
+  if (!segments.length) {
+    return avatarRoot;
+  }
+
+  const suffix = segments.map(encodePathSegment).join('/');
+  return `${avatarRoot}/${suffix}`;
+};
+
+function resolveAvatarCollectionUrl(baseUrl: string, userId: string): string {
   if (!baseUrl) {
     throw new AvatarApiError('Avatar API base URL is not configured');
   }
 
-  const normalizedBase = ensureTrailingSlash(baseUrl);
-
-  try {
-    return new URL(`avatars/${avatarId}`, normalizedBase).toString();
-  } catch {
-    // Fallback for cases where baseUrl might already contain path segments
-    return `${stripTrailingSlash(baseUrl)}/avatars/${avatarId}`;
-  }
+  return buildAvatarScopedUrl(baseUrl, userId);
 }
 
-function resolveAvatarCollectionUrl(baseUrl: string): string {
+function resolveAvatarUrl(
+  baseUrl: string,
+  userId: string,
+  avatarId: string | number,
+): string {
   if (!baseUrl) {
     throw new AvatarApiError('Avatar API base URL is not configured');
   }
 
-  const normalizedBase = ensureTrailingSlash(baseUrl);
-
-  try {
-    return new URL('avatars', normalizedBase).toString();
-  } catch {
-    return `${stripTrailingSlash(baseUrl)}/avatars`;
-  }
+  return buildAvatarScopedUrl(baseUrl, userId, avatarId);
 }
 
 function resolveAvatarMeasurementsUrl(
   baseUrl: string,
+  userId: string,
   avatarId: string | number,
 ): string {
-  const avatarUrl = resolveAvatarUrl(baseUrl, avatarId);
-  return avatarUrl.endsWith('/measurements')
-    ? avatarUrl
-    : `${avatarUrl.replace(/\/+$/, '')}/measurements`;
+  if (!baseUrl) {
+    throw new AvatarApiError('Avatar API base URL is not configured');
+  }
+
+  return buildAvatarScopedUrl(baseUrl, userId, avatarId, 'measurements');
 }
 
 function resolveAvatarMorphTargetsUrl(
   baseUrl: string,
+  userId: string,
   avatarId: string | number,
 ): string {
-  const avatarUrl = resolveAvatarUrl(baseUrl, avatarId);
-  return avatarUrl.endsWith('/morph-targets')
-    ? avatarUrl
-    : `${avatarUrl.replace(/\/+$/, '')}/morph-targets`;
+  if (!baseUrl) {
+    throw new AvatarApiError('Avatar API base URL is not configured');
+  }
+
+  return buildAvatarScopedUrl(baseUrl, userId, avatarId, 'morph-targets');
 }
 
 async function readErrorResponse(response: Response): Promise<string | undefined> {
@@ -235,7 +249,7 @@ async function createAvatarRequest({
   baseUrl = DEFAULT_AVATAR_API_BASE_URL,
   payload,
 }: CreateAvatarRequest): Promise<AvatarApiResult> {
-  const url = resolveAvatarCollectionUrl(baseUrl);
+  const url = resolveAvatarCollectionUrl(baseUrl, userId);
 
   const response = await fetch(url, {
     method: 'POST',
@@ -272,7 +286,7 @@ async function updateAvatarMeasurementsRequest({
   baseUrl = DEFAULT_AVATAR_API_BASE_URL,
   payload,
 }: UpdateAvatarMeasurementsRequest): Promise<AvatarApiResult> {
-  const url = resolveAvatarMeasurementsUrl(baseUrl, avatarId);
+  const url = resolveAvatarMeasurementsUrl(baseUrl, userId, avatarId);
 
   const response = await fetch(url, {
     method: 'PUT',
@@ -289,7 +303,8 @@ async function updateAvatarMeasurementsRequest({
 
   const body = await readJsonBody(response);
   const backendAvatar = extractBackendAvatar(body) ?? null;
-  const nextAvatarId = extractAvatarId(body) ?? (typeof avatarId === 'string' ? avatarId : String(avatarId));
+  const nextAvatarId =
+    extractAvatarId(body) ?? (typeof avatarId === 'string' ? avatarId : String(avatarId));
 
   return {
     avatarId: nextAvatarId,
@@ -305,7 +320,7 @@ async function updateAvatarMorphTargetsRequest({
   baseUrl = DEFAULT_AVATAR_API_BASE_URL,
   payload,
 }: UpdateAvatarMorphTargetsRequest): Promise<AvatarApiResult> {
-  const url = resolveAvatarMorphTargetsUrl(baseUrl, avatarId);
+  const url = resolveAvatarMorphTargetsUrl(baseUrl, userId, avatarId);
 
   const response = await fetch(url, {
     method: 'PATCH',
@@ -346,7 +361,7 @@ export async function fetchAvatarByIdRequest({
     throw new AvatarApiError('Missing user identifier for avatar request');
   }
 
-  const url = resolveAvatarUrl(baseUrl, avatarId);
+  const url = resolveAvatarUrl(baseUrl, userId, avatarId);
 
   const response = await fetch(url, {
     method: 'GET',
@@ -470,6 +485,6 @@ export function useAvatarApi(config?: { baseUrl?: string }) {
     fetchAvatarById,
     createAvatar,
     updateAvatarMeasurements,
-    updateMorphTargets, 
+    updateMorphTargets,
   };
 }
