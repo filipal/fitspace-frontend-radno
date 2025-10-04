@@ -1,0 +1,2 @@
+# Dummy requirements.txt
+# Frontend nema Python ovisnosti
