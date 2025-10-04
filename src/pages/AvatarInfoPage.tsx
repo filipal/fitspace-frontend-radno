@@ -211,15 +211,16 @@ export default function AvatarInfoPage() {
                 try {
                   const trimmedName = name.trim()
                   const fallbackName = trimmedName || `Avatar ${avatars.length + 1}`
-                  const creationMode = 'manual' as const
                   const payload: AvatarPayload = {
                     avatarName: fallbackName,
                     gender,
                     ageRange,
+                    creationMode: 'manual' as const,
+                    quickMode: true,                    
                     basicMeasurements: {
                       height: heightValue,
                       weight: weightValue,
-                      creationMode: 'quickMode' as const,
+                      creationMode: 'manual' as const,
                     },
                     bodyMeasurements: {},
                     morphTargets: {},
