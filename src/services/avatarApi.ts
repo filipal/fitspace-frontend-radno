@@ -50,6 +50,7 @@ interface AvatarApiAuth {
   backendSession: BackendSession;
   userId: string;
   baseUrl?: string;
+  sessionId?: string;
 }
 
 interface CreateAvatarRequest extends AvatarApiAuth {
@@ -868,8 +869,11 @@ async function createAvatarRequest({
   userId,
   baseUrl = DEFAULT_AVATAR_API_BASE_URL,
   payload,
+  sessionId,
 }: CreateAvatarRequest): Promise<AvatarApiResult> {
   const url = resolveAvatarCollectionUrl(baseUrl, userId);
+  const effectiveSessionId =
+    sessionId ?? backendSession.headers['X-Session-Id'];
 
   const response = await fetch(url, {
     method: 'POST',
@@ -879,7 +883,9 @@ async function createAvatarRequest({
       Accept: 'application/json',
       'X-User-Id': userId,
     },
-    body: JSON.stringify(buildBackendAvatarRequestPayload(payload, sessionId)),
+    body: JSON.stringify(
+      buildBackendAvatarRequestPayload(payload, effectiveSessionId),
+    ),
   });
 
   await ensureOk(response);
@@ -905,8 +911,11 @@ async function updateAvatarMeasurementsRequest({
   avatarId,
   baseUrl = DEFAULT_AVATAR_API_BASE_URL,
   payload,
+  sessionId,
 }: UpdateAvatarMeasurementsRequest): Promise<AvatarApiResult> {
   const url = resolveAvatarUrl(baseUrl, userId, avatarId);
+  const effectiveSessionId =
+    sessionId ?? backendSession.headers['X-Session-Id'];
 
   const response = await fetch(url, {
     method: 'PUT',
@@ -916,7 +925,9 @@ async function updateAvatarMeasurementsRequest({
       Accept: 'application/json',
       'X-User-Id': userId,
     },
-    body: JSON.stringify(buildBackendAvatarRequestPayload(payload, sessionId)),
+    body: JSON.stringify(
+      buildBackendAvatarRequestPayload(payload, effectiveSessionId),
+    ),
   });
 
   await ensureOk(response);
@@ -1088,10 +1099,17 @@ export function useAvatarApi(config?: { baseUrl?: string }) {
           userId,
           baseUrl: config?.baseUrl,
           payload,
+          sessionId,
         }),
       );
     },
-    [authData.isAuthenticated, config?.baseUrl, userId, withBackendSession],
+    [
+      authData.isAuthenticated,
+      config?.baseUrl,
+      sessionId,
+      userId,
+      withBackendSession,
+    ],
   );
 
   const updateAvatarMeasurements = useCallback(
@@ -1143,10 +1161,17 @@ export function useAvatarApi(config?: { baseUrl?: string }) {
           avatarId,
           baseUrl: config?.baseUrl,
           payload: requestPayload,
+          sessionId,
         }),
       );
     },
-    [authData.isAuthenticated, config?.baseUrl, userId, withBackendSession],
+    [
+      authData.isAuthenticated,
+      config?.baseUrl,
+      sessionId,
+      userId,
+      withBackendSession,
+    ],
   );
 
   return {
