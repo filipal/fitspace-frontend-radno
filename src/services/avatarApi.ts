@@ -30,6 +30,8 @@ export interface AvatarPayload {
 interface AvatarApiAuth {
   accessToken: string;
   userId: string;
+  email: string;
+  sessionId: string;
   baseUrl?: string;
 }
 
@@ -57,6 +59,8 @@ export interface FetchAvatarByIdRequest {
   avatarId: string | number;
   accessToken: string;
   userId: string;
+  email: string;
+  sessionId: string;
   baseUrl?: string;
 }
 
@@ -246,10 +250,18 @@ function extractAvatarId(data: unknown): string | undefined {
 async function createAvatarRequest({
   accessToken,
   userId,
+  email,
+  sessionId,
   baseUrl = DEFAULT_AVATAR_API_BASE_URL,
   payload,
 }: CreateAvatarRequest): Promise<AvatarApiResult> {
   const url = resolveAvatarCollectionUrl(baseUrl, userId);
+
+  if (!email || !sessionId) {
+    throw new AvatarApiError(
+      'User session information is incomplete; please sign in again to create avatars.',
+    );
+  }
 
   const response = await fetch(url, {
     method: 'POST',
@@ -258,6 +270,8 @@ async function createAvatarRequest({
       'Content-Type': 'application/json',
       Accept: 'application/json',
       'X-User-Id': userId,
+      'X-User-Email': email,
+      'X-Session-Id': sessionId,
     },
     body: JSON.stringify(payload),
   });
@@ -283,10 +297,18 @@ async function updateAvatarMeasurementsRequest({
   accessToken,
   userId,
   avatarId,
+  email,
+  sessionId,
   baseUrl = DEFAULT_AVATAR_API_BASE_URL,
   payload,
 }: UpdateAvatarMeasurementsRequest): Promise<AvatarApiResult> {
   const url = resolveAvatarMeasurementsUrl(baseUrl, userId, avatarId);
+
+  if (!email || !sessionId) {
+    throw new AvatarApiError(
+      'User session information is incomplete; please sign in again to update avatar measurements.',
+    );
+  }
 
   const response = await fetch(url, {
     method: 'PUT',
@@ -295,6 +317,8 @@ async function updateAvatarMeasurementsRequest({
       'Content-Type': 'application/json',
       Accept: 'application/json',
       'X-User-Id': userId,
+      'X-User-Email': email,
+      'X-Session-Id': sessionId,
     },
     body: JSON.stringify(payload),
   });
@@ -317,10 +341,18 @@ async function updateAvatarMorphTargetsRequest({
   accessToken,
   userId,
   avatarId,
+  email,
+  sessionId,
   baseUrl = DEFAULT_AVATAR_API_BASE_URL,
   payload,
 }: UpdateAvatarMorphTargetsRequest): Promise<AvatarApiResult> {
   const url = resolveAvatarMorphTargetsUrl(baseUrl, userId, avatarId);
+
+  if (!email || !sessionId) {
+    throw new AvatarApiError(
+      'User session information is incomplete; please sign in again to update avatar morph targets.',
+    );
+  }
 
   const response = await fetch(url, {
     method: 'PATCH',
@@ -329,6 +361,8 @@ async function updateAvatarMorphTargetsRequest({
       'Content-Type': 'application/json',
       Accept: 'application/json',
       'X-User-Id': userId,
+      'X-User-Email': email,
+      'X-Session-Id': sessionId,
     },
     body: JSON.stringify(payload),
   });
@@ -351,6 +385,8 @@ export async function fetchAvatarByIdRequest({
   avatarId,
   accessToken,
   userId,
+  email,
+  sessionId,
   baseUrl = DEFAULT_AVATAR_API_BASE_URL,
 }: FetchAvatarByIdRequest): Promise<BackendAvatarData> {
   if (!accessToken) {
@@ -359,6 +395,12 @@ export async function fetchAvatarByIdRequest({
 
   if (!userId) {
     throw new AvatarApiError('Missing user identifier for avatar request');
+  }
+
+  if (!email || !sessionId) {
+    throw new AvatarApiError(
+      'User session information is incomplete; please sign in again to load avatars.',
+    );
   }
 
   const url = resolveAvatarUrl(baseUrl, userId, avatarId);
@@ -370,6 +412,8 @@ export async function fetchAvatarByIdRequest({
       'Content-Type': 'application/json',
       Accept: 'application/json',
       'X-User-Id': userId,
+      'X-User-Email': email,
+      'X-Session-Id': sessionId,
     },
   });
 
@@ -408,6 +452,8 @@ export function useAvatarApi(config?: { baseUrl?: string }) {
   const authData = useAuthData();
   const accessToken = authData.authData?.accessToken ?? undefined;
   const userId = authData.userId ?? undefined;
+  const email = authData.email ?? undefined;
+  const sessionId = authData.sessionId ?? undefined;
 
   const fetchAvatarById = useCallback(
     async (avatarId: string | number): Promise<BackendAvatarData> => {
@@ -415,14 +461,22 @@ export function useAvatarApi(config?: { baseUrl?: string }) {
         throw new AvatarApiError('User is not authenticated to load avatars');
       }
 
+      if (!email || !sessionId) {
+        throw new AvatarApiError(
+          'User session information is incomplete; please sign in again to load avatars.',
+        );
+      }
+
       return fetchAvatarByIdRequest({
         avatarId,
         accessToken,
         userId,
+        email,
+        sessionId,
         baseUrl: config?.baseUrl,
       });
     },
-    [accessToken, authData.isAuthenticated, config?.baseUrl, userId],
+    [accessToken, authData.isAuthenticated, config?.baseUrl, email, sessionId, userId],
   );
 
   const createAvatar = useCallback(
@@ -431,14 +485,29 @@ export function useAvatarApi(config?: { baseUrl?: string }) {
         throw new AvatarApiError('User is not authenticated to create avatars');
       }
 
+      if (!email || !sessionId) {
+        throw new AvatarApiError(
+          'User session information is incomplete; please sign in again to create avatars.',
+        );
+      }
+
       return createAvatarRequest({
         accessToken,
         userId,
+        email,
+        sessionId,
         baseUrl: config?.baseUrl,
         payload,
       });
     },
-    [accessToken, authData.isAuthenticated, config?.baseUrl, userId],
+    [
+      accessToken,
+      authData.isAuthenticated,
+      config?.baseUrl,
+      email,
+      sessionId,
+      userId,
+    ],
   );
 
   const updateAvatarMeasurements = useCallback(
@@ -450,15 +519,30 @@ export function useAvatarApi(config?: { baseUrl?: string }) {
         throw new AvatarApiError('User is not authenticated to update avatars');
       }
 
+      if (!email || !sessionId) {
+        throw new AvatarApiError(
+          'User session information is incomplete; please sign in again to update avatar measurements.',
+        );
+      }
+
       return updateAvatarMeasurementsRequest({
         accessToken,
         userId,
         avatarId,
+        email,
+        sessionId,
         baseUrl: config?.baseUrl,
         payload,
       });
     },
-    [accessToken, authData.isAuthenticated, config?.baseUrl, userId],
+    [
+      accessToken,
+      authData.isAuthenticated,
+      config?.baseUrl,
+      email,
+      sessionId,
+      userId,
+    ],
   );
 
   const updateMorphTargets = useCallback(
@@ -470,15 +554,30 @@ export function useAvatarApi(config?: { baseUrl?: string }) {
         throw new AvatarApiError('User is not authenticated to update avatar morph targets');
       }
 
+      if (!email || !sessionId) {
+        throw new AvatarApiError(
+          'User session information is incomplete; please sign in again to update avatar morph targets.',
+        );
+      }
+
       return updateAvatarMorphTargetsRequest({
         accessToken,
         userId,
+        email,
+        sessionId,
         avatarId,
         baseUrl: config?.baseUrl,
         payload: morphTargets,
       });
     },
-    [accessToken, authData.isAuthenticated, config?.baseUrl, userId],
+    [
+      accessToken,
+      authData.isAuthenticated,
+      config?.baseUrl,
+      email,
+      sessionId,
+      userId,
+    ],
   );
 
   return {
