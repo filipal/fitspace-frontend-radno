@@ -18,6 +18,7 @@ import {
   LAST_LOADED_AVATAR_STORAGE_KEY,
   useAvatarApi,
   type QuickModeSettingsPayload,
+  type AvatarPayload,
 } from '../services/avatarApi'
 import { useAvatars } from '../context/AvatarContext'
 import {
@@ -261,8 +262,8 @@ export default function QuickMode() {
         }
       : undefined
 
-    const payload = {
-      avatarName,
+    const payload: AvatarPayload = {
+      name: avatarName,
       gender,
       ageRange,
       creationMode,
@@ -294,7 +295,7 @@ export default function QuickMode() {
           LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
           JSON.stringify({
             avatarId: persistedAvatarId ?? effectiveAvatarId,
-            avatarName: result.backendAvatar?.data.avatarName ?? payload.avatarName,
+            avatarName: result.backendAvatar?.data.avatarName ?? payload.name,
             gender: result.backendAvatar?.data.gender ?? payload.gender,
             ageRange: result.backendAvatar?.data.ageRange ?? payload.ageRange,
             basicMeasurements:
@@ -325,7 +326,7 @@ export default function QuickMode() {
           const next = [...prev]
           const existingIndex = next.findIndex(avatar => avatar.id === persistedAvatarId)
           const avatarNameToPersist =
-            result.backendAvatar?.data.avatarName ?? payload.avatarName
+            result.backendAvatar?.data.avatarName ?? payload.name
           const createdAtValue =
             existingIndex >= 0
               ? next[existingIndex].createdAt

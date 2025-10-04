@@ -24,8 +24,7 @@ const DEFAULT_BACKEND_API_ROOT =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '';
 
 const BACKEND_SESSION_STORAGE_KEY = 'fitspace:backendSession';
-const BACKEND_AUTH_API_KEY = import.meta.env
-  .VITE_BACKEND_AUTH_API_KEY as string | undefined;
+const AVATAR_API_KEY = import.meta.env.VITE_AVATAR_API_KEY as string | undefined;
 
 export interface QuickModeSettingsPayload {
   bodyShape?: string | null;
@@ -33,16 +32,23 @@ export interface QuickModeSettingsPayload {
   measurements?: Record<string, number>;
 }
 
+export interface AvatarMorphPayload {
+  id: string;
+  backendKey: string;
+  sliderValue: number;
+}
+
 export interface AvatarPayload {
-  avatarName: string;
+  name: string;
   gender: 'male' | 'female';
   ageRange: string;
   creationMode?: AvatarCreationMode | null;
   quickMode?: boolean;
-  source?: string;
+  source?: string | null;
   basicMeasurements?: Partial<BasicMeasurements>;
   bodyMeasurements?: AvatarApiMeasurements;
   morphTargets?: Record<string, number>;
+  morphs?: AvatarMorphPayload[];
   quickModeSettings?: QuickModeSettingsPayload | null;
 }
 
@@ -66,6 +72,18 @@ export interface AvatarApiResult {
   avatarId?: string;
   backendAvatar?: BackendAvatarData | null;
   responseBody: unknown;
+}
+
+export interface AvatarListItem {
+  id: string;
+  name: string;
+  gender: 'male' | 'female';
+  ageRange?: string;
+  source?: string | null;
+  creationMode?: AvatarCreationMode | null;
+  quickMode?: boolean;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface FetchAvatarByIdRequest {
@@ -264,7 +282,7 @@ async function requestBackendSession({
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
-      ...(BACKEND_AUTH_API_KEY ? { 'x-api-key': BACKEND_AUTH_API_KEY } : {}),
+      ...(AVATAR_API_KEY ? { 'x-api-key': AVATAR_API_KEY } : {}),
     },
     body: JSON.stringify({ userId, email, sessionId, refreshToken }),
   });
@@ -480,6 +498,59 @@ const sanitizeMorphTargetsPayload = (
   return Object.keys(entries).length ? entries : undefined;
 };
 
+const buildBackendMorphPayload = (
+  payload: AvatarPayload,
+): AvatarMorphPayload[] | undefined => {
+  const result = new Map<string, AvatarMorphPayload>();
+
+  const assignMorph = (id: string | undefined, backendKey: string | undefined, value: unknown) => {
+    const normalizedBackendKey = normalizeString(backendKey ?? id);
+    if (!normalizedBackendKey) {
+      return;
+    }
+
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) {
+      return;
+    }
+
+    const normalizedId = normalizeString(id ?? backendKey) ?? normalizedBackendKey;
+    result.set(normalizedBackendKey, {
+      id: normalizedId,
+      backendKey: normalizedBackendKey,
+      sliderValue: numericValue,
+    });
+  };
+
+  if (Array.isArray(payload.morphs)) {
+    payload.morphs.forEach(item => {
+      if (!item || typeof item !== 'object') {
+        return;
+      }
+
+      const candidate = item as Partial<AvatarMorphPayload> & {
+        value?: unknown;
+        unrealValue?: unknown;
+        defaultValue?: unknown;
+      };
+
+      const rawValue =
+        candidate.sliderValue ?? candidate.value ?? candidate.unrealValue ?? candidate.defaultValue;
+
+      assignMorph(candidate.id, candidate.backendKey, rawValue);
+    });
+  }
+
+  const sanitizedTargets = sanitizeMorphTargetsPayload(payload.morphTargets);
+  if (sanitizedTargets) {
+    Object.entries(sanitizedTargets).forEach(([key, value]) => {
+      assignMorph(key, key, value);
+    });
+  }
+
+  return result.size ? Array.from(result.values()) : undefined;
+};
+
 const sanitizeQuickModeSettingsPayload = (
   settings?: QuickModeSettingsPayload | QuickModeSettings | null,
 ): QuickModeSettings | undefined => {
@@ -529,7 +600,7 @@ const buildBackendAvatarRequestPayload = (
   sessionId?: string,
 ): Record<string, unknown> => {
   const request: Record<string, unknown> = {
-    name: payload.avatarName,
+    name: payload.name,
   };
 
   if (payload.gender) {
@@ -566,9 +637,9 @@ const buildBackendAvatarRequestPayload = (
     request.bodyMeasurements = bodyMeasurements;
   }
 
-  const morphTargets = sanitizeMorphTargetsPayload(payload.morphTargets);
-  if (morphTargets) {
-    request.morphTargets = morphTargets;
+  const morphs = buildBackendMorphPayload(payload);
+  if (morphs) {
+    request.morphs = morphs;
   }
 
   const quickModeSettings = sanitizeQuickModeSettingsPayload(payload.quickModeSettings);
@@ -761,7 +832,10 @@ const normalizeBackendAvatar = (payload: unknown): BackendAvatarData | undefined
     basicMeasurements.creationMode = creationMode;
   }
   const bodyMeasurements = normalizeBodyMeasurements(candidate.bodyMeasurements);
-  const morphTargets = normalizeMorphTargetsResponse(candidate.morphTargets);
+  const morphTargets = normalizeMorphTargetsResponse(
+    (candidate as { morphTargets?: unknown }).morphTargets ??
+      (candidate as { morphs?: unknown }).morphs,
+  );
   const quickModeSettings = normalizeQuickModeSettingsResponse(
     candidate.quickModeSettings,
   );
@@ -785,6 +859,92 @@ const normalizeBackendAvatar = (payload: unknown): BackendAvatarData | undefined
       quickModeSettings,
     },
   };
+};
+
+const parseAvatarResponse = (
+  payload: unknown,
+  options?: { fallbackId?: string | number },
+): { backendAvatar: BackendAvatarData | null; avatarId: string } => {
+  const backendAvatar = normalizeBackendAvatar(payload) ?? null;
+  const candidate = findAvatarCandidate(payload);
+  const topLevel = isRecord(payload) ? (payload as Record<string, unknown>) : undefined;
+
+  const rawIdentifier =
+    backendAvatar?.data.avatarId ??
+    normalizeString(candidate?.avatarId ?? candidate?.id) ??
+    normalizeString(topLevel?.avatarId ?? topLevel?.id) ??
+    (options?.fallbackId != null ? String(options.fallbackId) : undefined);
+
+  if (!rawIdentifier) {
+    throw new AvatarApiError('Avatar response did not include an avatar identifier');
+  }
+
+  return { backendAvatar, avatarId: rawIdentifier };
+};
+
+const parseAvatarListItem = (payload: unknown): AvatarListItem | null => {
+  if (!isRecord(payload)) {
+    return null;
+  }
+
+  const id = normalizeString(payload.id ?? payload.avatarId);
+  if (!id) {
+    return null;
+  }
+
+  const name =
+    normalizeString(payload.name ?? payload.avatarName) ?? `Avatar ${id}`;
+  const gender = normalizeGender(payload.gender);
+  const ageRange = normalizeString(payload.ageRange) ?? undefined;
+  const source = normalizeString(payload.source) ?? null;
+  const creationMode =
+    normalizeCreationMode(payload.creationMode) ?? null;
+  const quickMode =
+    typeof payload.quickMode === 'boolean' ? payload.quickMode : undefined;
+  const createdAt = normalizeString(payload.createdAt) ?? null;
+  const updatedAt = normalizeString(payload.updatedAt) ?? null;
+
+  return {
+    id,
+    name,
+    gender,
+    ageRange,
+    source,
+    creationMode,
+    quickMode,
+    createdAt,
+    updatedAt,
+  };
+};
+
+const parseAvatarListResponse = (payload: unknown): AvatarListItem[] => {
+  const collect = (source: unknown): AvatarListItem[] => {
+    if (!Array.isArray(source)) {
+      return [];
+    }
+
+    return source
+      .map(parseAvatarListItem)
+      .filter((item): item is AvatarListItem => item !== null);
+  };
+
+  if (Array.isArray(payload)) {
+    return collect(payload);
+  }
+
+  if (isRecord(payload)) {
+    if (Array.isArray(payload.avatars)) {
+      return collect(payload.avatars);
+    }
+    if (Array.isArray(payload.data)) {
+      return collect(payload.data);
+    }
+    if (isRecord(payload.data) && Array.isArray(payload.data.avatars)) {
+      return collect(payload.data.avatars);
+    }
+  }
+
+  return [];
 };
 
 async function readErrorResponse(response: Response): Promise<string | undefined> {
@@ -839,29 +999,42 @@ async function readJsonBody(response: Response): Promise<unknown> {
   }
 }
 
-const extractBackendAvatar = normalizeBackendAvatar;
+async function listAvatarsRequest({
+  backendSession,
+  userId,
+  baseUrl = DEFAULT_AVATAR_API_BASE_URL,
+  sessionId,
+}: AvatarApiAuth): Promise<AvatarListItem[]> {
+  const url = resolveAvatarCollectionUrl(baseUrl, userId);
+  const effectiveSessionId =
+    sessionId ?? backendSession.headers['X-Session-Id'];
 
-function extractAvatarId(data: unknown): string | undefined {
-  if (!data || typeof data !== 'object') {
-    return undefined;
+  const headers: Record<string, string> = {
+    ...backendSession.headers,
+    Accept: 'application/json',
+  };
+
+  if (!('Content-Type' in headers)) {
+    headers['Content-Type'] = 'application/json';
   }
 
-  if (typeof (data as { avatarId?: unknown }).avatarId === 'string') {
-    return (data as { avatarId: string }).avatarId;
+  if (userId && !('X-User-Id' in headers)) {
+    headers['X-User-Id'] = userId;
   }
 
-  if (typeof (data as { id?: unknown }).id === 'string') {
-    return (data as { id: string }).id;
+  if (effectiveSessionId && !('X-Session-Id' in headers)) {
+    headers['X-Session-Id'] = effectiveSessionId;
   }
 
-  const dataField = (data as { data?: unknown }).data;
-  if (dataField && typeof dataField === 'object') {
-    if (typeof (dataField as { avatarId?: unknown }).avatarId === 'string') {
-      return (dataField as { avatarId: string }).avatarId;
-    }
-  }
+  const response = await fetch(url, {
+    method: 'GET',
+    headers,
+  });
 
-  return undefined;
+  await ensureOk(response);
+
+  const body = await readJsonBody(response);
+  return parseAvatarListResponse(body);
 }
 
 async function createAvatarRequest({
@@ -875,17 +1048,23 @@ async function createAvatarRequest({
   const effectiveSessionId =
     sessionId ?? backendSession.headers['X-Session-Id'];
 
+  const headers: Record<string, string> = {
+    ...backendSession.headers,
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+
+  if (userId && !('X-User-Id' in headers)) {
+    headers['X-User-Id'] = userId;
+  }
+
+  if (effectiveSessionId && !('X-Session-Id' in headers)) {
+    headers['X-Session-Id'] = effectiveSessionId;
+  }
+
   const response = await fetch(url, {
     method: 'POST',
-    headers: {
-      ...backendSession.headers,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'X-User-Id': userId,
-      ...(effectiveSessionId
-        ? { 'X-Session-Id': effectiveSessionId }
-        : {}),
-    },
+    headers,
     body: JSON.stringify(
       buildBackendAvatarRequestPayload(payload, effectiveSessionId),
     ),
@@ -894,12 +1073,7 @@ async function createAvatarRequest({
   await ensureOk(response);
 
   const body = await readJsonBody(response);
-  const backendAvatar = extractBackendAvatar(body) ?? null;
-  const avatarId = extractAvatarId(body);
-
-  if (!avatarId) {
-    throw new AvatarApiError('Avatar creation response did not include an avatarId');
-  }
+  const { backendAvatar, avatarId } = parseAvatarResponse(body);
 
   return {
     avatarId,
@@ -920,17 +1094,23 @@ async function updateAvatarMeasurementsRequest({
   const effectiveSessionId =
     sessionId ?? backendSession.headers['X-Session-Id'];
 
+  const headers: Record<string, string> = {
+    ...backendSession.headers,
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+
+  if (userId && !('X-User-Id' in headers)) {
+    headers['X-User-Id'] = userId;
+  }
+
+  if (effectiveSessionId && !('X-Session-Id' in headers)) {
+    headers['X-Session-Id'] = effectiveSessionId;
+  }
+
   const response = await fetch(url, {
     method: 'PUT',
-    headers: {
-      ...backendSession.headers,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'X-User-Id': userId,
-      ...(effectiveSessionId
-        ? { 'X-Session-Id': effectiveSessionId }
-        : {}),
-    },
+    headers,
     body: JSON.stringify(
       buildBackendAvatarRequestPayload(payload, effectiveSessionId),
     ),
@@ -939,14 +1119,12 @@ async function updateAvatarMeasurementsRequest({
   await ensureOk(response);
 
   const body = await readJsonBody(response);
-  const backendAvatar = normalizeBackendAvatar(body) ?? null;
-  const nextAvatarId =
-    backendAvatar?.data.avatarId ??
-    extractAvatarId(body) ??
-    (typeof avatarId === 'string' ? avatarId : String(avatarId));
+  const { backendAvatar, avatarId: resolvedId } = parseAvatarResponse(body, {
+    fallbackId: avatarId,
+  });
 
   return {
-    avatarId: nextAvatarId,
+    avatarId: resolvedId,
     backendAvatar,
     responseBody: body,
   };
@@ -965,14 +1143,22 @@ export async function fetchAvatarByIdRequest({
 
   const url = resolveAvatarUrl(baseUrl, userId, avatarId);
 
+  const headers: Record<string, string> = {
+    ...backendSession.headers,
+    Accept: 'application/json',
+  };
+
+  if (!('Content-Type' in headers)) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  if (userId && !('X-User-Id' in headers)) {
+    headers['X-User-Id'] = userId;
+  }
+  
   const response = await fetch(url, {
     method: 'GET',
-    headers: {
-      ...backendSession.headers,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'X-User-Id': userId,
-    },
+    headers,
   });
 
   if (!response.ok) {
@@ -1118,6 +1304,21 @@ export function useAvatarApi(config?: { baseUrl?: string }) {
     ],
   );
 
+  const listAvatars = useCallback(async (): Promise<AvatarListItem[]> => {
+    if (!authData.isAuthenticated || !userId) {
+      throw new AvatarApiError('User is not authenticated to list avatars');
+    }
+
+    return withBackendSession((backendSession) =>
+      listAvatarsRequest({
+        backendSession,
+        userId,
+        baseUrl: config?.baseUrl,
+        sessionId,
+      }),
+    );
+  }, [authData.isAuthenticated, config?.baseUrl, sessionId, userId, withBackendSession]);
+
   const updateAvatarMeasurements = useCallback(
     async (
       avatarId: string | number,
@@ -1138,7 +1339,7 @@ export function useAvatarApi(config?: { baseUrl?: string }) {
 
       const requestPayload: AvatarPayload = {
         ...payload,
-        avatarName: payload.avatarName,
+        name: payload.name,
         gender: payload.gender,
         ageRange: payload.ageRange,
         ...(payload.basicMeasurements
@@ -1183,6 +1384,7 @@ export function useAvatarApi(config?: { baseUrl?: string }) {
   return {
     fetchAvatarById,
     createAvatar,
+    listAvatars,
     updateAvatarMeasurements,
   };
 }

@@ -40,7 +40,7 @@ VITE_API_BASE_URL=https://backend.example.com/api
 VITE_AVATAR_API_BASE_URL=https://backend.example.com/api/users/
 ```
 If your backend protects the `/auth/token` endpoint with an API key, also set
-`VITE_BACKEND_AUTH_API_KEY`.
+`VITE_AVATAR_API_KEY`.
 
 After updating the environment file, restart the Vite development server so the
 new value is picked up in `import.meta.env`.

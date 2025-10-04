@@ -9,6 +9,7 @@ import { convertMorphValueToBackendValue, getBackendKeyForMorphId } from '../ser
 import { morphAttributes } from '../data/morphAttributes'
 import { useAvatarLoader } from '../hooks/useAvatarLoader'
 import {
+  LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
   LAST_LOADED_AVATAR_STORAGE_KEY,
   type AvatarPayload,
   useAvatarApi,
@@ -277,24 +278,58 @@ export default function UnrealMeasurements() {
       }, {})
 
       const payload: AvatarPayload = {
-        avatarName: currentAvatar.avatarName ?? 'Avatar',
+        name: currentAvatar.avatarName ?? 'Avatar',
         gender: currentAvatar.gender,
         ageRange: currentAvatar.ageRange ?? '20-29',
+        creationMode: currentAvatar.creationMode ?? 'manual',
+        quickMode: currentAvatar.quickMode ?? true,
+        source: currentAvatar.source ?? 'web',
         ...(currentAvatar.basicMeasurements
           ? { basicMeasurements: { ...currentAvatar.basicMeasurements } }
           : {}),
         ...(currentAvatar.bodyMeasurements
           ? { bodyMeasurements: { ...currentAvatar.bodyMeasurements } }
           : {}),
+        ...(currentAvatar.quickModeSettings
+          ? {
+              quickModeSettings: {
+                ...currentAvatar.quickModeSettings,
+                ...(currentAvatar.quickModeSettings?.measurements
+                  ? { measurements: { ...currentAvatar.quickModeSettings.measurements } }
+                  : {}),
+              },
+            }
+          : {}),
         morphTargets,
       }
 
       const result = await updateAvatarMeasurements(activeAvatarId, payload)
 
-      const persistedAvatarId = result.avatarId ?? String(activeAvatarId)
+      const persistedAvatarId =
+        result.backendAvatar?.data.avatarId ?? result.avatarId ?? String(activeAvatarId)
 
       if (typeof window !== 'undefined') {
         sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, persistedAvatarId)
+        sessionStorage.setItem(
+          LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
+          JSON.stringify({
+            avatarId: persistedAvatarId,
+            avatarName: result.backendAvatar?.data.avatarName ?? payload.avatarName,
+            gender: result.backendAvatar?.data.gender ?? payload.gender,
+            ageRange: result.backendAvatar?.data.ageRange ?? payload.ageRange,
+            basicMeasurements:
+              result.backendAvatar?.data.basicMeasurements ?? payload.basicMeasurements,
+            bodyMeasurements:
+              result.backendAvatar?.data.bodyMeasurements ?? payload.bodyMeasurements,
+            morphTargets:
+              result.backendAvatar?.data.morphTargets ?? payload.morphTargets,
+            quickMode: result.backendAvatar?.data.quickMode ?? payload.quickMode,
+            creationMode: result.backendAvatar?.data.creationMode ?? payload.creationMode,
+            quickModeSettings:
+              result.backendAvatar?.data.quickModeSettings ?? payload.quickModeSettings ?? null,
+            source: result.backendAvatar?.data.source ?? payload.source,
+          }),
+        )
       }
 
       if (isMountedRef.current) {
