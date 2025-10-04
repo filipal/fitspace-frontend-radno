@@ -1,9 +1,11 @@
 import { useCallback } from 'react';
 import { useAuthData } from '../hooks/useAuthData';
 import type {
+  AvatarCreationMode,
   BackendAvatarData,
   BasicMeasurements,
   BodyMeasurements,
+  QuickModeSettings,
 } from '../context/AvatarConfigurationContext';
 
 // VITE_AVATAR_API_BASE_URL must be defined; otherwise resolveAvatarUrl throws an AvatarApiError.
@@ -12,6 +14,12 @@ const DEFAULT_AVATAR_API_BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
   '';
 
+export const LAST_LOADED_AVATAR_STORAGE_KEY = 'fitspace:lastAvatarId';
+export const LAST_CREATED_AVATAR_METADATA_STORAGE_KEY =
+  'fitspace:lastAvatarMetadata';
+
+export type AvatarApiMeasurements = Partial<BodyMeasurements>;
+
 const DEFAULT_BACKEND_API_ROOT =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '';
 
@@ -19,19 +27,23 @@ const BACKEND_SESSION_STORAGE_KEY = 'fitspace:backendSession';
 const BACKEND_AUTH_API_KEY = import.meta.env
   .VITE_BACKEND_AUTH_API_KEY as string | undefined;
 
-export const LAST_LOADED_AVATAR_STORAGE_KEY = 'fitspace:lastAvatarId';
-export const LAST_CREATED_AVATAR_METADATA_STORAGE_KEY =
-  'fitspace:lastAvatarMetadata';
-
-export type AvatarApiMeasurements = Partial<BodyMeasurements>;
+export interface QuickModeSettingsPayload {
+  bodyShape?: string | null;
+  athleticLevel?: string | null;
+  measurements?: Record<string, number>;
+}
 
 export interface AvatarPayload {
   avatarName: string;
   gender: 'male' | 'female';
   ageRange: string;
+  creationMode?: AvatarCreationMode | null;
+  quickMode?: boolean;
+  source?: string;
   basicMeasurements?: Partial<BasicMeasurements>;
   bodyMeasurements?: AvatarApiMeasurements;
   morphTargets?: Record<string, number>;
+  quickModeSettings?: QuickModeSettingsPayload | null;
 }
 
 interface AvatarApiAuth {
@@ -377,6 +389,403 @@ function resolveAvatarUrl(
   return buildAvatarScopedUrl(baseUrl, userId, avatarId);
 }
 
+const ALLOWED_CREATION_MODES: AvatarCreationMode[] = ['manual', 'scan', 'preset', 'import'];
+
+const normalizeString = (value: unknown): string | undefined => {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : undefined;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  return undefined;
+};
+
+const normalizeCreationMode = (value: unknown): AvatarCreationMode | null => {
+  const normalized = normalizeString(value)?.toLowerCase();
+  if (!normalized) {
+    return null;
+  }
+  return ALLOWED_CREATION_MODES.includes(normalized as AvatarCreationMode)
+    ? (normalized as AvatarCreationMode)
+    : null;
+};
+
+const normalizeGender = (value: unknown): 'male' | 'female' => {
+  const normalized = normalizeString(value)?.toLowerCase();
+  return normalized === 'female' ? 'female' : 'male';
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+
+const sanitizeMeasurementPayload = (
+  section?: Record<string, unknown> | null,
+  options?: { includeCreationMode?: boolean },
+): Record<string, unknown> | undefined => {
+  if (!section) {
+    return undefined;
+  }
+
+  const includeCreationMode = options?.includeCreationMode ?? false;
+  const entries = Object.entries(section).reduce<Record<string, unknown>>(
+    (acc, [key, value]) => {
+      if (value == null) {
+        return acc;
+      }
+
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        acc[key] = value;
+        return acc;
+      }
+
+      if (includeCreationMode && key === 'creationMode') {
+        const creationMode = normalizeCreationMode(value);
+        if (creationMode) {
+          acc[key] = creationMode;
+        }
+      }
+
+      return acc;
+    },
+    {},
+  );
+
+  return Object.keys(entries).length ? entries : undefined;
+};
+
+const sanitizeMorphTargetsPayload = (
+  morphTargets?: Record<string, number> | null,
+): Record<string, number> | undefined => {
+  if (!morphTargets) {
+    return undefined;
+  }
+
+  const entries = Object.entries(morphTargets).reduce<Record<string, number>>(
+    (acc, [key, value]) => {
+      if (!key) {
+        return acc;
+      }
+      const numericValue = Number(value);
+      if (Number.isFinite(numericValue)) {
+        acc[key] = numericValue;
+      }
+      return acc;
+    },
+    {},
+  );
+
+  return Object.keys(entries).length ? entries : undefined;
+};
+
+const sanitizeQuickModeSettingsPayload = (
+  settings?: QuickModeSettingsPayload | QuickModeSettings | null,
+): QuickModeSettings | undefined => {
+  if (!settings) {
+    return undefined;
+  }
+  const normalized: QuickModeSettings = {};
+  const bodyShape = normalizeString(settings.bodyShape);
+  if (bodyShape) {
+    normalized.bodyShape = bodyShape;
+  }
+  const athleticLevel = normalizeString(settings.athleticLevel);
+  if (athleticLevel) {
+    normalized.athleticLevel = athleticLevel;
+  }
+  const measurementsSource = isRecord(settings.measurements)
+    ? (settings.measurements as Record<string, unknown>)
+    : undefined;
+  if (measurementsSource) {
+    const measurements = Object.entries(measurementsSource).reduce<Record<string, number>>(
+      (acc, [key, value]) => {
+        if (!key) {
+          return acc;
+        }
+        const numericValue = Number(value);
+        if (Number.isFinite(numericValue)) {
+          acc[key] = numericValue;
+        }
+        return acc;
+      },
+      {},
+    );
+    if (Object.keys(measurements).length) {
+      normalized.measurements = measurements;
+    }
+  }
+  const updatedAt = normalizeString((settings as QuickModeSettings)?.updatedAt);
+  if (updatedAt) {
+    normalized.updatedAt = updatedAt;
+  }
+
+  return Object.keys(normalized).length ? normalized : undefined;
+};
+
+const buildBackendAvatarRequestPayload = (
+  payload: AvatarPayload,
+  sessionId?: string,
+): Record<string, unknown> => {
+  const request: Record<string, unknown> = {
+    name: payload.avatarName,
+  };
+
+  if (payload.gender) {
+    request.gender = payload.gender;
+  }
+  if (payload.ageRange) {
+    request.ageRange = payload.ageRange;
+  }
+  if (payload.creationMode) {
+    request.creationMode = payload.creationMode;
+  }
+  if (typeof payload.quickMode === 'boolean') {
+    request.quickMode = payload.quickMode;
+  }
+  if (payload.source) {
+    request.source = payload.source;
+  }
+  if (sessionId) {
+    request.createdBySession = sessionId;
+  }
+
+  const basicMeasurements = sanitizeMeasurementPayload(
+    payload.basicMeasurements as Record<string, unknown> | undefined,
+    { includeCreationMode: true },
+  );
+  if (basicMeasurements) {
+    request.basicMeasurements = basicMeasurements;
+  }
+
+  const bodyMeasurements = sanitizeMeasurementPayload(
+    payload.bodyMeasurements as Record<string, unknown> | undefined,
+  );
+  if (bodyMeasurements) {
+    request.bodyMeasurements = bodyMeasurements;
+  }
+
+  const morphTargets = sanitizeMorphTargetsPayload(payload.morphTargets);
+  if (morphTargets) {
+    request.morphTargets = morphTargets;
+  }
+
+  const quickModeSettings = sanitizeQuickModeSettingsPayload(payload.quickModeSettings);
+  if (quickModeSettings) {
+    request.quickModeSettings = quickModeSettings;
+  }
+
+  return request;
+};
+
+const normalizeBasicMeasurements = (
+  section: unknown,
+): Partial<BasicMeasurements> => {
+  if (!isRecord(section)) {
+    return {};
+  }
+  const normalized: Partial<BasicMeasurements> = {};
+  for (const [key, value] of Object.entries(section)) {
+    if (key === 'creationMode') {
+      const creationMode = normalizeCreationMode(value);
+      if (creationMode) {
+        normalized.creationMode = creationMode;
+      }
+      continue;
+    }
+    const numericValue = Number(value);
+    if (Number.isFinite(numericValue)) {
+      normalized[key] = numericValue;
+    }
+  }
+  return normalized;
+};
+
+const normalizeBodyMeasurements = (
+  section: unknown,
+): Partial<BodyMeasurements> => {
+  if (!isRecord(section)) {
+    return {};
+  }
+  const normalized: Partial<BodyMeasurements> = {};
+  for (const [key, value] of Object.entries(section)) {
+    const numericValue = Number(value);
+    if (Number.isFinite(numericValue)) {
+      normalized[key as keyof BodyMeasurements] = numericValue as BodyMeasurements[keyof BodyMeasurements];
+    }
+  }
+  return normalized;
+};
+
+const normalizeMorphTargetsResponse = (payload: unknown): Record<string, number> => {
+  if (!payload) {
+    return {};
+  }
+
+  const normalized: Record<string, number> = {};
+
+  const assignEntry = (key: unknown, value: unknown) => {
+    const normalizedKey = normalizeString(key);
+    if (!normalizedKey) {
+      return;
+    }
+    const numericValue = Number(value);
+    if (Number.isFinite(numericValue)) {
+      normalized[normalizedKey] = numericValue;
+    }
+  };
+
+  if (Array.isArray(payload)) {
+    payload.forEach(item => {
+      if (!isRecord(item)) {
+        return;
+      }
+      const backendKey = normalizeString(item.backendKey);
+      const fallbackId = normalizeString(item.id);
+      const sliderValue =
+        item.sliderValue ?? item.value ?? item.unrealValue ?? item.defaultValue;
+      assignEntry(backendKey ?? fallbackId, sliderValue);
+    });
+    return normalized;
+  }
+
+  if (isRecord(payload)) {
+    Object.entries(payload).forEach(([key, value]) => assignEntry(key, value));
+  }
+
+  return normalized;
+};
+
+const normalizeQuickModeSettingsResponse = (
+  payload: unknown,
+): QuickModeSettings | null => {
+  if (!isRecord(payload)) {
+    return null;
+  }
+  const normalized: QuickModeSettings = {};
+  const bodyShape = normalizeString(payload.bodyShape);
+  if (bodyShape) {
+    normalized.bodyShape = bodyShape;
+  }
+  const athleticLevel = normalizeString(payload.athleticLevel);
+  if (athleticLevel) {
+    normalized.athleticLevel = athleticLevel;
+  }
+  if (isRecord(payload.measurements)) {
+    const measurements = Object.entries(payload.measurements).reduce<Record<string, number>>(
+      (acc, [key, value]) => {
+        const normalizedKey = normalizeString(key);
+        const numericValue = Number(value);
+        if (normalizedKey && Number.isFinite(numericValue)) {
+          acc[normalizedKey] = numericValue;
+        }
+        return acc;
+      },
+      {},
+    );
+    if (Object.keys(measurements).length) {
+      normalized.measurements = measurements;
+    }
+  }
+  const updatedAt = normalizeString(payload.updatedAt);
+  if (updatedAt) {
+    normalized.updatedAt = updatedAt;
+  }
+
+  return Object.keys(normalized).length ? normalized : null;
+};
+
+const findAvatarCandidate = (payload: unknown): Record<string, unknown> | undefined => {
+  if (!isRecord(payload)) {
+    return undefined;
+  }
+
+  if (payload.type === 'createAvatar' && isRecord(payload.data)) {
+    return payload.data as Record<string, unknown>;
+  }
+
+  if (isRecord(payload.avatar)) {
+    return payload.avatar as Record<string, unknown>;
+  }
+
+  if (isRecord(payload.data)) {
+    const nested = payload.data as Record<string, unknown>;
+    if (nested.type === 'createAvatar' && isRecord(nested.data)) {
+      return nested.data as Record<string, unknown>;
+    }
+    if ('id' in nested || 'avatarId' in nested) {
+      return nested;
+    }
+  }
+
+  if ('id' in payload || 'avatarId' in payload) {
+    return payload;
+  }
+
+  return undefined;
+};
+
+const normalizeBackendAvatar = (payload: unknown): BackendAvatarData | undefined => {
+  const candidate = findAvatarCandidate(payload);
+  if (!candidate) {
+    return undefined;
+  }
+
+  const rawId =
+    candidate.avatarId ??
+    candidate.id ??
+    (isRecord(payload) ? (payload.avatarId ?? payload.id) : undefined);
+  const avatarId = normalizeString(rawId);
+  if (!avatarId) {
+    return undefined;
+  }
+
+  const avatarName =
+    normalizeString(candidate.avatarName ?? candidate.name) ?? `Avatar ${avatarId}`;
+  const gender = normalizeGender(candidate.gender);
+  const ageRange = normalizeString(candidate.ageRange) ?? '';
+  const quickMode =
+    typeof candidate.quickMode === 'boolean' ? candidate.quickMode : undefined;
+  const creationMode =
+    normalizeCreationMode(candidate.creationMode) ??
+    normalizeCreationMode((candidate.basicMeasurements as Record<string, unknown> | undefined)?.creationMode) ??
+    null;
+  const source = normalizeString(candidate.source) ?? null;
+  const createdAt = normalizeString(candidate.createdAt) ?? null;
+  const updatedAt = normalizeString(candidate.updatedAt) ?? null;
+  const createdBySession = normalizeString(candidate.createdBySession) ?? null;
+
+  const basicMeasurements = normalizeBasicMeasurements(candidate.basicMeasurements);
+  if (!basicMeasurements.creationMode && creationMode) {
+    basicMeasurements.creationMode = creationMode;
+  }
+  const bodyMeasurements = normalizeBodyMeasurements(candidate.bodyMeasurements);
+  const morphTargets = normalizeMorphTargetsResponse(candidate.morphTargets);
+  const quickModeSettings = normalizeQuickModeSettingsResponse(
+    candidate.quickModeSettings,
+  );
+
+  return {
+    type: 'createAvatar',
+    data: {
+      avatarId,
+      avatarName,
+      gender,
+      ageRange,
+      quickMode,
+      creationMode,
+      source,
+      createdAt,
+      updatedAt,
+      createdBySession,
+      basicMeasurements,
+      bodyMeasurements,
+      morphTargets,
+      quickModeSettings,
+    },
+  };
+};
+
 async function readErrorResponse(response: Response): Promise<string | undefined> {
   try {
     const text = await response.text();
@@ -429,31 +838,7 @@ async function readJsonBody(response: Response): Promise<unknown> {
   }
 }
 
-function extractBackendAvatar(data: unknown): BackendAvatarData | undefined {
-  if (!data || typeof data !== 'object') {
-    return undefined;
-  }
-
-  if ((data as BackendAvatarData).type === 'createAvatar') {
-    return data as BackendAvatarData;
-  }
-
-  const candidate = (data as { data?: unknown; avatar?: unknown }).data;
-  if (candidate && typeof candidate === 'object') {
-    if ((candidate as BackendAvatarData).type === 'createAvatar') {
-      return candidate as BackendAvatarData;
-    }
-  }
-
-  const avatarCandidate = (data as { avatar?: unknown }).avatar;
-  if (avatarCandidate && typeof avatarCandidate === 'object') {
-    if ((avatarCandidate as BackendAvatarData).type === 'createAvatar') {
-      return avatarCandidate as BackendAvatarData;
-    }
-  }
-
-  return undefined;
-}
+const extractBackendAvatar = normalizeBackendAvatar;
 
 function extractAvatarId(data: unknown): string | undefined {
   if (!data || typeof data !== 'object') {
@@ -494,7 +879,7 @@ async function createAvatarRequest({
       Accept: 'application/json',
       'X-User-Id': userId,
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(buildBackendAvatarRequestPayload(payload, sessionId)),
   });
 
   await ensureOk(response);
@@ -531,15 +916,17 @@ async function updateAvatarMeasurementsRequest({
       Accept: 'application/json',
       'X-User-Id': userId,
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(buildBackendAvatarRequestPayload(payload, sessionId)),
   });
 
   await ensureOk(response);
 
   const body = await readJsonBody(response);
-  const backendAvatar = extractBackendAvatar(body) ?? null;
+  const backendAvatar = normalizeBackendAvatar(body) ?? null;
   const nextAvatarId =
-    extractAvatarId(body) ?? (typeof avatarId === 'string' ? avatarId : String(avatarId));
+    backendAvatar?.data.avatarId ??
+    extractAvatarId(body) ??
+    (typeof avatarId === 'string' ? avatarId : String(avatarId));
 
   return {
     avatarId: nextAvatarId,
@@ -599,7 +986,13 @@ export async function fetchAvatarByIdRequest({
     });
   }
 
-  return response.json() as Promise<BackendAvatarData>;
+  const body = await readJsonBody(response);
+  const backendAvatar = normalizeBackendAvatar(body);
+  if (!backendAvatar) {
+    throw new AvatarApiError('Avatar response did not include valid avatar data');
+  }
+
+  return backendAvatar;
 }
 
 export function useAvatarApi(config?: { baseUrl?: string }) {
@@ -720,6 +1113,7 @@ export function useAvatarApi(config?: { baseUrl?: string }) {
           : undefined;
 
       const requestPayload: AvatarPayload = {
+        ...payload,
         avatarName: payload.avatarName,
         gender: payload.gender,
         ageRange: payload.ageRange,
@@ -728,6 +1122,16 @@ export function useAvatarApi(config?: { baseUrl?: string }) {
           : {}),
         ...(payload.bodyMeasurements
           ? { bodyMeasurements: { ...payload.bodyMeasurements } }
+          : {}),
+        ...(payload.quickModeSettings
+          ? {
+              quickModeSettings: {
+                ...payload.quickModeSettings,
+                ...(payload.quickModeSettings?.measurements
+                  ? { measurements: { ...payload.quickModeSettings.measurements } }
+                  : {}),
+              },
+            }
           : {}),
         ...(mergedMorphTargets ? { morphTargets: mergedMorphTargets } : {}),
       };

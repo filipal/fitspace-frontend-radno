@@ -2,11 +2,13 @@ import React, { createContext, useState, useCallback, useMemo } from 'react';
 import { morphAttributes, type MorphAttribute } from '../data/morphAttributes';
 import { transformBackendDataToMorphs } from '../services/avatarTransformationService';
 
-// Types matching your backend JSON structure
+export type AvatarCreationMode = 'manual' | 'scan' | 'preset' | 'import';
+
 export interface BasicMeasurements {
-  height: number;
-  weight: number;
-  creationMode: 'quickMode' | 'fullScan';
+  height?: number;
+  weight?: number;
+  creationMode?: AvatarCreationMode | null;
+  [key: string]: number | AvatarCreationMode | null | undefined;
 }
 
 export interface BodyMeasurements {
@@ -35,15 +37,30 @@ export interface BodyMeasurements {
 }
 
 // Backend JSON structure
+export interface QuickModeSettings {
+  bodyShape?: string | null;
+  athleticLevel?: string | null;
+  measurements?: Record<string, number>;
+  updatedAt?: string | null;
+}
+
 export interface BackendAvatarData {
   type: 'createAvatar';
   data: {
+    avatarId: string;
     avatarName: string;
     gender: 'male' | 'female';
     ageRange: string;
-    basicMeasurements: BasicMeasurements;
-    bodyMeasurements: BodyMeasurements;
+    quickMode?: boolean;
+    creationMode?: AvatarCreationMode | null;
+    source?: string | null;
+    createdAt?: string | null;
+    updatedAt?: string | null;
+    createdBySession?: string | null;
+    basicMeasurements: Partial<BasicMeasurements>;
+    bodyMeasurements: Partial<BodyMeasurements>;
     morphTargets: Record<string, number>; // Backend friendly names with values 0-100
+    quickModeSettings?: QuickModeSettings | null;
   };
 }
 
@@ -53,8 +70,15 @@ export interface AvatarConfiguration {
   avatarName?: string;
   gender: 'male' | 'female';
   ageRange?: string;
-  basicMeasurements?: BasicMeasurements;
-  bodyMeasurements?: BodyMeasurements;
+  basicMeasurements?: Partial<BasicMeasurements>;
+  bodyMeasurements?: Partial<BodyMeasurements>;
+  quickMode?: boolean;
+  creationMode?: AvatarCreationMode | null;
+  source?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  createdBySession?: string | null;
+  quickModeSettings?: QuickModeSettings | null;
   morphValues: MorphAttribute[]; // Using your existing structure
   lastUpdated: Date;
 }
@@ -130,13 +154,21 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
 
       // Apply backend morph values (this will be handled by transformation service)
       // For now, we'll just store the data as-is
+      const nextAvatarId = backendData.data.avatarId ?? avatarId ?? `avatar_${Date.now()}`;
       const avatarConfig: AvatarConfiguration = {
-        avatarId: avatarId ?? `avatar_${Date.now()}`,
+        avatarId: nextAvatarId,
         avatarName: backendData.data.avatarName,
         gender: backendData.data.gender,
         ageRange: backendData.data.ageRange,
         basicMeasurements: backendData.data.basicMeasurements,
         bodyMeasurements: backendData.data.bodyMeasurements,
+        quickMode: backendData.data.quickMode,
+        creationMode: backendData.data.creationMode ?? null,
+        source: backendData.data.source ?? null,
+        createdAt: backendData.data.createdAt ?? null,
+        updatedAt: backendData.data.updatedAt ?? null,
+        createdBySession: backendData.data.createdBySession ?? null,
+        quickModeSettings: backendData.data.quickModeSettings ?? null,
         morphValues,
         lastUpdated: new Date()
       };

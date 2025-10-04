@@ -17,11 +17,14 @@ import {
   LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
   LAST_LOADED_AVATAR_STORAGE_KEY,
   useAvatarApi,
+  type QuickModeSettingsPayload,
 } from '../services/avatarApi'
 import { useAvatars } from '../context/AvatarContext'
 import {
   useAvatarConfiguration,
   type BasicMeasurements,
+  type AvatarCreationMode,
+  type QuickModeSettings,
 } from '../context/AvatarConfigurationContext'
 
 const bodyShapes = [
@@ -33,6 +36,7 @@ const bodyShapes = [
 ]
 
 const measurementOptions = Array.from({ length: 100 }, (_, i) => (60 + i).toString())
+const athleticLevelLabels = ['low', 'medium', 'high'] as const
 
 export default function QuickMode() {
   const navigate = useNavigate()
@@ -61,6 +65,10 @@ export default function QuickMode() {
     basicMeasurements?: Partial<BasicMeasurements>
     bodyMeasurements?: Record<string, number>
     morphTargets?: Record<string, number>
+    quickMode?: boolean
+    creationMode?: AvatarCreationMode | null
+    quickModeSettings?: (QuickModeSettings | QuickModeSettingsPayload) | null
+    source?: string | null
   }
 
   const storedMetadata = useMemo<StoredAvatarMetadata | null>(() => {
@@ -154,8 +162,20 @@ export default function QuickMode() {
     const waist = parseMeasurement(waistCircumference)
     const hip = parseMeasurement(lowHipCircumference)
 
-    const bodyMeasurements: Record<string, number> = {
-      ...(storedMetadata?.bodyMeasurements ?? {}),
+    const bodyMeasurements: Record<string, number> = {}
+    if (currentAvatar?.bodyMeasurements) {
+      Object.entries(currentAvatar.bodyMeasurements).forEach(([key, value]) => {
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          bodyMeasurements[key] = value
+        }
+      })
+    }
+    if (storedMetadata?.bodyMeasurements) {
+      Object.entries(storedMetadata.bodyMeasurements).forEach(([key, value]) => {
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          bodyMeasurements[key] = value
+        }
+      })
     }
     if (typeof bust === 'number') bodyMeasurements.chest = bust
     if (typeof waist === 'number') bodyMeasurements.waist = waist
@@ -172,6 +192,12 @@ export default function QuickMode() {
       quickModeAthleticLevel: athleticMorphValue,
     }
 
+    const selectedBodyShapeMeta = bodyShapes.find(shape => shape.id === selectedBodyShape)
+    const normalizedBodyShape = selectedBodyShapeMeta
+      ? selectedBodyShapeMeta.label.toLowerCase().replace(/\s+/g, '-')
+      : undefined
+    const athleticLevelKey = athleticLevelLabels[athleticLevel] ?? undefined
+
     const avatarName = storedMetadata?.avatarName
       ?? (effectiveAvatarId ? avatars.find(avatar => avatar.id === effectiveAvatarId)?.name : undefined)
       ?? currentAvatar?.avatarName
@@ -179,18 +205,73 @@ export default function QuickMode() {
 
     const gender = storedMetadata?.gender ?? currentAvatar?.gender ?? 'male'
     const ageRange = storedMetadata?.ageRange ?? currentAvatar?.ageRange ?? '20-29'
-    const basicMeasurements =
+    const creationMode: AvatarCreationMode =
+      storedMetadata?.creationMode ?? currentAvatar?.creationMode ?? 'manual'
+
+    const baseBasicMeasurements =
       storedMetadata?.basicMeasurements ??
       (currentAvatar?.basicMeasurements as Partial<BasicMeasurements> | undefined) ??
-      { creationMode: 'quickMode' as const }
+      {}
+    const basicMeasurements: Partial<BasicMeasurements> = {
+      ...baseBasicMeasurements,
+      ...(creationMode ? { creationMode } : {}),
+    }
+
+    const quickModeFlag = storedMetadata?.quickMode ?? currentAvatar?.quickMode ?? true
+    const source = storedMetadata?.source ?? currentAvatar?.source ?? 'web'
+
+    const baseQuickModeSettings: (QuickModeSettings | QuickModeSettingsPayload | null | undefined) =
+      storedMetadata?.quickModeSettings ?? currentAvatar?.quickModeSettings ?? null
+
+    const quickModeMeasurements: Record<string, number> = {}
+    if (baseQuickModeSettings?.measurements) {
+      Object.entries(baseQuickModeSettings.measurements).forEach(([key, value]) => {
+        const numericValue = Number(value)
+        if (Number.isFinite(numericValue)) {
+          quickModeMeasurements[key] = numericValue
+        }
+      })
+    }
+    if (typeof bust === 'number') quickModeMeasurements.chest = bust
+    if (typeof waist === 'number') quickModeMeasurements.waist = waist
+    if (typeof hip === 'number') quickModeMeasurements.lowHip = hip
+
+    const normalizedQuickModeMeasurements = Object.entries(quickModeMeasurements).reduce<Record<string, number>>(
+      (acc, [key, value]) => {
+        if (Number.isFinite(value)) {
+          acc[key] = Number(value)
+        }
+        return acc
+      },
+      {},
+    )
+
+    const hasQuickModeSettings =
+      Boolean(normalizedBodyShape) ||
+      Boolean(athleticLevelKey) ||
+      Object.keys(normalizedQuickModeMeasurements).length > 0
+
+    const quickModeSettings: QuickModeSettingsPayload | undefined = hasQuickModeSettings
+      ? {
+          ...(normalizedBodyShape ? { bodyShape: normalizedBodyShape } : {}),
+          ...(athleticLevelKey ? { athleticLevel: athleticLevelKey } : {}),
+          ...(Object.keys(normalizedQuickModeMeasurements).length
+            ? { measurements: normalizedQuickModeMeasurements }
+            : {}),
+        }
+      : undefined
 
     const payload = {
       avatarName,
       gender,
       ageRange,
+      creationMode,
+      quickMode: quickModeFlag,
+      source,
       basicMeasurements,
       bodyMeasurements,
       morphTargets,
+      ...(quickModeSettings ? { quickModeSettings } : {}),
     }
 
     setIsSubmitting(true)
@@ -198,10 +279,13 @@ export default function QuickMode() {
     try {
       const result = await updateAvatarMeasurements(effectiveAvatarId, payload)
 
-      if (result.avatarId) {
-        setStoredAvatarId(result.avatarId)
+      const persistedAvatarId =
+        result.backendAvatar?.data.avatarId ?? result.avatarId ?? effectiveAvatarId
+
+      if (persistedAvatarId) {
+        setStoredAvatarId(persistedAvatarId)
         if (typeof window !== 'undefined') {
-          window.sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, result.avatarId)
+          window.sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, persistedAvatarId)
         }
       }
 
@@ -209,8 +293,21 @@ export default function QuickMode() {
         window.sessionStorage.setItem(
           LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
           JSON.stringify({
-            avatarId: result.avatarId ?? effectiveAvatarId,
-            ...payload,
+            avatarId: persistedAvatarId ?? effectiveAvatarId,
+            avatarName: result.backendAvatar?.data.avatarName ?? payload.avatarName,
+            gender: result.backendAvatar?.data.gender ?? payload.gender,
+            ageRange: result.backendAvatar?.data.ageRange ?? payload.ageRange,
+            basicMeasurements:
+              result.backendAvatar?.data.basicMeasurements ?? payload.basicMeasurements,
+            bodyMeasurements:
+              result.backendAvatar?.data.bodyMeasurements ?? payload.bodyMeasurements,
+            morphTargets:
+              result.backendAvatar?.data.morphTargets ?? payload.morphTargets,
+            quickMode: result.backendAvatar?.data.quickMode ?? payload.quickMode,
+            creationMode: result.backendAvatar?.data.creationMode ?? payload.creationMode,
+            quickModeSettings:
+              result.backendAvatar?.data.quickModeSettings ?? payload.quickModeSettings ?? null,
+            source: result.backendAvatar?.data.source ?? payload.source,
           }),
         )
       }
@@ -219,20 +316,24 @@ export default function QuickMode() {
         await loadAvatarFromBackend(
           result.backendAvatar,
           undefined,
-          result.avatarId ?? effectiveAvatarId,
+          persistedAvatarId ?? effectiveAvatarId,
         )
       }
 
-      if (result.avatarId ?? effectiveAvatarId) {
-        const avatarIdToPersist = result.avatarId ?? effectiveAvatarId
+      if (persistedAvatarId) {
         updateAvatars(prev => {
           const next = [...prev]
-          const existingIndex = next.findIndex(avatar => avatar.id === avatarIdToPersist)
+          const existingIndex = next.findIndex(avatar => avatar.id === persistedAvatarId)
+          const avatarNameToPersist =
+            result.backendAvatar?.data.avatarName ?? payload.avatarName
+          const createdAtValue =
+            existingIndex >= 0
+              ? next[existingIndex].createdAt
+              : result.backendAvatar?.data.createdAt ?? new Date().toISOString()
           const record = {
-            id: avatarIdToPersist,
-            name: payload.avatarName,
-            createdAt:
-              existingIndex >= 0 ? next[existingIndex].createdAt : new Date().toISOString(),
+            id: persistedAvatarId,
+            name: avatarNameToPersist,
+            createdAt: createdAtValue,
           }
           if (existingIndex >= 0) {
             next[existingIndex] = { ...record }
@@ -260,7 +361,12 @@ export default function QuickMode() {
     currentAvatar?.ageRange,
     currentAvatar?.avatarName,
     currentAvatar?.basicMeasurements,
+    currentAvatar?.bodyMeasurements,
+    currentAvatar?.creationMode,
     currentAvatar?.gender,
+    currentAvatar?.quickMode,
+    currentAvatar?.quickModeSettings,
+    currentAvatar?.source,
     effectiveAvatarId,
     loadAvatarFromBackend,
     lowHipCircumference,
@@ -273,7 +379,11 @@ export default function QuickMode() {
     storedMetadata?.avatarName,
     storedMetadata?.basicMeasurements,
     storedMetadata?.bodyMeasurements,
+    storedMetadata?.creationMode,
     storedMetadata?.gender,
+    storedMetadata?.quickMode,
+    storedMetadata?.quickModeSettings,
+    storedMetadata?.source,
     updateAvatarMeasurements,
     updateAvatars,
     waistCircumference,
