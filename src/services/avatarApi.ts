@@ -882,6 +882,9 @@ async function createAvatarRequest({
       'Content-Type': 'application/json',
       Accept: 'application/json',
       'X-User-Id': userId,
+      ...(effectiveSessionId
+        ? { 'X-Session-Id': effectiveSessionId }
+        : {}),
     },
     body: JSON.stringify(
       buildBackendAvatarRequestPayload(payload, effectiveSessionId),
@@ -924,6 +927,9 @@ async function updateAvatarMeasurementsRequest({
       'Content-Type': 'application/json',
       Accept: 'application/json',
       'X-User-Id': userId,
+      ...(effectiveSessionId
+        ? { 'X-Session-Id': effectiveSessionId }
+        : {}),
     },
     body: JSON.stringify(
       buildBackendAvatarRequestPayload(payload, effectiveSessionId),
