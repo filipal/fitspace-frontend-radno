@@ -8,7 +8,11 @@ import { convertSliderValueToUnrealValue } from '../services/avatarCommandServic
 import { convertMorphValueToBackendValue, getBackendKeyForMorphId } from '../services/avatarTransformationService'
 import { morphAttributes } from '../data/morphAttributes'
 import { useAvatarLoader } from '../hooks/useAvatarLoader'
-import { LAST_LOADED_AVATAR_STORAGE_KEY, useAvatarApi } from '../services/avatarApi'
+import {
+  LAST_LOADED_AVATAR_STORAGE_KEY,
+  type AvatarPayload,
+  useAvatarApi,
+} from '../services/avatarApi'
 
 import avatarsButton from '../assets/avatars-button.png'
 import RLeft from '../assets/r-left.svg?react'
@@ -192,7 +196,7 @@ export default function UnrealMeasurements() {
   const { sendFittingRoomCommand, connectionState, application } = usePixelStreaming()
   const { updateMorphValue, currentAvatar } = useAvatarConfiguration()
   const { loadAvatar, loaderState } = useAvatarLoader()
-  const { fetchAvatarById, updateMorphTargets } = useAvatarApi()
+  const { fetchAvatarById, updateAvatarMeasurements } = useAvatarApi()
 
   const pendingMorphUpdatesRef = useRef<PendingMorphUpdate[]>([])
 
@@ -272,19 +276,34 @@ export default function UnrealMeasurements() {
         return acc
       }, {})
 
-      await updateMorphTargets(activeAvatarId, morphTargets)
+      const payload: AvatarPayload = {
+        avatarName: currentAvatar.avatarName ?? 'Avatar',
+        gender: currentAvatar.gender,
+        ageRange: currentAvatar.ageRange ?? '20-29',
+        ...(currentAvatar.basicMeasurements
+          ? { basicMeasurements: { ...currentAvatar.basicMeasurements } }
+          : {}),
+        ...(currentAvatar.bodyMeasurements
+          ? { bodyMeasurements: { ...currentAvatar.bodyMeasurements } }
+          : {}),
+        morphTargets,
+      }
+
+      const result = await updateAvatarMeasurements(activeAvatarId, payload)
+
+      const persistedAvatarId = result.avatarId ?? String(activeAvatarId)
 
       if (typeof window !== 'undefined') {
-        sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, String(activeAvatarId))
+        sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, persistedAvatarId)
       }
 
       if (isMountedRef.current) {
         try {
-          const backendAvatar = await fetchAvatarById(activeAvatarId)
-          const result = await loadAvatar(backendAvatar)
+          const backendAvatar = result.backendAvatar ?? await fetchAvatarById(persistedAvatarId)
+          const loadResult = await loadAvatar(backendAvatar)
 
-          if (!result.success) {
-            throw new Error(result.error ?? 'Failed to refresh avatar configuration')
+          if (!loadResult.success) {
+            throw new Error(loadResult.error ?? 'Failed to refresh avatar configuration')
           }
         } catch (refreshError) {
           console.error('Failed to refresh avatar after saving morph targets', refreshError)
@@ -313,7 +332,7 @@ export default function UnrealMeasurements() {
         setIsSavingMorphs(false)
       }
     }
-  }, [currentAvatar, fetchAvatarById, getActiveAvatarId, loadAvatar, updateMorphTargets])
+  }, [currentAvatar, fetchAvatarById, getActiveAvatarId, loadAvatar, updateAvatarMeasurements])
 
   useEffect(() => {
     if (currentAvatar || loaderState.isLoading) {

@@ -44,11 +44,6 @@ interface UpdateAvatarMeasurementsRequest extends AvatarApiAuth {
   payload: AvatarPayload;
 }
 
-interface UpdateAvatarMorphTargetsRequest extends AvatarApiAuth {
-  avatarId: string | number;
-  payload: Record<string, number>;
-}
-
 export interface AvatarApiResult {
   avatarId?: string;
   backendAvatar?: BackendAvatarData | null;
@@ -120,30 +115,6 @@ function resolveAvatarUrl(
   }
 
   return buildAvatarScopedUrl(baseUrl, userId, avatarId);
-}
-
-function resolveAvatarMeasurementsUrl(
-  baseUrl: string,
-  userId: string,
-  avatarId: string | number,
-): string {
-  if (!baseUrl) {
-    throw new AvatarApiError('Avatar API base URL is not configured');
-  }
-
-  return buildAvatarScopedUrl(baseUrl, userId, avatarId, 'measurements');
-}
-
-function resolveAvatarMorphTargetsUrl(
-  baseUrl: string,
-  userId: string,
-  avatarId: string | number,
-): string {
-  if (!baseUrl) {
-    throw new AvatarApiError('Avatar API base URL is not configured');
-  }
-
-  return buildAvatarScopedUrl(baseUrl, userId, avatarId, 'morph-targets');
 }
 
 async function readErrorResponse(response: Response): Promise<string | undefined> {
@@ -302,7 +273,7 @@ async function updateAvatarMeasurementsRequest({
   baseUrl = DEFAULT_AVATAR_API_BASE_URL,
   payload,
 }: UpdateAvatarMeasurementsRequest): Promise<AvatarApiResult> {
-  const url = resolveAvatarMeasurementsUrl(baseUrl, userId, avatarId);
+  const url = resolveAvatarUrl(baseUrl, userId, avatarId);
 
   if (!email || !sessionId) {
     throw new AvatarApiError(
@@ -312,50 +283,6 @@ async function updateAvatarMeasurementsRequest({
 
   const response = await fetch(url, {
     method: 'PUT',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      'X-User-Id': userId,
-      'X-User-Email': email,
-      'X-Session-Id': sessionId,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  await ensureOk(response);
-
-  const body = await readJsonBody(response);
-  const backendAvatar = extractBackendAvatar(body) ?? null;
-  const nextAvatarId =
-    extractAvatarId(body) ?? (typeof avatarId === 'string' ? avatarId : String(avatarId));
-
-  return {
-    avatarId: nextAvatarId,
-    backendAvatar,
-    responseBody: body,
-  };
-}
-
-async function updateAvatarMorphTargetsRequest({
-  accessToken,
-  userId,
-  avatarId,
-  email,
-  sessionId,
-  baseUrl = DEFAULT_AVATAR_API_BASE_URL,
-  payload,
-}: UpdateAvatarMorphTargetsRequest): Promise<AvatarApiResult> {
-  const url = resolveAvatarMorphTargetsUrl(baseUrl, userId, avatarId);
-
-  if (!email || !sessionId) {
-    throw new AvatarApiError(
-      'User session information is incomplete; please sign in again to update avatar morph targets.',
-    );
-  }
-
-  const response = await fetch(url, {
-    method: 'PATCH',
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
@@ -514,6 +441,7 @@ export function useAvatarApi(config?: { baseUrl?: string }) {
     async (
       avatarId: string | number,
       payload: AvatarPayload,
+      options?: { morphTargets?: Record<string, number> },
     ): Promise<AvatarApiResult> => {
       if (!authData.isAuthenticated || !accessToken || !userId) {
         throw new AvatarApiError('User is not authenticated to update avatars');
@@ -525,6 +453,27 @@ export function useAvatarApi(config?: { baseUrl?: string }) {
         );
       }
 
+      const mergedMorphTargets =
+        payload.morphTargets || options?.morphTargets
+          ? {
+              ...(payload.morphTargets ?? {}),
+              ...(options?.morphTargets ?? {}),
+            }
+          : undefined;
+
+      const requestPayload: AvatarPayload = {
+        avatarName: payload.avatarName,
+        gender: payload.gender,
+        ageRange: payload.ageRange,
+        ...(payload.basicMeasurements
+          ? { basicMeasurements: { ...payload.basicMeasurements } }
+          : {}),
+        ...(payload.bodyMeasurements
+          ? { bodyMeasurements: { ...payload.bodyMeasurements } }
+          : {}),
+        ...(mergedMorphTargets ? { morphTargets: mergedMorphTargets } : {}),
+      };
+
       return updateAvatarMeasurementsRequest({
         accessToken,
         userId,
@@ -532,42 +481,7 @@ export function useAvatarApi(config?: { baseUrl?: string }) {
         email,
         sessionId,
         baseUrl: config?.baseUrl,
-        payload,
-      });
-    },
-    [
-      accessToken,
-      authData.isAuthenticated,
-      config?.baseUrl,
-      email,
-      sessionId,
-      userId,
-    ],
-  );
-
-  const updateMorphTargets = useCallback(
-    async (
-      avatarId: string | number,
-      morphTargets: Record<string, number>,
-    ): Promise<AvatarApiResult> => {
-      if (!authData.isAuthenticated || !accessToken || !userId) {
-        throw new AvatarApiError('User is not authenticated to update avatar morph targets');
-      }
-
-      if (!email || !sessionId) {
-        throw new AvatarApiError(
-          'User session information is incomplete; please sign in again to update avatar morph targets.',
-        );
-      }
-
-      return updateAvatarMorphTargetsRequest({
-        accessToken,
-        userId,
-        email,
-        sessionId,
-        avatarId,
-        baseUrl: config?.baseUrl,
-        payload: morphTargets,
+        payload: requestPayload,
       });
     },
     [
@@ -584,6 +498,5 @@ export function useAvatarApi(config?: { baseUrl?: string }) {
     fetchAvatarById,
     createAvatar,
     updateAvatarMeasurements,
-    updateMorphTargets,
   };
 }
