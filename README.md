@@ -19,9 +19,15 @@ The dev server runs on Vite's default port, usually `http://localhost:5173/`.
 
 ### Configure environment variables
 
-The frontend expects the avatar backend URL to be provided through
-`VITE_AVATAR_API_BASE_URL` (for example `https://backend.example.com/api`). Add
-this key to a local `.env` file by copying `.env.example`:
+The frontend communicates with the FitSpace backend in two steps:
+
+1. It first requests a short-lived backend JWT by calling
+   `POST {VITE_API_BASE_URL}/auth/token` with the signed-in user's Cognito
+   identifiers and refresh token.
+2. It then uses that backend token (together with the Cognito session headers)
+   when calling the avatar endpoints under `VITE_AVATAR_API_BASE_URL`.
+
+Copy `.env.example` to `.env` and configure at least the following keys:
 
 ```bash
 cp .env.example .env
@@ -30,8 +36,11 @@ cp .env.example .env
 Then edit `.env` so that it contains at least:
 
 ```dotenv
-VITE_AVATAR_API_BASE_URL=https://backend.example.com/api
+VITE_API_BASE_URL=https://backend.example.com/api
+VITE_AVATAR_API_BASE_URL=https://backend.example.com/api/users/
 ```
+If your backend protects the `/auth/token` endpoint with an API key, also set
+`VITE_BACKEND_AUTH_API_KEY`.
 
 After updating the environment file, restart the Vite development server so the
 new value is picked up in `import.meta.env`.

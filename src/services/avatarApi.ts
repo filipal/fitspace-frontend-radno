@@ -12,6 +12,13 @@ const DEFAULT_AVATAR_API_BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
   '';
 
+const DEFAULT_BACKEND_API_ROOT =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '';
+
+const BACKEND_SESSION_STORAGE_KEY = 'fitspace:backendSession';
+const BACKEND_AUTH_API_KEY = import.meta.env
+  .VITE_BACKEND_AUTH_API_KEY as string | undefined;
+
 export const LAST_LOADED_AVATAR_STORAGE_KEY = 'fitspace:lastAvatarId';
 export const LAST_CREATED_AVATAR_METADATA_STORAGE_KEY =
   'fitspace:lastAvatarMetadata';
@@ -28,10 +35,8 @@ export interface AvatarPayload {
 }
 
 interface AvatarApiAuth {
-  accessToken: string;
+  backendSession: BackendSession;
   userId: string;
-  email: string;
-  sessionId: string;
   baseUrl?: string;
 }
 
@@ -52,10 +57,31 @@ export interface AvatarApiResult {
 
 export interface FetchAvatarByIdRequest {
   avatarId: string | number;
-  accessToken: string;
+  userId: string;
+  backendSession: BackendSession;
+  baseUrl?: string;
+}
+
+export interface BackendSession {
+  token: string;
+  expiresAt: string;
+  headers: Record<string, string>;
+}
+
+interface StoredBackendSession extends BackendSession {
+  metadata: {
+    userId: string;
+    email: string;
+    sessionId: string;
+    refreshToken: string;
+  };
+}
+
+interface EnsureBackendSessionOptions {
   userId: string;
   email: string;
   sessionId: string;
+  refreshToken: string;
   baseUrl?: string;
 }
 
@@ -77,6 +103,240 @@ const trimTrailingSlashes = (value: string): string => value.replace(/\/+$/u, ''
 
 const encodePathSegment = (segment: string | number): string =>
   encodeURIComponent(String(segment));
+
+const getSessionStorage = (): Storage | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    return window.sessionStorage;
+  } catch (error) {
+    console.warn('Unable to access sessionStorage', error);
+    return null;
+  }
+};
+
+const safeParseJson = <T>(value: string): T | null => {
+  try {
+    return JSON.parse(value) as T;
+  } catch (error) {
+    console.warn('Failed to parse JSON from storage', error);
+    return null;
+  }
+};
+
+const deriveApiRoot = (baseUrl?: string): string => {
+  const explicitRoot = trimTrailingSlashes(
+    baseUrl ?? DEFAULT_BACKEND_API_ROOT ?? '',
+  );
+
+  if (explicitRoot) {
+    return explicitRoot;
+  }
+
+  const avatarRoot = trimTrailingSlashes(DEFAULT_AVATAR_API_BASE_URL);
+  if (!avatarRoot) {
+    throw new AvatarApiError('Backend API base URL is not configured');
+  }
+
+  if (avatarRoot.endsWith('/users')) {
+    return avatarRoot.replace(/\/users$/u, '');
+  }
+
+  return avatarRoot;
+};
+
+const isBackendSessionValid = (
+  session: StoredBackendSession,
+  expected: { email: string; sessionId: string; refreshToken: string },
+): boolean => {
+  if (
+    session.metadata.email !== expected.email ||
+    session.metadata.sessionId !== expected.sessionId ||
+    session.metadata.refreshToken !== expected.refreshToken
+  ) {
+    return false;
+  }
+
+  const expiryTimestamp = Date.parse(session.expiresAt);
+  if (Number.isNaN(expiryTimestamp)) {
+    return false;
+  }
+
+  const now = Date.now();
+  const buffer = 30_000; // 30 seconds safety buffer
+  return now + buffer < expiryTimestamp;
+};
+
+const readStoredBackendSession = (
+  expected: { userId: string; email: string; sessionId: string; refreshToken: string },
+): BackendSession | null => {
+  const storage = getSessionStorage();
+  if (!storage) {
+    return null;
+  }
+
+  const raw = storage.getItem(BACKEND_SESSION_STORAGE_KEY);
+  if (!raw) {
+    return null;
+  }
+
+  const stored = safeParseJson<StoredBackendSession>(raw);
+  if (!stored) {
+    return null;
+  }
+
+  if (stored.metadata.userId !== expected.userId) {
+    return null;
+  }
+
+  if (!isBackendSessionValid(stored, expected)) {
+    return null;
+  }
+
+  return stored;
+};
+
+const storeBackendSession = (session: StoredBackendSession): void => {
+  const storage = getSessionStorage();
+  if (!storage) {
+    return;
+  }
+
+  try {
+    storage.setItem(BACKEND_SESSION_STORAGE_KEY, JSON.stringify(session));
+  } catch (error) {
+    console.warn('Failed to store backend session', error);
+  }
+};
+
+const clearStoredBackendSession = (): void => {
+  const storage = getSessionStorage();
+  if (!storage) {
+    return;
+  }
+
+  try {
+    storage.removeItem(BACKEND_SESSION_STORAGE_KEY);
+  } catch (error) {
+    console.warn('Failed to clear backend session', error);
+  }
+};
+
+const normaliseHeaders = (headers: unknown): Record<string, string> => {
+  if (!headers || typeof headers !== 'object') {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(headers as Record<string, unknown>).filter(
+      (entry): entry is [string, string] => typeof entry[1] === 'string',
+    ),
+  );
+};
+
+async function requestBackendSession({
+  userId,
+  email,
+  sessionId,
+  refreshToken,
+  baseUrl,
+}: EnsureBackendSessionOptions): Promise<BackendSession> {
+  const apiRoot = deriveApiRoot(baseUrl);
+  const url = `${apiRoot}/auth/token`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...(BACKEND_AUTH_API_KEY ? { 'x-api-key': BACKEND_AUTH_API_KEY } : {}),
+    },
+    body: JSON.stringify({ userId, email, sessionId, refreshToken }),
+  });
+
+  if (!response.ok) {
+    const statusText = response.statusText || 'Unknown error';
+    const details = await readErrorResponse(response);
+    const message = details
+      ? `Backend session request failed (${response.status} ${statusText}): ${details}`
+      : `Backend session request failed (${response.status} ${statusText})`;
+
+    throw new AvatarApiError(message, {
+      status: response.status,
+      statusText,
+    });
+  }
+
+  const body = await readJsonBody(response);
+  if (!body || typeof body !== 'object') {
+    throw new AvatarApiError('Backend session response payload is invalid');
+  }
+
+  const token = typeof (body as { token?: unknown }).token === 'string'
+    ? (body as { token: string }).token
+    : undefined;
+  const expiresAt = typeof (body as { expiresAt?: unknown }).expiresAt === 'string'
+    ? (body as { expiresAt: string }).expiresAt
+    : undefined;
+  const additionalHeaders = normaliseHeaders((body as { headers?: unknown }).headers);
+
+  if (!token || !expiresAt) {
+    throw new AvatarApiError('Backend session response is missing token or expiry');
+  }
+
+  const headers = {
+    ...additionalHeaders,
+    Authorization: `Bearer ${token}`,
+    'X-User-Email': email,
+    'X-Session-Id': sessionId,
+    ...(refreshToken ? { 'X-Refresh-Token': refreshToken } : {}),
+  };
+
+  return { token, expiresAt, headers };
+}
+
+export async function ensureBackendSession(
+  options: EnsureBackendSessionOptions,
+): Promise<BackendSession> {
+  const { userId, email, sessionId, refreshToken } = options;
+
+  if (!userId) {
+    throw new AvatarApiError('Missing user identifier for backend session request');
+  }
+
+  if (!email) {
+    throw new AvatarApiError('Missing email for backend session request');
+  }
+
+  if (!sessionId) {
+    throw new AvatarApiError('Missing session identifier for backend session request');
+  }
+
+  if (!refreshToken) {
+    throw new AvatarApiError('Missing refresh token for backend session request');
+  }
+
+  const stored = readStoredBackendSession({
+    userId,
+    email,
+    sessionId,
+    refreshToken,
+  });
+
+  if (stored) {
+    return stored;
+  }
+
+  const session = await requestBackendSession(options);
+  storeBackendSession({
+    ...session,
+    metadata: { userId, email, sessionId, refreshToken },
+  });
+
+  return session;
+}
 
 const resolveUserRootUrl = (baseUrl: string, userId: string): string => {
   const normalisedBase = ensureTrailingSlash(trimTrailingSlashes(baseUrl));
@@ -219,30 +479,20 @@ function extractAvatarId(data: unknown): string | undefined {
 }
 
 async function createAvatarRequest({
-  accessToken,
+  backendSession,
   userId,
-  email,
-  sessionId,
   baseUrl = DEFAULT_AVATAR_API_BASE_URL,
   payload,
 }: CreateAvatarRequest): Promise<AvatarApiResult> {
   const url = resolveAvatarCollectionUrl(baseUrl, userId);
 
-  if (!email || !sessionId) {
-    throw new AvatarApiError(
-      'User session information is incomplete; please sign in again to create avatars.',
-    );
-  }
-
   const response = await fetch(url, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      ...backendSession.headers,
       'Content-Type': 'application/json',
       Accept: 'application/json',
       'X-User-Id': userId,
-      'X-User-Email': email,
-      'X-Session-Id': sessionId,
     },
     body: JSON.stringify(payload),
   });
@@ -265,31 +515,21 @@ async function createAvatarRequest({
 }
 
 async function updateAvatarMeasurementsRequest({
-  accessToken,
+  backendSession,
   userId,
   avatarId,
-  email,
-  sessionId,
   baseUrl = DEFAULT_AVATAR_API_BASE_URL,
   payload,
 }: UpdateAvatarMeasurementsRequest): Promise<AvatarApiResult> {
   const url = resolveAvatarUrl(baseUrl, userId, avatarId);
 
-  if (!email || !sessionId) {
-    throw new AvatarApiError(
-      'User session information is incomplete; please sign in again to update avatar measurements.',
-    );
-  }
-
   const response = await fetch(url, {
     method: 'PUT',
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      ...backendSession.headers,
       'Content-Type': 'application/json',
       Accept: 'application/json',
       'X-User-Id': userId,
-      'X-User-Email': email,
-      'X-Session-Id': sessionId,
     },
     body: JSON.stringify(payload),
   });
@@ -310,24 +550,13 @@ async function updateAvatarMeasurementsRequest({
 
 export async function fetchAvatarByIdRequest({
   avatarId,
-  accessToken,
   userId,
-  email,
-  sessionId,
+  backendSession,
   baseUrl = DEFAULT_AVATAR_API_BASE_URL,
 }: FetchAvatarByIdRequest): Promise<BackendAvatarData> {
-  if (!accessToken) {
-    throw new AvatarApiError('Missing access token for avatar request');
-  }
 
   if (!userId) {
     throw new AvatarApiError('Missing user identifier for avatar request');
-  }
-
-  if (!email || !sessionId) {
-    throw new AvatarApiError(
-      'User session information is incomplete; please sign in again to load avatars.',
-    );
   }
 
   const url = resolveAvatarUrl(baseUrl, userId, avatarId);
@@ -335,12 +564,10 @@ export async function fetchAvatarByIdRequest({
   const response = await fetch(url, {
     method: 'GET',
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      ...backendSession.headers,
       'Content-Type': 'application/json',
       Accept: 'application/json',
       'X-User-Id': userId,
-      'X-User-Email': email,
-      'X-Session-Id': sessionId,
     },
   });
 
@@ -377,64 +604,101 @@ export async function fetchAvatarByIdRequest({
 
 export function useAvatarApi(config?: { baseUrl?: string }) {
   const authData = useAuthData();
-  const accessToken = authData.authData?.accessToken ?? undefined;
   const userId = authData.userId ?? undefined;
   const email = authData.email ?? undefined;
   const sessionId = authData.sessionId ?? undefined;
+  const refreshToken = authData.authData?.refreshToken ?? undefined;
+
+  const ensureSession = useCallback(async (): Promise<BackendSession> => {
+    if (!authData.isAuthenticated) {
+      throw new AvatarApiError('User is not authenticated to access avatars');
+    }
+
+    if (!userId) {
+      throw new AvatarApiError('Missing user identifier for avatar request');
+    }
+
+    if (!email || !sessionId) {
+      throw new AvatarApiError(
+        'User session information is incomplete; please sign in again to continue.',
+      );
+    }
+
+    if (!refreshToken) {
+      throw new AvatarApiError(
+        'Missing refresh token; please sign in again to continue using avatar features.',
+      );
+    }
+
+    return ensureBackendSession({
+      userId,
+      email,
+      sessionId,
+      refreshToken,
+      baseUrl: config?.baseUrl,
+    });
+  }, [
+    authData.isAuthenticated,
+    config?.baseUrl,
+    email,
+    refreshToken,
+    sessionId,
+    userId,
+  ]);
+
+  const withBackendSession = useCallback(
+    async <T>(operation: (session: BackendSession) => Promise<T>): Promise<T> => {
+      let session = await ensureSession();
+
+      try {
+        return await operation(session);
+      } catch (error) {
+        if (error instanceof AvatarApiError && error.status === 401) {
+          clearStoredBackendSession();
+          session = await ensureSession();
+          return await operation(session);
+        }
+
+        throw error;
+      }
+    },
+    [ensureSession],
+  );
 
   const fetchAvatarById = useCallback(
     async (avatarId: string | number): Promise<BackendAvatarData> => {
-      if (!authData.isAuthenticated || !accessToken || !userId) {
+      if (!authData.isAuthenticated || !userId) {
         throw new AvatarApiError('User is not authenticated to load avatars');
       }
 
-      if (!email || !sessionId) {
-        throw new AvatarApiError(
-          'User session information is incomplete; please sign in again to load avatars.',
-        );
-      }
-
-      return fetchAvatarByIdRequest({
-        avatarId,
-        accessToken,
-        userId,
-        email,
-        sessionId,
-        baseUrl: config?.baseUrl,
-      });
+      return withBackendSession((backendSession) =>
+        fetchAvatarByIdRequest({
+          avatarId,
+          userId,
+          backendSession,
+          baseUrl: config?.baseUrl,
+        }),
+      );
     },
-    [accessToken, authData.isAuthenticated, config?.baseUrl, email, sessionId, userId],
+    [authData.isAuthenticated, config?.baseUrl, userId, withBackendSession],
   );
 
   const createAvatar = useCallback(
     async (payload: AvatarPayload): Promise<AvatarApiResult> => {
-      if (!authData.isAuthenticated || !accessToken || !userId) {
+      if (!authData.isAuthenticated || !userId) {
         throw new AvatarApiError('User is not authenticated to create avatars');
       }
 
-      if (!email || !sessionId) {
-        throw new AvatarApiError(
-          'User session information is incomplete; please sign in again to create avatars.',
-        );
-      }
-
-      return createAvatarRequest({
-        accessToken,
-        userId,
-        email,
-        sessionId,
-        baseUrl: config?.baseUrl,
-        payload,
-      });
+      return withBackendSession((backendSession) =>
+        createAvatarRequest({
+          backendSession,
+          userId,
+          baseUrl: config?.baseUrl,
+          payload,
+        }),
+      );
     },
-    [
-      accessToken,
-      authData.isAuthenticated,
-      config?.baseUrl,
-      email,
-      sessionId,
-      userId,
-    ],
+    [authData.isAuthenticated, config?.baseUrl, userId, withBackendSession],
   );
 
   const updateAvatarMeasurements = useCallback(
@@ -443,14 +707,8 @@ export function useAvatarApi(config?: { baseUrl?: string }) {
       payload: AvatarPayload,
       options?: { morphTargets?: Record<string, number> },
     ): Promise<AvatarApiResult> => {
-      if (!authData.isAuthenticated || !accessToken || !userId) {
+      if (!authData.isAuthenticated || !userId) {
         throw new AvatarApiError('User is not authenticated to update avatars');
-      }
-
-      if (!email || !sessionId) {
-        throw new AvatarApiError(
-          'User session information is incomplete; please sign in again to update avatar measurements.',
-        );
       }
 
       const mergedMorphTargets =
@@ -474,24 +732,17 @@ export function useAvatarApi(config?: { baseUrl?: string }) {
         ...(mergedMorphTargets ? { morphTargets: mergedMorphTargets } : {}),
       };
 
-      return updateAvatarMeasurementsRequest({
-        accessToken,
-        userId,
-        avatarId,
-        email,
-        sessionId,
-        baseUrl: config?.baseUrl,
-        payload: requestPayload,
-      });
+      return withBackendSession((backendSession) =>
+        updateAvatarMeasurementsRequest({
+          backendSession,
+          userId,
+          avatarId,
+          baseUrl: config?.baseUrl,
+          payload: requestPayload,
+        }),
+      );
     },
-    [
-      accessToken,
-      authData.isAuthenticated,
-      config?.baseUrl,
-      email,
-      sessionId,
-      userId,
-    ],
+    [authData.isAuthenticated, config?.baseUrl, userId, withBackendSession],
   );
 
   return {
