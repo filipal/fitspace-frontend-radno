@@ -316,9 +316,15 @@ async function requestBackendSession({
   const token = typeof (body as { token?: unknown }).token === 'string'
     ? (body as { token: string }).token
     : undefined;
-  const expiresAt = typeof (body as { expiresAt?: unknown }).expiresAt === 'string'
-    ? (body as { expiresAt: string }).expiresAt
-    : undefined;
+
+  const rawExpiresAt = (body as { expiresAt?: unknown }).expiresAt;
+  let expiresAt: string | undefined;
+  if (typeof rawExpiresAt === 'string') {
+    expiresAt = rawExpiresAt;
+  } else if (typeof rawExpiresAt === 'number' && Number.isFinite(rawExpiresAt)) {
+    const timestampMs = rawExpiresAt > 1_000_000_000_000 ? rawExpiresAt : rawExpiresAt * 1000;
+    expiresAt = new Date(timestampMs).toISOString();
+  }
   const additionalHeaders = normaliseHeaders((body as { headers?: unknown }).headers);
 
   if (!token || !expiresAt) {
