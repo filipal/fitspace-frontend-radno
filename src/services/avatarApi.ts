@@ -224,11 +224,25 @@ const readStoredBackendSession = (
     return null;
   }
 
-  if (!isBackendSessionValid(stored, expected)) {
+  const normalisedExpiresAt = normaliseExpiresAtValue(stored.expiresAt);
+  if (!normalisedExpiresAt) {
     return null;
   }
 
-  return stored;
+  const session: StoredBackendSession =
+    normalisedExpiresAt === stored.expiresAt
+      ? stored
+      : { ...stored, expiresAt: normalisedExpiresAt };
+
+  if (!isBackendSessionValid(session, expected)) {
+    return null;
+  }
+
+  if (session !== stored) {
+    storeBackendSession(session);
+  }
+
+  return session;
 };
 
 const storeBackendSession = (session: StoredBackendSession): void => {
@@ -267,6 +281,50 @@ const normaliseHeaders = (headers: unknown): Record<string, string> => {
       (entry): entry is [string, string] => typeof entry[1] === 'string',
     ),
   );
+};
+
+const convertEpochToIsoString = (value: number): string | null => {
+  if (!Number.isFinite(value)) {
+    return null;
+  }
+
+  const timestampMs = value >= 1_000_000_000_000 ? value : value * 1000;
+  const date = new Date(timestampMs);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.toISOString();
+};
+
+const normaliseExpiresAtValue = (value: unknown): string | null => {
+  if (typeof value === 'number') {
+    return convertEpochToIsoString(value);
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    if (/^-?\d+(?:\.\d+)?$/u.test(trimmed)) {
+      const numericValue = Number(trimmed);
+      const isoFromNumeric = convertEpochToIsoString(numericValue);
+      if (isoFromNumeric) {
+        return isoFromNumeric;
+      }
+    }
+
+    const parsed = Date.parse(trimmed);
+    if (Number.isNaN(parsed)) {
+      return null;
+    }
+
+    return new Date(parsed).toISOString();
+  }
+
+  return null;
 };
 
 async function requestBackendSession({
@@ -318,13 +376,7 @@ async function requestBackendSession({
     : undefined;
 
   const rawExpiresAt = (body as { expiresAt?: unknown }).expiresAt;
-  let expiresAt: string | undefined;
-  if (typeof rawExpiresAt === 'string') {
-    expiresAt = rawExpiresAt;
-  } else if (typeof rawExpiresAt === 'number' && Number.isFinite(rawExpiresAt)) {
-    const timestampMs = rawExpiresAt > 1_000_000_000_000 ? rawExpiresAt : rawExpiresAt * 1000;
-    expiresAt = new Date(timestampMs).toISOString();
-  }
+  const expiresAt = normaliseExpiresAtValue(rawExpiresAt) ?? undefined;
   const additionalHeaders = normaliseHeaders((body as { headers?: unknown }).headers);
 
   if (!token || !expiresAt) {
