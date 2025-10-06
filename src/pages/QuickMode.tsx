@@ -27,6 +27,7 @@ import {
   type AvatarCreationMode,
   type QuickModeSettings,
 } from '../context/AvatarConfigurationContext'
+import { mapBackendMorphTargetsToRecord } from '../services/avatarTransformationService'
 
 const bodyShapes = [
   { id: 1, Icon: BodyShape1, label: 'Shape 1', width: 33, height: 55 },
@@ -280,8 +281,13 @@ export default function QuickMode() {
     try {
       const result = await updateAvatarMeasurements(effectiveAvatarId, payload)
 
+      const backendAvatar = result.backendAvatar
+      const backendMorphTargets = backendAvatar
+        ? mapBackendMorphTargetsToRecord(backendAvatar.morphTargets)
+        : undefined
+
       const persistedAvatarId =
-        result.backendAvatar?.data.avatarId ?? result.avatarId ?? effectiveAvatarId
+        backendAvatar?.id ?? result.avatarId ?? effectiveAvatarId
 
       if (persistedAvatarId) {
         setStoredAvatarId(persistedAvatarId)
@@ -295,27 +301,26 @@ export default function QuickMode() {
           LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
           JSON.stringify({
             avatarId: persistedAvatarId ?? effectiveAvatarId,
-            avatarName: result.backendAvatar?.data.avatarName ?? payload.name,
-            gender: result.backendAvatar?.data.gender ?? payload.gender,
-            ageRange: result.backendAvatar?.data.ageRange ?? payload.ageRange,
+            avatarName: backendAvatar?.name ?? payload.name,
+            gender: backendAvatar?.gender ?? payload.gender,
+            ageRange: backendAvatar?.ageRange ?? payload.ageRange,
             basicMeasurements:
-              result.backendAvatar?.data.basicMeasurements ?? payload.basicMeasurements,
+              backendAvatar?.basicMeasurements ?? payload.basicMeasurements,
             bodyMeasurements:
-              result.backendAvatar?.data.bodyMeasurements ?? payload.bodyMeasurements,
-            morphTargets:
-              result.backendAvatar?.data.morphTargets ?? payload.morphTargets,
-            quickMode: result.backendAvatar?.data.quickMode ?? payload.quickMode,
-            creationMode: result.backendAvatar?.data.creationMode ?? payload.creationMode,
+              backendAvatar?.bodyMeasurements ?? payload.bodyMeasurements,
+            morphTargets: backendMorphTargets ?? payload.morphTargets,
+            quickMode: backendAvatar?.quickMode ?? payload.quickMode,
+            creationMode: backendAvatar?.creationMode ?? payload.creationMode,
             quickModeSettings:
-              result.backendAvatar?.data.quickModeSettings ?? payload.quickModeSettings ?? null,
-            source: result.backendAvatar?.data.source ?? payload.source,
+              backendAvatar?.quickModeSettings ?? payload.quickModeSettings ?? null,
+            source: backendAvatar?.source ?? payload.source,
           }),
         )
       }
 
-      if (result.backendAvatar) {
+      if (backendAvatar) {
         await loadAvatarFromBackend(
-          result.backendAvatar,
+          backendAvatar,
           undefined,
           persistedAvatarId ?? effectiveAvatarId,
         )
@@ -325,12 +330,11 @@ export default function QuickMode() {
         updateAvatars(prev => {
           const next = [...prev]
           const existingIndex = next.findIndex(avatar => avatar.id === persistedAvatarId)
-          const avatarNameToPersist =
-            result.backendAvatar?.data.avatarName ?? payload.name
+          const avatarNameToPersist = backendAvatar?.name ?? payload.name
           const createdAtValue =
             existingIndex >= 0
               ? next[existingIndex].createdAt
-              : result.backendAvatar?.data.createdAt ?? new Date().toISOString()
+              : backendAvatar?.createdAt ?? new Date().toISOString()
           const record = {
             id: persistedAvatarId,
             name: avatarNameToPersist,

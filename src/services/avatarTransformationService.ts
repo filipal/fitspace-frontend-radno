@@ -1,5 +1,5 @@
 import type { MorphAttribute } from '../data/morphAttributes';
-import type { BackendAvatarData } from '../context/AvatarConfigurationContext';
+import type { BackendAvatarMorphTarget } from '../context/AvatarConfigurationContext';
 
 /**
  * Maps backend friendly morph names to morphAttribute entries
@@ -111,17 +111,52 @@ export function convertMorphValueToBackendValue(
 /**
  * Main transformation function that converts backend JSON to updated morphAttributes
  */
+export function mapBackendMorphTargetsToRecord(
+  morphTargets: BackendAvatarMorphTarget[],
+): Record<string, number> {
+  return morphTargets.reduce<Record<string, number>>((acc, target) => {
+    if (!target || typeof target !== 'object') {
+      return acc;
+    }
+    const { name, value } = target;
+    if (!name) {
+      return acc;
+    }
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) {
+      return acc;
+    }
+    acc[name] = numericValue;
+    return acc;
+  }, {});
+}
+
+export function buildBackendMorphPayload(
+  morphs: MorphAttribute[],
+): BackendAvatarMorphTarget[] {
+  return morphs.reduce<BackendAvatarMorphTarget[]>((acc, morph) => {
+    const backendKey = getBackendKeyForMorphId(morph.morphId);
+    if (!backendKey) {
+      return acc;
+    }
+    const backendValue = convertMorphValueToBackendValue(morph.value, morph);
+    acc.push({ name: backendKey, value: backendValue });
+    return acc;
+  }, []);
+}
+
 export function transformBackendDataToMorphs(
-  backendData: BackendAvatarData,
+  morphTargetMap: Record<string, number>,
+  gender: 'male' | 'female',
   currentMorphs: MorphAttribute[]
 ): MorphAttribute[] {
-  console.log('Transforming backend data to morphs:', backendData.data.morphTargets);
+  console.log('Transforming backend morph map to morphs:', morphTargetMap);
   
   // Start with current morph values
   const updatedMorphs = [...currentMorphs];
-  
+
   // Apply backend morph values
-  Object.entries(backendData.data.morphTargets).forEach(([backendKey, backendValue]) => {
+  Object.entries(morphTargetMap).forEach(([backendKey, backendValue]) => {
     const morphId = BACKEND_TO_MORPH_MAPPING[backendKey];
     
     if (morphId !== undefined) {
@@ -147,7 +182,7 @@ export function transformBackendDataToMorphs(
   });
   
   // Apply gender-based base morphs
-  const genderMorphs = applyGenderBaseMorphs(updatedMorphs, backendData.data.gender);
+  const genderMorphs = applyGenderBaseMorphs(updatedMorphs, gender);
   
   return genderMorphs;
 }
@@ -216,15 +251,15 @@ export function getBackendKeyForMorphId(morphId: number): string | undefined {
 /**
  * Validate backend morph data
  */
-export function validateBackendMorphData(morphTargets: Record<string, number>): {
+export function validateBackendMorphData(morphTargetMap: Record<string, number>): {
   isValid: boolean;
   errors: string[];
   warnings: string[];
 } {
   const errors: string[] = [];
   const warnings: string[] = [];
-  
-  Object.entries(morphTargets).forEach(([key, value]) => {
+
+  Object.entries(morphTargetMap).forEach(([key, value]) => {
     // Check if key is mapped
     if (!(key in BACKEND_TO_MORPH_MAPPING)) {
       warnings.push(`Unknown morph key: ${key}`);

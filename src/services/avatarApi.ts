@@ -3,6 +3,7 @@ import { useAuthData } from '../hooks/useAuthData';
 import type {
   AvatarCreationMode,
   BackendAvatarData,
+  BackendAvatarMorphTarget,
   BasicMeasurements,
   BodyMeasurements,
   QuickModeSettings,
@@ -690,9 +691,9 @@ const normalizeBodyMeasurements = (
   return normalized;
 };
 
-const normalizeMorphTargetsResponse = (payload: unknown): Record<string, number> => {
+const normalizeMorphTargetsResponse = (payload: unknown): BackendAvatarMorphTarget[] => {
   if (!payload) {
-    return {};
+    return [];
   }
 
   const normalized: Record<string, number> = {};
@@ -719,14 +720,14 @@ const normalizeMorphTargetsResponse = (payload: unknown): Record<string, number>
         item.sliderValue ?? item.value ?? item.unrealValue ?? item.defaultValue;
       assignEntry(backendKey ?? fallbackId, sliderValue);
     });
-    return normalized;
+    return Object.entries(normalized).map(([name, value]) => ({ name, value }));
   }
 
   if (isRecord(payload)) {
     Object.entries(payload).forEach(([key, value]) => assignEntry(key, value));
   }
 
-  return normalized;
+  return Object.entries(normalized).map(([name, value]) => ({ name, value }));
 };
 
 const normalizeQuickModeSettingsResponse = (
@@ -843,22 +844,20 @@ const normalizeBackendAvatar = (payload: unknown): BackendAvatarData | undefined
 
   return {
     type: 'createAvatar',
-    data: {
-      avatarId,
-      avatarName,
-      gender,
-      ageRange,
-      quickMode,
-      creationMode,
-      source,
-      createdAt,
-      updatedAt,
-      createdBySession,
-      basicMeasurements,
-      bodyMeasurements,
-      morphTargets,
-      quickModeSettings,
-    },
+    id: avatarId,
+    name: avatarName,
+    gender,
+    ageRange,
+    quickMode,
+    creationMode,
+    source,
+    createdAt,
+    updatedAt,
+    createdBySession,
+    basicMeasurements,
+    bodyMeasurements,
+    morphTargets,
+    quickModeSettings,
   };
 };
 
@@ -871,7 +870,7 @@ const parseAvatarResponse = (
   const topLevel = isRecord(payload) ? (payload as Record<string, unknown>) : undefined;
 
   const rawIdentifier =
-    backendAvatar?.data.avatarId ??
+    backendAvatar?.id ??
     normalizeString(candidate?.avatarId ?? candidate?.id) ??
     normalizeString(topLevel?.avatarId ?? topLevel?.id) ??
     (options?.fallbackId != null ? String(options.fallbackId) : undefined);

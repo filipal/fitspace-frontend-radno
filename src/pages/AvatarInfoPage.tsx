@@ -11,6 +11,7 @@ import { useAvatarApi, LAST_CREATED_AVATAR_METADATA_STORAGE_KEY, LAST_LOADED_AVA
 import type { AvatarPayload } from '../services/avatarApi'
 import { useAvatars } from '../context/AvatarContext'
 import { useAvatarConfiguration } from '../context/AvatarConfigurationContext'
+import { mapBackendMorphTargetsToRecord } from '../services/avatarTransformationService'
 
 const ages = ['15-19', ...Array.from({ length: 8 }, (_, i) => {
   const start = 20 + i * 10
@@ -229,7 +230,11 @@ export default function AvatarInfoPage() {
 
                   const result = await createAvatar(payload)
 
-                  const resolvedAvatarId = result.backendAvatar?.data.avatarId ?? result.avatarId
+                  const backendAvatar = result.backendAvatar
+                  const backendMorphTargets = backendAvatar
+                    ? mapBackendMorphTargetsToRecord(backendAvatar.morphTargets)
+                    : undefined
+                  const resolvedAvatarId = backendAvatar?.id ?? result.avatarId
 
                   if (typeof window !== 'undefined' && resolvedAvatarId) {
                     window.sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, resolvedAvatarId)
@@ -237,21 +242,19 @@ export default function AvatarInfoPage() {
                       LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
                       JSON.stringify({
                         avatarId: resolvedAvatarId,
-                        avatarName: result.backendAvatar?.data.avatarName ?? fallbackName,
-                        gender: result.backendAvatar?.data.gender ?? gender,
-                        ageRange: result.backendAvatar?.data.ageRange ?? ageRange,
+                        avatarName: backendAvatar?.name ?? fallbackName,
+                        gender: backendAvatar?.gender ?? gender,
+                        ageRange: backendAvatar?.ageRange ?? ageRange,
                         basicMeasurements:
-                          result.backendAvatar?.data.basicMeasurements ?? payload.basicMeasurements,
+                          backendAvatar?.basicMeasurements ?? payload.basicMeasurements,
                         bodyMeasurements:
-                          result.backendAvatar?.data.bodyMeasurements ?? payload.bodyMeasurements,
-                        morphTargets:
-                          result.backendAvatar?.data.morphTargets ?? payload.morphTargets,
-                        quickMode: result.backendAvatar?.data.quickMode ?? true,
-                        creationMode:
-                          result.backendAvatar?.data.creationMode ?? payload.creationMode,
+                          backendAvatar?.bodyMeasurements ?? payload.bodyMeasurements,
+                        morphTargets: backendMorphTargets ?? payload.morphTargets,
+                        quickMode: backendAvatar?.quickMode ?? true,
+                        creationMode: backendAvatar?.creationMode ?? payload.creationMode,
                         quickModeSettings:
-                          result.backendAvatar?.data.quickModeSettings ?? payload.quickModeSettings ?? null,
-                        source: result.backendAvatar?.data.source ?? payload.source,
+                          backendAvatar?.quickModeSettings ?? payload.quickModeSettings ?? null,
+                        source: backendAvatar?.source ?? payload.source,
                       }),
                     )
                   }
@@ -262,11 +265,11 @@ export default function AvatarInfoPage() {
                       const existingIndex = next.findIndex(avatar => avatar.id === resolvedAvatarId)
                       const record = {
                         id: resolvedAvatarId,
-                        name: result.backendAvatar?.data.avatarName ?? fallbackName,
+                        name: backendAvatar?.name ?? fallbackName,
                         createdAt:
                           existingIndex >= 0
                             ? next[existingIndex].createdAt
-                            : result.backendAvatar?.data.createdAt ?? new Date().toISOString(),
+                            : backendAvatar?.createdAt ?? new Date().toISOString(),
                       }
                       if (existingIndex >= 0) {
                         next[existingIndex] = { ...next[existingIndex], ...record }
@@ -280,8 +283,8 @@ export default function AvatarInfoPage() {
                     })
                   }
 
-                  if (result.backendAvatar) {
-                    await loadAvatarFromBackend(result.backendAvatar, undefined, resolvedAvatarId ?? undefined)
+                  if (backendAvatar) {
+                    await loadAvatarFromBackend(backendAvatar, undefined, resolvedAvatarId ?? undefined)
                   }
 
                   setPendingAvatarName(null)

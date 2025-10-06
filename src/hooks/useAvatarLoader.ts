@@ -1,7 +1,11 @@
 import { useCallback, useState } from 'react';
 import { usePixelStreaming } from '../context/PixelStreamingContext';
 import { useAvatarConfiguration, type BackendAvatarData } from '../context/AvatarConfigurationContext';
-import { transformBackendDataToMorphs, validateBackendMorphData } from '../services/avatarTransformationService';
+import {
+  mapBackendMorphTargetsToRecord,
+  transformBackendDataToMorphs,
+  validateBackendMorphData,
+} from '../services/avatarTransformationService';
 import { generateUnrealAvatarCommand, validateAvatarConfiguration, getMorphStatistics } from '../services/avatarCommandService';
 
 export interface AvatarLoaderState {
@@ -34,7 +38,8 @@ export function useAvatarLoader() {
 
       // Step 1: Validate backend data
       console.log('Step 1: Validating backend morph data...');
-      const validation = validateBackendMorphData(backendData.data.morphTargets);
+      const morphTargetMap = mapBackendMorphTargetsToRecord(backendData.morphTargets);
+      const validation = validateBackendMorphData(morphTargetMap);
       
       if (!validation.isValid) {
         throw new Error(`Invalid backend data: ${validation.errors.join(', ')}`);
@@ -65,7 +70,11 @@ export function useAvatarLoader() {
       }
       
       console.log('Current morphs before transformation:', currentMorphs.length);
-      const transformedMorphs = transformBackendDataToMorphs(backendData, currentMorphs);
+      const transformedMorphs = transformBackendDataToMorphs(
+        morphTargetMap,
+        backendData.gender,
+        currentMorphs,
+      );
       console.log('Transformed morphs result:', transformedMorphs.length, 'morphs');
       
       setLoaderState({ isLoading: true, error: null, stage: 'command_generation', progress: 50 });

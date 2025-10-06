@@ -1,6 +1,6 @@
 import React, { createContext, useState, useCallback, useMemo } from 'react';
 import { morphAttributes, type MorphAttribute } from '../data/morphAttributes';
-import { transformBackendDataToMorphs } from '../services/avatarTransformationService';
+import { mapBackendMorphTargetsToRecord, transformBackendDataToMorphs } from '../services/avatarTransformationService';
 
 export type AvatarCreationMode = 'manual' | 'scan' | 'preset' | 'import';
 
@@ -12,28 +12,28 @@ export interface BasicMeasurements {
 }
 
 export interface BodyMeasurements {
-  shoulder: number;
-  chest: number;
-  underchest: number;
-  waist: number;
-  highHip: number;
-  lowHip: number;
-  inseam: number;
-  highThigh: number;
-  midThigh: number;
-  knee: number;
-  calf: number;
-  ankle: number;
-  footLength: number;
-  footBreadth: number;
-  bicep: number;
-  forearm: number;
-  wrist: number;
-  shoulderToWrist: number;
-  handLength: number;
-  handBreadth: number;
-  neck: number;
-  head: number;
+  shoulder?: number;
+  chest?: number;
+  underchest?: number;
+  waist?: number;
+  highHip?: number;
+  lowHip?: number;
+  inseam?: number;
+  highThigh?: number;
+  midThigh?: number;
+  knee?: number;
+  calf?: number;
+  ankle?: number;
+  footLength?: number;
+  footBreadth?: number;
+  bicep?: number;
+  forearm?: number;
+  wrist?: number;
+  shoulderToWrist?: number;
+  handLength?: number;
+  handBreadth?: number;
+  neck?: number;
+  head?: number;
 }
 
 // Backend JSON structure
@@ -44,24 +44,27 @@ export interface QuickModeSettings {
   updatedAt?: string | null;
 }
 
+export interface BackendAvatarMorphTarget {
+  name: string;
+  value: number;
+}
+
 export interface BackendAvatarData {
   type: 'createAvatar';
-  data: {
-    avatarId: string;
-    avatarName: string;
-    gender: 'male' | 'female';
-    ageRange: string;
-    quickMode?: boolean;
-    creationMode?: AvatarCreationMode | null;
-    source?: string | null;
-    createdAt?: string | null;
-    updatedAt?: string | null;
-    createdBySession?: string | null;
-    basicMeasurements: Partial<BasicMeasurements>;
-    bodyMeasurements: Partial<BodyMeasurements>;
-    morphTargets: Record<string, number>; // Backend friendly names with values 0-100
-    quickModeSettings?: QuickModeSettings | null;
-  };
+  id: string;
+  name: string;
+  gender: 'male' | 'female';
+  ageRange: string;
+  quickMode?: boolean;
+  creationMode?: AvatarCreationMode | null;
+  source?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  createdBySession?: string | null;
+  basicMeasurements?: BasicMeasurements;
+  bodyMeasurements?: BodyMeasurements;
+  morphTargets: BackendAvatarMorphTarget[];
+  quickModeSettings?: QuickModeSettings | null;
 }
 
 // Current avatar state
@@ -149,26 +152,32 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
       console.log('Loading avatar from backend data:', backendData);
       
       // Start with provided morphs or transform backend data
+      const morphTargetMap = mapBackendMorphTargetsToRecord(backendData.morphTargets);
+
       const morphValues = transformedMorphs ??
-        transformBackendDataToMorphs(backendData, initializeDefaultMorphs());
+        transformBackendDataToMorphs(
+          morphTargetMap,
+          backendData.gender,
+          initializeDefaultMorphs()
+        );
 
       // Apply backend morph values (this will be handled by transformation service)
       // For now, we'll just store the data as-is
-      const nextAvatarId = backendData.data.avatarId ?? avatarId ?? `avatar_${Date.now()}`;
+      const nextAvatarId = backendData.id ?? avatarId;
       const avatarConfig: AvatarConfiguration = {
         avatarId: nextAvatarId,
-        avatarName: backendData.data.avatarName,
-        gender: backendData.data.gender,
-        ageRange: backendData.data.ageRange,
-        basicMeasurements: backendData.data.basicMeasurements,
-        bodyMeasurements: backendData.data.bodyMeasurements,
-        quickMode: backendData.data.quickMode,
-        creationMode: backendData.data.creationMode ?? null,
-        source: backendData.data.source ?? null,
-        createdAt: backendData.data.createdAt ?? null,
-        updatedAt: backendData.data.updatedAt ?? null,
-        createdBySession: backendData.data.createdBySession ?? null,
-        quickModeSettings: backendData.data.quickModeSettings ?? null,
+        avatarName: backendData.name,
+        gender: backendData.gender,
+        ageRange: backendData.ageRange,
+        basicMeasurements: backendData.basicMeasurements,
+        bodyMeasurements: backendData.bodyMeasurements,
+        quickMode: backendData.quickMode,
+        creationMode: backendData.creationMode ?? null,
+        source: backendData.source ?? null,
+        createdAt: backendData.createdAt ?? null,
+        updatedAt: backendData.updatedAt ?? null,
+        createdBySession: backendData.createdBySession ?? null,
+        quickModeSettings: backendData.quickModeSettings ?? null,
         morphValues,
         lastUpdated: new Date()
       };

@@ -5,7 +5,11 @@ import { usePixelStreaming } from '../context/PixelStreamingContext'
 import { PixelStreamingView } from '../components/PixelStreamingView/PixelStreamingView'
 import { useAvatarConfiguration, type BasicMeasurements, type BodyMeasurements } from '../context/AvatarConfigurationContext'
 import { convertSliderValueToUnrealValue } from '../services/avatarCommandService'
-import { convertMorphValueToBackendValue, getBackendKeyForMorphId } from '../services/avatarTransformationService'
+import {
+  convertMorphValueToBackendValue,
+  getBackendKeyForMorphId,
+  mapBackendMorphTargetsToRecord,
+} from '../services/avatarTransformationService'
 import { morphAttributes } from '../data/morphAttributes'
 import { useAvatarLoader } from '../hooks/useAvatarLoader'
 import {
@@ -305,8 +309,12 @@ export default function UnrealMeasurements() {
 
       const result = await updateAvatarMeasurements(activeAvatarId, payload)
 
+      const backendAvatar = result.backendAvatar
+      const backendMorphTargets = backendAvatar
+        ? mapBackendMorphTargetsToRecord(backendAvatar.morphTargets)
+        : undefined
       const persistedAvatarId =
-        result.backendAvatar?.data.avatarId ?? result.avatarId ?? String(activeAvatarId)
+        backendAvatar?.id ?? result.avatarId ?? String(activeAvatarId)
 
       if (typeof window !== 'undefined') {
         sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, persistedAvatarId)
@@ -314,20 +322,19 @@ export default function UnrealMeasurements() {
           LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
           JSON.stringify({
             avatarId: persistedAvatarId,
-            avatarName: result.backendAvatar?.data.avatarName ?? payload.name,
-            gender: result.backendAvatar?.data.gender ?? payload.gender,
-            ageRange: result.backendAvatar?.data.ageRange ?? payload.ageRange,
+            avatarName: backendAvatar?.name ?? payload.name,
+            gender: backendAvatar?.gender ?? payload.gender,
+            ageRange: backendAvatar?.ageRange ?? payload.ageRange,
             basicMeasurements:
-              result.backendAvatar?.data.basicMeasurements ?? payload.basicMeasurements,
+              backendAvatar?.basicMeasurements ?? payload.basicMeasurements,
             bodyMeasurements:
-              result.backendAvatar?.data.bodyMeasurements ?? payload.bodyMeasurements,
-            morphTargets:
-              result.backendAvatar?.data.morphTargets ?? payload.morphTargets,
-            quickMode: result.backendAvatar?.data.quickMode ?? payload.quickMode,
-            creationMode: result.backendAvatar?.data.creationMode ?? payload.creationMode,
+              backendAvatar?.bodyMeasurements ?? payload.bodyMeasurements,
+            morphTargets: backendMorphTargets ?? payload.morphTargets,
+            quickMode: backendAvatar?.quickMode ?? payload.quickMode,
+            creationMode: backendAvatar?.creationMode ?? payload.creationMode,
             quickModeSettings:
-              result.backendAvatar?.data.quickModeSettings ?? payload.quickModeSettings ?? null,
-            source: result.backendAvatar?.data.source ?? payload.source,
+              backendAvatar?.quickModeSettings ?? payload.quickModeSettings ?? null,
+            source: backendAvatar?.source ?? payload.source,
           }),
         )
       }
