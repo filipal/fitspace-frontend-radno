@@ -39,7 +39,10 @@ Then edit `.env` so that it contains at least:
 VITE_API_BASE_URL=https://backend.example.com/api
 VITE_AVATAR_API_BASE_URL=https://backend.example.com/api/users/
 ```
-If your backend protects the `/auth/token` endpoint with an API key, also set
+`VITE_AVATAR_API_BASE_URL` **mora** završavati s `/api/users/` kako bi frontend
+mogao dodati identifikator korisnika na kraj putanje.
+
+Ako avatar servis podržava API ključ, postavite ga kao opcionalnu varijablu
 `VITE_AVATAR_API_KEY`.
 
 After updating the environment file, restart the Vite development server so the
