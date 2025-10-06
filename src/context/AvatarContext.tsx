@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useAvatarApi, type AvatarListItem } from '../services/avatarApi'
+import { useAuthData } from '../hooks/useAuthData'
 
 export interface AvatarRecord {
   id: string
@@ -53,6 +54,7 @@ const normalizeAvatarList = (items: AvatarListItem[]): AvatarRecord[] =>
 
 export function AvatarProvider({ children }: { children: ReactNode }) {
   const { listAvatars } = useAvatarApi()
+  const { isAuthenticated } = useAuthData()
   const [avatars, setAvatarList] = useState<AvatarRecord[]>([])
   const [pendingAvatarName, setPendingAvatarNameState] = useState<string | null>(() => readStoredPendingName())
   const applyBackendAvatars = useCallback((items: AvatarListItem[]) => {
@@ -60,14 +62,22 @@ export function AvatarProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const refreshAvatars = useCallback(async () => {
+    if (!isAuthenticated) {
+      return
+    }
+
     const items = await listAvatars()
     applyBackendAvatars(items)
-  }, [applyBackendAvatars, listAvatars])
+  }, [applyBackendAvatars, isAuthenticated, listAvatars])
 
   useEffect(() => {
     let isCancelled = false
 
     const load = async () => {
+      if (!isAuthenticated) {
+        return
+      }
+
       try {
         const items = await listAvatars()
         if (!isCancelled) {
@@ -85,7 +95,13 @@ export function AvatarProvider({ children }: { children: ReactNode }) {
     return () => {
       isCancelled = true
     }
-  }, [applyBackendAvatars, listAvatars])
+  }, [applyBackendAvatars, isAuthenticated, listAvatars])
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setAvatarList([])
+    }
+  }, [isAuthenticated])
 
   useEffect(() => {
     persistPendingName(pendingAvatarName)
