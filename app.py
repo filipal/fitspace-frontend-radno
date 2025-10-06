@@ -1,7 +1,3 @@
-
-+28
--0
-
 import os
 
 from flask import Flask, jsonify, request
@@ -11,10 +7,13 @@ from werkzeug.exceptions import HTTPException
 from avatar import avatar_bp, init_app as init_avatar
 from auth import auth_bp, init_app as init_auth
 
+from dotenv import load_dotenv
+load_dotenv()
+
 app = Flask(__name__)
 
 
-allowed_origins_env = os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:5177")
+allowed_origins_env = os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:5177,http://127.0.0.1:5177")
 allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
 
 if not allowed_origins:
@@ -25,20 +24,33 @@ if "*" in allowed_origins:
 else:
     cors_origins = allowed_origins
 
-CORS(app, resources={
-    r"/api/*": {
-        "origins": cors_origins,
-        "allow_headers": [
-            "Content-Type",
-            "Accept",
-            "x-api-key",
-            "X-User-Email",
-            "X-Session-Id",
-            "X-Refresh-Token",
-        ],
-    }
-})
+CORS(
+    app,
+    resources={r"/api/*": {"origins": ["http://localhost:5177", "http://127.0.0.1:5177"]}},
+    # supports_credentials=True  # uključi SAMO ako koristiš cookies; za Bearer ostavi isključeno
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "Accept",
+        "x-api-key",
+        "X-User-Email",
+        "X-Session-Id",
+        "X-Refresh-Token",
+        "X-User-Id",
+    ],
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    expose_headers=["Content-Disposition"],
+    # supports_credentials=False  # uključi True SAMO ako koristiš cookies
+)
 
+# ✅ Globalno pusti preflight
+from flask import request
+@app.before_request
+def _allow_preflight():
+    if request.method == "OPTIONS":
+        return ("", 204)
+
+# TEK ONDA init + registracija
 init_auth(app)
 init_avatar(app)
 app.register_blueprint(auth_bp)
