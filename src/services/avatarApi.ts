@@ -1106,26 +1106,31 @@ const parseAvatarListItem = (payload: unknown): AvatarListItem | null => {
 };
 
 const parseAvatarListResponse = (payload: unknown): AvatarListItem[] => {
-  const collect = (source: unknown): AvatarListItem[] => {
-    if (!Array.isArray(source)) {
-      return [];
-    }
+  const collect = (source: unknown): AvatarListItem[] =>
+    Array.isArray(source)
+      ? (source
+          .map(parseAvatarListItem)
+          .filter((item): item is AvatarListItem => item !== null))
+      : [];
 
-    return source
-      .map(parseAvatarListItem)
-      .filter((item): item is AvatarListItem => item !== null);
-  };
-
+  // Ako backend vrati direktno niz
   if (Array.isArray(payload)) {
     return collect(payload);
   }
 
+  // Ako je objekt, provjeri očekivane ključeve (uključujući "items")
   if (isRecord(payload)) {
+    if (Array.isArray(payload.items)) {              // ⬅️ NOVO
+      return collect(payload.items);
+    }
     if (Array.isArray(payload.avatars)) {
       return collect(payload.avatars);
     }
     if (Array.isArray(payload.data)) {
       return collect(payload.data);
+    }
+    if (isRecord(payload.data) && Array.isArray(payload.data.items)) {   // ⬅️ NOVO
+      return collect(payload.data.items);
     }
     if (isRecord(payload.data) && Array.isArray(payload.data.avatars)) {
       return collect(payload.data.avatars);
@@ -1322,6 +1327,32 @@ async function updateAvatarMeasurementsRequest({
     backendAvatar,
     responseBody: body,
   };
+}
+
+async function deleteAvatarRequest({
+  backendSession,
+  userId,
+  avatarId,
+  baseUrl = DEFAULT_AVATAR_API_BASE_URL,
+  sessionId,
+}: AvatarApiAuth & { avatarId: string | number }): Promise<void> {
+  const sanitizedUserId = normalizeUserIdentifier(userId) ?? userId;
+  const url = resolveAvatarUrl(baseUrl, sanitizedUserId, avatarId);
+  const effectiveSessionId = normalizeSessionIdentifier(
+    sessionId ?? backendSession.headers['X-Session-Id'],
+  );
+
+  const headers: Record<string, string> = {
+    ...backendSession.headers,
+    Accept: 'application/json',
+  };
+
+  if (!('Content-Type' in headers)) headers['Content-Type'] = 'application/json';
+  if (sanitizedUserId && !('X-User-Id' in headers)) headers['X-User-Id'] = sanitizedUserId;
+  if (effectiveSessionId && !('X-Session-Id' in headers)) headers['X-Session-Id'] = effectiveSessionId;
+
+  const response = await fetch(url, { method: 'DELETE', headers });
+  await ensureOk(response); // očekujemo 204 No Content
 }
 
 export async function fetchAvatarByIdRequest({
@@ -1577,10 +1608,46 @@ export function useAvatarApi(config?: { baseUrl?: string }) {
     ],
   );
 
+  const deleteAvatar = useCallback(
+    async (avatarId: string | number): Promise<void> => {
+      if (!authData.isAuthenticated || !userId) {
+        throw new AvatarApiError('User is not authenticated to delete avatars');
+      }
+
+      await withBackendSession((backendSession) =>
+        deleteAvatarRequest({
+          backendSession,
+          userId,
+          avatarId,
+          baseUrl: config?.baseUrl,
+          sessionId,
+        }),
+      );
+
+      // Opcionalno: očisti lokalne reference na izbrisani avatar
+      try {
+        if (localStorage?.getItem(LAST_LOADED_AVATAR_STORAGE_KEY) === String(avatarId)) {
+          localStorage.removeItem(LAST_LOADED_AVATAR_STORAGE_KEY);
+        }
+        const raw = sessionStorage?.getItem(LAST_CREATED_AVATAR_METADATA_STORAGE_KEY);
+        if (raw) {
+          const meta = JSON.parse(raw);
+          if (meta?.id === String(avatarId)) {
+            sessionStorage.removeItem(LAST_CREATED_AVATAR_METADATA_STORAGE_KEY);
+          }
+        }
+      } catch {
+        // ignore storage errors
+      }
+    },
+    [authData.isAuthenticated, config?.baseUrl, sessionId, userId, withBackendSession],
+  );
+
   return {
     fetchAvatarById,
     createAvatar,
     listAvatars,
     updateAvatarMeasurements,
+    deleteAvatar,
   };
 }
