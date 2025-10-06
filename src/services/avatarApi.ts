@@ -684,8 +684,9 @@ const buildBackendAvatarRequestPayload = (
   if (payload.source) {
     request.source = payload.source;
   }
-  if (sessionId) {
-    request.createdBySession = sessionId;
+  const sanitizedSessionId = normalizeString(sessionId);
+  if (sanitizedSessionId) {
+    request.createdBySession = sanitizedSessionId;
   }
 
   const basicMeasurements = sanitizeMeasurementPayload(
