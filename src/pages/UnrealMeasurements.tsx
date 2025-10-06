@@ -314,7 +314,7 @@ export default function UnrealMeasurements() {
           LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
           JSON.stringify({
             avatarId: persistedAvatarId,
-            avatarName: result.backendAvatar?.data.avatarName ?? payload.avatarName,
+            avatarName: result.backendAvatar?.data.avatarName ?? payload.name,
             gender: result.backendAvatar?.data.gender ?? payload.gender,
             ageRange: result.backendAvatar?.data.ageRange ?? payload.ageRange,
             basicMeasurements:

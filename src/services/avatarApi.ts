@@ -40,6 +40,7 @@ export interface AvatarMorphPayload {
 
 export interface AvatarPayload {
   name: string;
+  avatarName?: string;
   gender: 'male' | 'female';
   ageRange: string;
   creationMode?: AvatarCreationMode | null;
