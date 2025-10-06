@@ -182,16 +182,30 @@ const deriveApiRoot = (baseUrl?: string): string => {
 
 const isBackendSessionValid = (
   session: StoredBackendSession,
-  expected: { email: string; sessionId: string; refreshToken: string },
+  expected: {
+    email: string;
+    sessionId: string;
+    refreshToken: string;
+    userId?: string;
+  },
 ): boolean => {
   const expectedSessionId = normalizeSessionIdentifier(expected.sessionId);
   const storedSessionId = normalizeSessionIdentifier(session.metadata.sessionId);
+  const storedUserId = normalizeUserIdentifier(session.metadata.userId);
+
   if (
     session.metadata.email !== expected.email ||
     storedSessionId !== expectedSessionId ||
     session.metadata.refreshToken !== expected.refreshToken
   ) {
     return false;
+  }
+
+  if (storedUserId && expected.userId) {
+    const expectedUserId = normalizeUserIdentifier(expected.userId);
+    if (expectedUserId && storedUserId !== expectedUserId) {
+      return false;
+    }
   }
 
   const expiryTimestamp = Date.parse(session.expiresAt);
@@ -210,10 +224,19 @@ const sanitizeBackendSession = (
   const normalizedSessionId =
     normalizeSessionIdentifier(session.metadata.sessionId) ??
     session.metadata.sessionId;
+  const normalizedUserId =
+    normalizeUserIdentifier(session.metadata.userId) ?? session.metadata.userId;
 
   const sanitizedHeaders: Record<string, string> = {
     ...session.headers,
   };
+
+  const headerUserId = normalizeUserIdentifier(sanitizedHeaders['X-User-Id']);
+  if (headerUserId) {
+    sanitizedHeaders['X-User-Id'] = headerUserId;
+  } else {
+    delete sanitizedHeaders['X-User-Id'];
+  }
 
   const headerSessionId = normalizeSessionIdentifier(
     sanitizedHeaders['X-Session-Id'],
@@ -231,6 +254,7 @@ const sanitizeBackendSession = (
     headers: sanitizedHeaders,
     metadata: {
       ...session.metadata,
+      userId: normalizedUserId,
       sessionId: normalizedSessionId,
     },
   };
@@ -371,6 +395,10 @@ async function requestBackendSession({
   refreshToken,
   baseUrl,
 }: EnsureBackendSessionOptions): Promise<BackendSession> {
+  const normalizedUserId = normalizeUserIdentifier(userId);
+  if (!normalizedUserId) {
+    throw new AvatarApiError('Missing user identifier for backend session request');
+  }
   const normalizedSessionId = normalizeSessionIdentifier(sessionId);
   if (!normalizedSessionId) {
     throw new AvatarApiError('Missing session identifier for backend session request');
@@ -387,7 +415,7 @@ async function requestBackendSession({
       ...(AVATAR_API_KEY ? { 'x-api-key': AVATAR_API_KEY } : {}),
     },
     body: JSON.stringify({
-      userId,
+      userId: normalizedUserId,
       email,
       sessionId: normalizedSessionId,
       refreshToken,
@@ -439,10 +467,11 @@ async function requestBackendSession({
 export async function ensureBackendSession(
   options: EnsureBackendSessionOptions,
 ): Promise<BackendSession> {
-  const { userId, email, refreshToken } = options;
+  const { email, refreshToken } = options;
+  const sanitizedUserId = normalizeUserIdentifier(options.userId);
   const sanitizedSessionId = normalizeSessionIdentifier(options.sessionId);
 
-  if (!userId) {
+  if (!sanitizedUserId) {
     throw new AvatarApiError('Missing user identifier for backend session request');
   }
 
@@ -459,7 +488,7 @@ export async function ensureBackendSession(
   }
 
   const stored = readStoredBackendSession({
-    userId,
+    userId: sanitizedUserId,
     email,
     sessionId: sanitizedSessionId,
     refreshToken,
@@ -472,9 +501,15 @@ export async function ensureBackendSession(
   const storedSession = sanitizeBackendSession({
     ...(await requestBackendSession({
       ...options,
+      userId: sanitizedUserId,
       sessionId: sanitizedSessionId,
     })),
-    metadata: { userId, email, sessionId: sanitizedSessionId, refreshToken },
+    metadata: {
+      userId: sanitizedUserId,
+      email,
+      sessionId: sanitizedSessionId,
+      refreshToken,
+    },
   });
   storeBackendSession(storedSession);
 
@@ -483,7 +518,8 @@ export async function ensureBackendSession(
 
 const resolveUserRootUrl = (baseUrl: string, userId: string): string => {
   const normalisedBase = ensureTrailingSlash(trimTrailingSlashes(baseUrl));
-  return `${normalisedBase}${encodePathSegment(userId)}`;
+  const normalizedUserId = normalizeUserIdentifier(userId) ?? userId;
+  return `${normalisedBase}${encodePathSegment(normalizedUserId)}`;
 };
 
 const buildAvatarScopedUrl = (
@@ -536,8 +572,26 @@ const normalizeString = (value: unknown): string | undefined => {
 const UUID_PATTERN =
   /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/u;
 
-const normalizeSessionIdentifier = (value: unknown): string | undefined => {
-  const normalized = normalizeString(value);
+const normalizeUuidLikeIdentifier = (value: unknown): string | undefined => {
+  let candidate = value;
+
+  if (
+    candidate &&
+    typeof candidate === 'object' &&
+    'toString' in candidate &&
+    typeof candidate.toString === 'function'
+  ) {
+    try {
+      const serialized = candidate.toString();
+      if (serialized && serialized !== '[object Object]') {
+        candidate = serialized;
+      }
+    } catch (error) {
+      console.warn('Failed to serialize identifier value', error);
+    }
+  }
+
+  const normalized = normalizeString(candidate);
   if (!normalized) {
     return undefined;
   }
@@ -549,6 +603,12 @@ const normalizeSessionIdentifier = (value: unknown): string | undefined => {
 
   return normalized;
 };
+
+const normalizeSessionIdentifier = (value: unknown): string | undefined =>
+  normalizeUuidLikeIdentifier(value);
+
+const normalizeUserIdentifier = (value: unknown): string | undefined =>
+  normalizeUuidLikeIdentifier(value);
 
 const normalizeCreationMode = (value: unknown): AvatarCreationMode | null => {
   const normalized = normalizeString(value)?.toLowerCase();
@@ -1133,7 +1193,8 @@ async function listAvatarsRequest({
   baseUrl = DEFAULT_AVATAR_API_BASE_URL,
   sessionId,
 }: AvatarApiAuth): Promise<AvatarListItem[]> {
-  const url = resolveAvatarCollectionUrl(baseUrl, userId);
+  const sanitizedUserId = normalizeUserIdentifier(userId) ?? userId;
+  const url = resolveAvatarCollectionUrl(baseUrl, sanitizedUserId);
   const effectiveSessionId = normalizeSessionIdentifier(
     sessionId ?? backendSession.headers['X-Session-Id'],
   );
@@ -1147,8 +1208,8 @@ async function listAvatarsRequest({
     headers['Content-Type'] = 'application/json';
   }
 
-  if (userId && !('X-User-Id' in headers)) {
-    headers['X-User-Id'] = userId;
+  if (sanitizedUserId && !('X-User-Id' in headers)) {
+    headers['X-User-Id'] = sanitizedUserId;
   }
 
   if (effectiveSessionId && !('X-Session-Id' in headers)) {
@@ -1173,7 +1234,8 @@ async function createAvatarRequest({
   payload,
   sessionId,
 }: CreateAvatarRequest): Promise<AvatarApiResult> {
-  const url = resolveAvatarCollectionUrl(baseUrl, userId);
+  const sanitizedUserId = normalizeUserIdentifier(userId) ?? userId;
+  const url = resolveAvatarCollectionUrl(baseUrl, sanitizedUserId);
   const effectiveSessionId = normalizeSessionIdentifier(
     sessionId ?? backendSession.headers['X-Session-Id'],
   );
@@ -1184,8 +1246,8 @@ async function createAvatarRequest({
     Accept: 'application/json',
   };
 
-  if (userId && !('X-User-Id' in headers)) {
-    headers['X-User-Id'] = userId;
+  if (sanitizedUserId && !('X-User-Id' in headers)) {
+    headers['X-User-Id'] = sanitizedUserId;
   }
 
   if (effectiveSessionId && !('X-Session-Id' in headers)) {
@@ -1220,7 +1282,8 @@ async function updateAvatarMeasurementsRequest({
   payload,
   sessionId,
 }: UpdateAvatarMeasurementsRequest): Promise<AvatarApiResult> {
-  const url = resolveAvatarUrl(baseUrl, userId, avatarId);
+  const sanitizedUserId = normalizeUserIdentifier(userId) ?? userId;
+  const url = resolveAvatarUrl(baseUrl, sanitizedUserId, avatarId);
   const effectiveSessionId = normalizeSessionIdentifier(
     sessionId ?? backendSession.headers['X-Session-Id'],
   );
@@ -1231,8 +1294,8 @@ async function updateAvatarMeasurementsRequest({
     Accept: 'application/json',
   };
 
-  if (userId && !('X-User-Id' in headers)) {
-    headers['X-User-Id'] = userId;
+  if (sanitizedUserId && !('X-User-Id' in headers)) {
+    headers['X-User-Id'] = sanitizedUserId;
   }
 
   if (effectiveSessionId && !('X-Session-Id' in headers)) {
@@ -1268,11 +1331,13 @@ export async function fetchAvatarByIdRequest({
   baseUrl = DEFAULT_AVATAR_API_BASE_URL,
 }: FetchAvatarByIdRequest): Promise<BackendAvatarData> {
 
-  if (!userId) {
+  const sanitizedUserId = normalizeUserIdentifier(userId) ?? userId;
+
+  if (!sanitizedUserId) {
     throw new AvatarApiError('Missing user identifier for avatar request');
   }
 
-  const url = resolveAvatarUrl(baseUrl, userId, avatarId);
+  const url = resolveAvatarUrl(baseUrl, sanitizedUserId, avatarId);
 
   const headers: Record<string, string> = {
     ...backendSession.headers,
@@ -1283,8 +1348,8 @@ export async function fetchAvatarByIdRequest({
     headers['Content-Type'] = 'application/json';
   }
 
-  if (userId && !('X-User-Id' in headers)) {
-    headers['X-User-Id'] = userId;
+  if (sanitizedUserId && !('X-User-Id' in headers)) {
+    headers['X-User-Id'] = sanitizedUserId;
   }
   
   const response = await fetch(url, {
