@@ -46,7 +46,7 @@ const athleticLevelLabels = ['low', 'medium', 'high'] as const
 export default function QuickMode() {
   const navigate = useNavigate()
   const { updateAvatarMeasurements } = useAvatarApi()
-  const { avatars, maxAvatars, updateAvatars } = useAvatars()
+  const { avatars, refreshAvatars } = useAvatars()
   const { currentAvatar, loadAvatarFromBackend } = useAvatarConfiguration()
 
   const [selectedBodyShape, setSelectedBodyShape] = useState(3)
@@ -463,29 +463,11 @@ export default function QuickMode() {
       }
 
       if (persistedAvatarId) {
-        updateAvatars(prev => {
-          const next = [...prev]
-          const existingIndex = next.findIndex(avatar => avatar.id === persistedAvatarId)
-          const avatarNameToPersist = backendAvatar?.name ?? payload.name
-          const createdAtValue =
-            existingIndex >= 0
-              ? next[existingIndex].createdAt
-              : backendAvatar?.createdAt ?? new Date().toISOString()
-          const record = {
-            id: persistedAvatarId,
-            name: avatarNameToPersist,
-            createdAt: createdAtValue,
-          }
-          if (existingIndex >= 0) {
-            next[existingIndex] = { ...record }
-            return next
-          }
-          if (next.length >= maxAvatars) {
-            return next
-          }
-          next.push(record)
-          return next
-        })
+        try {
+          await refreshAvatars()
+        } catch (refreshError) {
+          console.error('Failed to refresh avatars after saving measurements', refreshError)
+        }
       }
 
       navigate('/unreal-measurements')
@@ -511,13 +493,13 @@ export default function QuickMode() {
     effectiveAvatarId,
     loadAvatarFromBackend,
     lowHipCircumference,
-    maxAvatars,
     navigate,
     selectedBodyShape,
     storedMetadata?.ageRange,
     storedMetadata?.avatarId,
     storedMetadata?.avatarName,
     storedMetadata?.name,
+    refreshAvatars,
     storedMetadata?.basicMeasurements,
     storedMetadata?.bodyMeasurements,
     storedMetadata?.creationMode,
@@ -527,7 +509,6 @@ export default function QuickMode() {
     storedMetadata?.source,
     storedMorphTargets,
     updateAvatarMeasurements,
-    updateAvatars,
     waistCircumference,
     isSubmitting,
   ])

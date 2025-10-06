@@ -6,33 +6,54 @@ import deleteIcon from '../assets/delete-avatar.svg'
 import styles from './LoggedInPage.module.scss'
 import { useAvatarLoader } from '../hooks/useAvatarLoader'
 import { LAST_LOADED_AVATAR_STORAGE_KEY, useAvatarApi } from '../services/avatarApi'
-
-interface Avatar {
-  id: number
-  name: string
-  isSelected?: boolean
-}
+import { useAvatars } from '../context/AvatarContext'
 
 export default function LoggedInPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { loadAvatar, loaderState } = useAvatarLoader()
   const { fetchAvatarById } = useAvatarApi()
+  const { avatars, refreshAvatars, maxAvatars } = useAvatars()
   const locationState = location.state as { nextRoute?: string } | null
 
-  const [avatars, setAvatars] = useState<Avatar[]>([
-    { id: 1, name: 'Avatar Name 1' },
-    { id: 2, name: 'Avatar Name 2' },
-    { id: 3, name: 'Avatar Name 3' },
-  ])
-  const [selectedAvatarId, setSelectedAvatarId] = useState<number | null>(null)
-  const [loadedAvatarId, setLoadedAvatarId] = useState<number | null>(null)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<null | number>(null)
-  const [confirmPos, setConfirmPos] = useState<{ top: number; height: number } | null>(null)
+  const [selectedAvatarId, setSelectedAvatarId] = useState<string | null>(null)
+  const [loadedAvatarId, setLoadedAvatarId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null
+    return window.sessionStorage.getItem(LAST_LOADED_AVATAR_STORAGE_KEY)
+  })
   const [fetchError, setFetchError] = useState<string | null>(null)
   const loadButtonRef = useRef<HTMLButtonElement | null>(null)
 
-  const handleSelect = (id: number) => setSelectedAvatarId(id)
+  useEffect(() => {
+    if (avatars.length > 0) {
+      return
+    }
+
+    refreshAvatars().catch(error => {
+      console.error('Failed to refresh avatars', error)
+    })
+  }, [avatars.length, refreshAvatars])
+
+  useEffect(() => {
+    if (avatars.length === 0) {
+      setSelectedAvatarId(null)
+      return
+    }
+
+    setSelectedAvatarId(prev => {
+      if (prev && avatars.some(avatar => avatar.id === prev)) {
+        return prev
+      }
+
+      if (loadedAvatarId && avatars.some(avatar => avatar.id === loadedAvatarId)) {
+        return loadedAvatarId
+      }
+
+      return avatars[0]?.id ?? null
+    })
+  }, [avatars, loadedAvatarId])
+
+  const handleSelect = (id: string) => setSelectedAvatarId(id)
   const handleLoad = useCallback(async () => {
     if (selectedAvatarId === null || loaderState.isLoading) return
 
@@ -60,58 +81,6 @@ export default function LoggedInPage() {
       console.error('Failed to load avatar', error)
     }
   }, [fetchAvatarById, loadAvatar, loaderState.isLoading, locationState?.nextRoute, navigate, selectedAvatarId])
-    
-  const handleDelete = (id: number) => setShowDeleteConfirm(id)
-
-  const confirmDelete = () => {
-    setAvatars(avatars.filter(a => a.id !== showDeleteConfirm))
-    setAvatars(prevAvatars => {
-      const updatedAvatars = prevAvatars.filter(a => a.id !== showDeleteConfirm)
-      const firstAvatarId = updatedAvatars[0]?.id ?? null
-
-      setSelectedAvatarId(prevSelected => {
-        if (prevSelected === null) return null
-        if (prevSelected === showDeleteConfirm) return firstAvatarId
-        if (!updatedAvatars.some(a => a.id === prevSelected)) return firstAvatarId
-        return prevSelected
-      })
-
-      setLoadedAvatarId(prevLoaded => {
-        if (prevLoaded === null) return null
-        if (prevLoaded === showDeleteConfirm) return firstAvatarId
-        if (!updatedAvatars.some(a => a.id === prevLoaded)) return firstAvatarId
-        return prevLoaded
-      })
-
-      return updatedAvatars
-    })
-    setShowDeleteConfirm(null)
-    setConfirmPos(null)
-  }
-
-  const positionConfirm = useCallback(() => {
-    if (loadButtonRef.current) {
-      const rect = loadButtonRef.current.getBoundingClientRect()
-      setConfirmPos({
-        top: rect.top,
-        height: rect.height
-      })
-    }
-  }, [])
-
-  useEffect(() => {
-    if (showDeleteConfirm) {
-      positionConfirm()
-      window.addEventListener('resize', positionConfirm)
-      window.addEventListener('scroll', positionConfirm)
-      return () => {
-        window.removeEventListener('resize', positionConfirm)
-        window.removeEventListener('scroll', positionConfirm)
-      }
-    } else {
-      setConfirmPos(null)
-    }
-  }, [showDeleteConfirm, positionConfirm])
 
   const loaderMessage = useMemo(() => {
     if (!loaderState.isLoading) {
@@ -140,7 +109,7 @@ export default function LoggedInPage() {
         title="Welcome back!"
         variant="dark"
         onExit={() => navigate('/')}
-        rightContent={<span className={styles.count}>{avatars.length}/5</span>}
+        rightContent={<span className={styles.count}>{avatars.length}/{maxAvatars}</span>}
       />
 
       <ul className={styles.avatarList}>
@@ -156,7 +125,9 @@ export default function LoggedInPage() {
             <button
               className={styles.iconButton}
               aria-label="remove avatar"
-              onClick={() => handleDelete(avatar.id)}
+              type="button"
+              disabled
+              title="Deleting avatars will be available soon"
             >
               <img src={deleteIcon} alt="Delete Avatar" />
             </button>
@@ -190,32 +161,14 @@ export default function LoggedInPage() {
           loaderState.isLoading
         }
         topButtonType="primary"
-        backText={showDeleteConfirm ? 'Cancel' : 'Back'}
-        actionText={showDeleteConfirm ? 'Delete Avatar' : 'Create New Avatar'}
-        onBack={() => {
-          if (showDeleteConfirm) {
-            setShowDeleteConfirm(null)
-            setConfirmPos(null)
-          } else {
-            navigate('/login')
-          }
-        }}
-        onAction={() => showDeleteConfirm ? confirmDelete() : navigate('/avatar-info')}
-        actionDisabled={false}
+        backText="Back"
+        actionText="Create New Avatar"
+        onBack={() => navigate('/login')}
+        onAction={() => navigate('/avatar-info')}
+        actionDisabled={avatars.length >= maxAvatars}
         actionType="black"
         loadButtonRef={loadButtonRef}
       />
-
-      {showDeleteConfirm && confirmPos && (
-        <div
-          className={styles.deleteConfirmOverlay}
-          style={{ top: confirmPos.top, height: confirmPos.height }}
-        >
-          <div className={styles.deleteConfirmRow}>
-            Are you sure?
-          </div>
-        </div>
-      )}
     </div>
   )
 }

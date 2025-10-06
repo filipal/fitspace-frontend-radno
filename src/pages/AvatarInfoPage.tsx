@@ -37,7 +37,7 @@ export default function AvatarInfoPage() {
   const navigate = useNavigate()
   const { createAvatar } = useAvatarApi()
   const { loadAvatarFromBackend } = useAvatarConfiguration()
-  const { avatars, maxAvatars, updateAvatars, setPendingAvatarName } = useAvatars()
+  const { avatars, maxAvatars, refreshAvatars, setPendingAvatarName } = useAvatars()
   const age = usePicker(1, ages)
   const height = usePicker(2, heights)
   const weight = usePicker(2, weights)
@@ -301,27 +301,11 @@ export default function AvatarInfoPage() {
                   }
 
                   if (resolvedAvatarId) {
-                    updateAvatars(prev => {
-                      const next = [...prev]
-                      const existingIndex = next.findIndex(avatar => avatar.id === resolvedAvatarId)
-                      const record = {
-                        id: resolvedAvatarId,
-                        name: backendAvatar?.name ?? payload.name,
-                        createdAt:
-                          existingIndex >= 0
-                            ? next[existingIndex].createdAt
-                            : backendAvatar?.createdAt ?? new Date().toISOString(),
-                      }
-                      if (existingIndex >= 0) {
-                        next[existingIndex] = { ...next[existingIndex], ...record }
-                        return next
-                      }
-                      if (next.length >= maxAvatars) {
-                        return next
-                      }
-                      next.push(record)
-                      return next
-                    })
+                    try {
+                      await refreshAvatars()
+                    } catch (refreshError) {
+                      console.error('Failed to refresh avatars after creation', refreshError)
+                    }
                   }
 
                   if (backendAvatar) {
