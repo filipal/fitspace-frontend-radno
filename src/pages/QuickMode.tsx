@@ -91,63 +91,74 @@ export default function QuickMode() {
     }
   }, [])
 
+  type LegacyStoredMorphEntry =
+    | BackendAvatarMorphTarget
+    | AvatarMorphPayload
+    | Record<string, unknown>
+    | null
+    | undefined
+
   const storedMorphTargets = useMemo(() => {
     const source = storedMetadata?.morphTargets
     if (!source) {
       return {}
     }
 
+    const toFiniteNumber = (value: unknown): number | undefined => {
+      const numericValue = Number(value)
+      return Number.isFinite(numericValue) ? numericValue : undefined
+    }
+
+    const normalizeLegacyEntry = (
+      entry: LegacyStoredMorphEntry,
+    ): BackendAvatarMorphTarget | null => {
+      if (!entry || typeof entry !== 'object') {
+        return null
+      }
+
+      const candidate = entry as Record<string, unknown>
+
+      if (typeof candidate.name === 'string') {
+        const numericValue =
+          toFiniteNumber(candidate.value) ?? toFiniteNumber(candidate.sliderValue)
+        if (numericValue !== undefined) {
+          return { name: candidate.name, value: numericValue }
+        }
+        return null
+      }
+
+      if (typeof candidate.backendKey === 'string') {
+        const numericValue =
+          toFiniteNumber(candidate.sliderValue) ??
+          toFiniteNumber(candidate.value) ??
+          toFiniteNumber(candidate.unrealValue) ??
+          toFiniteNumber(candidate.defaultValue)
+        if (numericValue !== undefined) {
+          return { name: candidate.backendKey, value: numericValue }
+        }
+        return null
+      }
+
+      if (typeof candidate.id === 'string') {
+        const numericValue =
+          toFiniteNumber(candidate.sliderValue) ??
+          toFiniteNumber(candidate.value) ??
+          toFiniteNumber(candidate.unrealValue) ??
+          toFiniteNumber(candidate.defaultValue)
+        if (numericValue !== undefined) {
+          return { name: candidate.id, value: numericValue }
+        }
+      }
+
+      return null
+    }
+
     if (Array.isArray(source)) {
       const normalizedTargets = source.reduce<BackendAvatarMorphTarget[]>((acc, entry) => {
-        if (!entry || typeof entry !== 'object') {
-          return acc
+        const normalized = normalizeLegacyEntry(entry as LegacyStoredMorphEntry)
+        if (normalized) {
+          acc.push(normalized)
         }
-
-        if ('name' in entry && typeof entry.name === 'string') {
-          const numericValue = Number(
-            'value' in entry ? entry.value : ('sliderValue' in entry ? entry.sliderValue : undefined),
-          )
-          if (Number.isFinite(numericValue)) {
-            acc.push({ name: entry.name, value: numericValue })
-          }
-          return acc
-        }
-
-        if ('backendKey' in entry && typeof entry.backendKey === 'string') {
-          const numericValue = Number(
-            'sliderValue' in entry
-              ? entry.sliderValue
-              : 'value' in entry
-                ? entry.value
-                : 'unrealValue' in entry
-                  ? entry.unrealValue
-                  : 'defaultValue' in entry
-                    ? entry.defaultValue
-                    : undefined,
-          )
-          if (Number.isFinite(numericValue)) {
-            acc.push({ name: entry.backendKey, value: numericValue })
-          }
-          return acc
-        }
-
-        if ('id' in entry && typeof entry.id === 'string') {
-          const numericValue = Number(
-            'sliderValue' in entry
-              ? entry.sliderValue
-              : 'value' in entry
-                ? entry.value
-                : 'unrealValue' in entry
-                  ? entry.unrealValue
-                  : 'defaultValue' in entry
-                    ? entry.defaultValue
-                    : undefined,
-          )
-          if (Number.isFinite(numericValue)) {
-            acc.push({ name: entry.id, value: numericValue })
-          }
-        }
-
         return acc
       }, [])
 
@@ -162,8 +173,8 @@ export default function QuickMode() {
       if (!key) {
         return acc
       }
-      const numericValue = Number(value)
-      if (Number.isFinite(numericValue)) {
+      const numericValue = toFiniteNumber(value)
+      if (numericValue !== undefined) {
         acc[key] = numericValue
       }
       return acc
