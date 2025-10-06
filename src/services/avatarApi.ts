@@ -286,7 +286,13 @@ async function requestBackendSession({
       Accept: 'application/json',
       ...(AVATAR_API_KEY ? { 'x-api-key': AVATAR_API_KEY } : {}),
     },
-    body: JSON.stringify({ userId, email, sessionId, refreshToken }),
+    body: JSON.stringify({
+      userId,
+      email,
+      sessionId,
+      refreshToken,
+      ...(AVATAR_API_KEY ? { apiKey: AVATAR_API_KEY } : {}),
+    }),
   });
 
   if (!response.ok) {
