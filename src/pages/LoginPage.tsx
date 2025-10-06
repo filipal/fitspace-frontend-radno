@@ -1,13 +1,34 @@
-import { useAuth } from "react-oidc-context"
+import { useCallback } from 'react'
+import { useLocation, type Location } from 'react-router-dom'
+import { useAuth } from 'react-oidc-context'
 import logo from '../assets/fitspace-logo-gradient-nobkg.svg'
 import exitIcon from '../assets/exit.svg'
 import googleLogo from '../assets/google-logo.svg'
 import appleLogo from '../assets/apple-logo.svg'
 import facebookLogo from '../assets/facebook-logo.svg'
 import styles from './LoginPage.module.scss'
+import { DEFAULT_POST_LOGIN_ROUTE, POST_LOGIN_REDIRECT_KEY } from '../config/authRedirect'
 
 export default function LoginPage() {
   const auth = useAuth()
+  const location = useLocation()
+
+  const handleSignIn = useCallback(() => {
+    const state = location.state as { from?: Location } | undefined
+    const redirectTarget = state?.from
+      ? `${state.from.pathname ?? ''}${state.from.search ?? ''}${state.from.hash ?? ''}`
+      : DEFAULT_POST_LOGIN_ROUTE
+
+    sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, redirectTarget)
+
+    if (auth.signinRedirect) {
+      auth
+        .signinRedirect({ state: redirectTarget })
+        .catch(e => console.error('signinRedirect failed', e))
+    } else {
+      console.warn('signinRedirect not available', auth)
+    }
+  }, [auth, location])
   // AuthProvider handles the OIDC redirect callback via onSigninCallback in src/main.tsx.
 
   return (
@@ -36,24 +57,18 @@ export default function LoginPage() {
             </span>
 
             <div className={styles.loginForm}>
-              <button type="button" className={styles.socialButton} onClick={() =>
-                (auth.signinRedirect ? auth.signinRedirect().catch(e => console.error('signinRedirect failed', e)) : console.warn('signinRedirect not available', auth))
-              }>
+              <button type="button" className={styles.socialButton} onClick={handleSignIn}>
                 <img src={googleLogo} alt="Google" className={styles.socialIcon} />
                 <span className={styles.socialLabel}>Log in with Google</span>
               </button>
-              <button type="button" className={styles.socialButton} onClick={() =>
-                (auth.signinRedirect ? auth.signinRedirect().catch(e => console.error('signinRedirect failed', e)) : console.warn('signinRedirect not available', auth))
-              }>
+              <button type="button" className={styles.socialButton} onClick={handleSignIn}>
                 <img src={appleLogo} alt="Apple" className={styles.socialIconApple} />
                 <span className={styles.socialLabel}>Log in with Apple</span>
               </button>
               <button
                 type="button"
                 className={`${styles.socialButton} ${styles.socialButtonLast}`}
-                onClick={() =>
-                  (auth.signinRedirect ? auth.signinRedirect().catch(e => console.error('signinRedirect failed', e)) : console.warn('signinRedirect not available', auth))
-                }
+                onClick={handleSignIn}
               >
                 <img src={facebookLogo} alt="Facebook" className={styles.socialIcon} />
                 <span className={styles.socialLabel}>Log in with Facebook</span>

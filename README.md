@@ -97,11 +97,10 @@ U korijenskom direktoriju projekta izvedi sljedeće korake redom:
 python3 -m venv venv 
 2. aktiviraj ga prije daljnjeg rada
 source venv/bin/activate 
-3. nstaliraj ovisnosti, uključujući psycopg2-binary
+3. instaliraj ovisnosti, uključujući psycopg2-binary
 pip install -r requirements.txt 
-1. postavi varijablu okoline na svoju PostgreSQL instancu
+4. postavi varijablu okoline na svoju PostgreSQL instancu
 export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/fitspace"
-
 5. primijeni shemu kako bi se kreirale potrebne tablice i ograničenja.
 psql "$DATABASE_URL" -f db/schema.sql 
 6. pripremi Flask CLI da zna koju aplikaciju treba učitati

@@ -4,6 +4,7 @@ import StartPage from './pages/StartPage.tsx'
 import LoginPage from './pages/LoginPage'
 import LoggedInPage from './pages/LoggedInPage.tsx'
 import AvatarInfoPage from './pages/AvatarInfoPage'
+import AuthCallback from './pages/AuthCallback'
 import UseOfData from './pages/UseOfData'
 import QuickMode from './pages/QuickMode'
 import BodyScanInfo from './pages/BodyScanInfo.tsx'
@@ -70,6 +71,7 @@ export default function App() {
                 <Routes>
                   <Route path="/" element={<StartPage />} />
                   <Route path="/login" element={<LoginPage />} />
+                  <Route path="/auth/callback" element={<AuthCallback />} />
                   <Route path="/avatar-info" element={<AvatarInfoPage />} />
                   <Route
                     path="/logged-in"

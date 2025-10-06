@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from 'react-oidc-context'
 import oidcConfig from './oidcConfig'
+import { DEFAULT_POST_LOGIN_ROUTE, POST_LOGIN_REDIRECT_KEY } from './config/authRedirect'
 import './index.css'
 import App from './App.tsx'
 
@@ -38,9 +39,51 @@ if (import.meta.env.DEV && 'serviceWorker' in navigator) {
 })()
 
 
-const onSigninCallback = () => {
+const extractRedirectFromState = (state: unknown): string | null => {
+  if (!state) {
+    return null
+  }
+
+  if (typeof state === 'string') {
+    return state
+  }
+
+  if (typeof state === 'object') {
+    const maybeReturnUrl = (state as { returnUrl?: unknown }).returnUrl
+    if (typeof maybeReturnUrl === 'string') {
+      return maybeReturnUrl
+    }
+
+    const maybePath = (state as { path?: unknown }).path
+    if (typeof maybePath === 'string') {
+      return maybePath
+    }
+  }
+
+  return null
+}
+
+const consumeStoredRedirect = () => {
+  try {
+    const stored = sessionStorage.getItem(POST_LOGIN_REDIRECT_KEY)
+    if (stored) {
+      sessionStorage.removeItem(POST_LOGIN_REDIRECT_KEY)
+      return stored
+    }
+  } catch (error) {
+    console.warn('Unable to access sessionStorage for post-login redirect', error)
+  }
+
+  return null
+}
+
+const onSigninCallback = (user?: unknown) => {
+  const redirectFromState = extractRedirectFromState((user as { state?: unknown } | null | undefined)?.state)
+  const storedRedirect = consumeStoredRedirect()
+  const target = redirectFromState || storedRedirect || DEFAULT_POST_LOGIN_ROUTE
+
   window.history.replaceState({}, document.title, window.location.pathname)
-  window.location.replace('/logged-in')
+  window.location.replace(target)
 }
 
 createRoot(document.getElementById('root')!).render(
