@@ -7,11 +7,16 @@ import cameraIcon from '../assets/camera.png'
 import quickIcon from '../assets/quick.png'
 import Header from '../components/Header/Header'
 import styles from './AvatarInfoPage.module.scss'
-import { useAvatarApi, LAST_CREATED_AVATAR_METADATA_STORAGE_KEY, LAST_LOADED_AVATAR_STORAGE_KEY } from '../services/avatarApi'
+import {
+  useAvatarApi,
+  LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
+  LAST_LOADED_AVATAR_STORAGE_KEY,
+  buildBackendMorphPayload,
+} from '../services/avatarApi'
 import type { AvatarPayload } from '../services/avatarApi'
 import { useAvatars } from '../context/AvatarContext'
 import { useAvatarConfiguration } from '../context/AvatarConfigurationContext'
-import { mapBackendMorphTargetsToRecord } from '../services/avatarTransformationService'
+import type { BackendAvatarMorphTarget } from '../context/AvatarConfigurationContext'
 
 const ages = ['15-19', ...Array.from({ length: 8 }, (_, i) => {
   const start = 20 + i * 10
@@ -212,44 +217,80 @@ export default function AvatarInfoPage() {
                 try {
                   const trimmedName = name.trim()
                   const fallbackName = trimmedName || `Avatar ${avatars.length + 1}`
-                  const payload: AvatarPayload = {
+                  const basePayload: AvatarPayload = {
                     name: fallbackName,
                     gender,
                     ageRange,
-                    creationMode: 'manual' as const,
-                    quickMode: true,    
+                    creationMode: 'preset' as const,
+                    quickMode: true,
                     basicMeasurements: {
                       height: heightValue,
                       weight: weightValue,
-                      creationMode: 'manual' as const,
+                      creationMode: 'preset' as const,
                     },
                     bodyMeasurements: {},
                     morphTargets: {},
                     quickModeSettings: null,
                   }
 
+                  const morphs = buildBackendMorphPayload(basePayload)
+
+                  const payload: AvatarPayload = {
+                    ...basePayload,
+                    ...(morphs ? { morphs } : {}),
+                  }
+
+                  if (morphs) {
+                    delete (payload as { morphTargets?: Record<string, number> }).morphTargets
+                  }
+
                   const result = await createAvatar(payload)
 
                   const backendAvatar = result.backendAvatar
-                  const backendMorphTargets = backendAvatar
-                    ? mapBackendMorphTargetsToRecord(backendAvatar.morphTargets)
-                    : undefined
                   const resolvedAvatarId = backendAvatar?.id ?? result.avatarId
 
                   if (typeof window !== 'undefined' && resolvedAvatarId) {
                     window.sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, resolvedAvatarId)
+                    const storageMorphTargets = backendAvatar?.morphTargets
+                      ?? (Array.isArray(morphs)
+                        ? morphs
+                            .map((morph): BackendAvatarMorphTarget | null => {
+                              if (!morph) return null
+                              const key = morph.backendKey ?? morph.id
+                              const value = Number(morph.sliderValue)
+                              if (!key || !Number.isFinite(value)) {
+                                return null
+                              }
+                              return { name: key, value }
+                            })
+                            .filter((entry): entry is BackendAvatarMorphTarget => Boolean(entry))
+                        : undefined)
+                      ?? (basePayload.morphTargets
+                        ? Object.entries(basePayload.morphTargets).reduce<BackendAvatarMorphTarget[]>((acc, [key, value]) => {
+                            if (!key) {
+                              return acc
+                            }
+                            const numericValue = Number(value)
+                            if (Number.isFinite(numericValue)) {
+                              acc.push({ name: key, value: numericValue })
+                            }
+                            return acc
+                          }, [])
+                        : undefined)
+
                     window.sessionStorage.setItem(
                       LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
                       JSON.stringify({
                         avatarId: resolvedAvatarId,
-                        avatarName: backendAvatar?.name ?? fallbackName,
+                        name: backendAvatar?.name ?? payload.name,
+                        avatarName: backendAvatar?.name ?? payload.name,
                         gender: backendAvatar?.gender ?? gender,
                         ageRange: backendAvatar?.ageRange ?? ageRange,
                         basicMeasurements:
                           backendAvatar?.basicMeasurements ?? payload.basicMeasurements,
                         bodyMeasurements:
                           backendAvatar?.bodyMeasurements ?? payload.bodyMeasurements,
-                        morphTargets: backendMorphTargets ?? payload.morphTargets,
+                        morphTargets: storageMorphTargets ?? null,
                         quickMode: backendAvatar?.quickMode ?? true,
                         creationMode: backendAvatar?.creationMode ?? payload.creationMode,
                         quickModeSettings:
@@ -265,7 +306,7 @@ export default function AvatarInfoPage() {
                       const existingIndex = next.findIndex(avatar => avatar.id === resolvedAvatarId)
                       const record = {
                         id: resolvedAvatarId,
-                        name: backendAvatar?.name ?? fallbackName,
+                        name: backendAvatar?.name ?? payload.name,
                         createdAt:
                           existingIndex >= 0
                             ? next[existingIndex].createdAt

@@ -8,13 +8,13 @@ import { convertSliderValueToUnrealValue } from '../services/avatarCommandServic
 import {
   convertMorphValueToBackendValue,
   getBackendKeyForMorphId,
-  mapBackendMorphTargetsToRecord,
 } from '../services/avatarTransformationService'
 import { morphAttributes } from '../data/morphAttributes'
 import { useAvatarLoader } from '../hooks/useAvatarLoader'
 import {
   LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
   LAST_LOADED_AVATAR_STORAGE_KEY,
+  buildBackendMorphPayload,
   type AvatarPayload,
   useAvatarApi,
 } from '../services/avatarApi'
@@ -281,11 +281,11 @@ export default function UnrealMeasurements() {
         return acc
       }, {})
 
-      const payload: AvatarPayload = {
+      const basePayload: AvatarPayload = {
         name: currentAvatar.avatarName ?? 'Avatar',
         gender: currentAvatar.gender,
         ageRange: currentAvatar.ageRange ?? '20-29',
-        creationMode: currentAvatar.creationMode ?? 'manual',
+        creationMode: 'manual',
         quickMode: currentAvatar.quickMode ?? true,
         source: currentAvatar.source ?? 'web',
         ...(currentAvatar.basicMeasurements
@@ -307,21 +307,57 @@ export default function UnrealMeasurements() {
         morphTargets,
       }
 
+      const morphs = buildBackendMorphPayload({ ...basePayload })
+
+      const payload: AvatarPayload = {
+        ...basePayload,
+        ...(morphs ? { morphs } : {}),
+      }
+
+      if (morphs) {
+        delete (payload as { morphTargets?: Record<string, number> }).morphTargets
+      }
+
       const result = await updateAvatarMeasurements(activeAvatarId, payload)
 
       const backendAvatar = result.backendAvatar
-      const backendMorphTargets = backendAvatar
-        ? mapBackendMorphTargetsToRecord(backendAvatar.morphTargets)
-        : undefined
       const persistedAvatarId =
         backendAvatar?.id ?? result.avatarId ?? String(activeAvatarId)
 
       if (typeof window !== 'undefined') {
         sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, persistedAvatarId)
+        const storageMorphTargets = backendAvatar?.morphTargets
+          ?? (Array.isArray(morphs)
+            ? morphs
+                .map((morph): { name: string; value: number } | null => {
+                  if (!morph) return null
+                  const key = morph.backendKey ?? morph.id
+                  const value = Number(morph.sliderValue)
+                  if (!key || !Number.isFinite(value)) {
+                    return null
+                  }
+                  return { name: key, value }
+                })
+                .filter((entry): entry is { name: string; value: number } => Boolean(entry))
+            : undefined)
+          ?? (basePayload.morphTargets
+            ? Object.entries(basePayload.morphTargets).reduce<{ name: string; value: number }[]>((acc, [key, value]) => {
+                if (!key) {
+                  return acc
+                }
+                const numericValue = Number(value)
+                if (Number.isFinite(numericValue)) {
+                  acc.push({ name: key, value: numericValue })
+                }
+                return acc
+              }, [])
+            : undefined)
+
         sessionStorage.setItem(
           LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
           JSON.stringify({
             avatarId: persistedAvatarId,
+            name: backendAvatar?.name ?? payload.name,
             avatarName: backendAvatar?.name ?? payload.name,
             gender: backendAvatar?.gender ?? payload.gender,
             ageRange: backendAvatar?.ageRange ?? payload.ageRange,
@@ -329,7 +365,7 @@ export default function UnrealMeasurements() {
               backendAvatar?.basicMeasurements ?? payload.basicMeasurements,
             bodyMeasurements:
               backendAvatar?.bodyMeasurements ?? payload.bodyMeasurements,
-            morphTargets: backendMorphTargets ?? payload.morphTargets,
+            morphTargets: storageMorphTargets ?? null,
             quickMode: backendAvatar?.quickMode ?? payload.quickMode,
             creationMode: backendAvatar?.creationMode ?? payload.creationMode,
             quickModeSettings:

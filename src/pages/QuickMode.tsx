@@ -16,7 +16,9 @@ import styles from './QuickMode.module.scss'
 import {
   LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
   LAST_LOADED_AVATAR_STORAGE_KEY,
+  buildBackendMorphPayload,
   useAvatarApi,
+  type AvatarMorphPayload,
   type QuickModeSettingsPayload,
   type AvatarPayload,
 } from '../services/avatarApi'
@@ -26,6 +28,7 @@ import {
   type BasicMeasurements,
   type AvatarCreationMode,
   type QuickModeSettings,
+  type BackendAvatarMorphTarget,
 } from '../context/AvatarConfigurationContext'
 import { mapBackendMorphTargetsToRecord } from '../services/avatarTransformationService'
 
@@ -61,12 +64,15 @@ export default function QuickMode() {
 
   type StoredAvatarMetadata = {
     avatarId?: string
+    name?: string
     avatarName?: string
     gender?: 'male' | 'female'
     ageRange?: string
     basicMeasurements?: Partial<BasicMeasurements>
     bodyMeasurements?: Record<string, number>
-    morphTargets?: Record<string, number>
+    morphTargets?:
+      | Record<string, number>
+      | (BackendAvatarMorphTarget | AvatarMorphPayload | null | undefined)[]
     quickMode?: boolean
     creationMode?: AvatarCreationMode | null
     quickModeSettings?: (QuickModeSettings | QuickModeSettingsPayload) | null
@@ -84,6 +90,85 @@ export default function QuickMode() {
       return null
     }
   }, [])
+
+  const storedMorphTargets = useMemo(() => {
+    const source = storedMetadata?.morphTargets
+    if (!source) {
+      return {}
+    }
+
+    if (Array.isArray(source)) {
+      const normalizedTargets = source.reduce<BackendAvatarMorphTarget[]>((acc, entry) => {
+        if (!entry || typeof entry !== 'object') {
+          return acc
+        }
+
+        if ('name' in entry && typeof entry.name === 'string') {
+          const numericValue = Number(
+            'value' in entry ? entry.value : ('sliderValue' in entry ? entry.sliderValue : undefined),
+          )
+          if (Number.isFinite(numericValue)) {
+            acc.push({ name: entry.name, value: numericValue })
+          }
+          return acc
+        }
+
+        if ('backendKey' in entry && typeof entry.backendKey === 'string') {
+          const numericValue = Number(
+            'sliderValue' in entry
+              ? entry.sliderValue
+              : 'value' in entry
+                ? entry.value
+                : 'unrealValue' in entry
+                  ? entry.unrealValue
+                  : 'defaultValue' in entry
+                    ? entry.defaultValue
+                    : undefined,
+          )
+          if (Number.isFinite(numericValue)) {
+            acc.push({ name: entry.backendKey, value: numericValue })
+          }
+          return acc
+        }
+
+        if ('id' in entry && typeof entry.id === 'string') {
+          const numericValue = Number(
+            'sliderValue' in entry
+              ? entry.sliderValue
+              : 'value' in entry
+                ? entry.value
+                : 'unrealValue' in entry
+                  ? entry.unrealValue
+                  : 'defaultValue' in entry
+                    ? entry.defaultValue
+                    : undefined,
+          )
+          if (Number.isFinite(numericValue)) {
+            acc.push({ name: entry.id, value: numericValue })
+          }
+        }
+
+        return acc
+      }, [])
+
+      if (normalizedTargets.length === 0) {
+        return {}
+      }
+
+      return mapBackendMorphTargetsToRecord(normalizedTargets)
+    }
+
+    return Object.entries(source).reduce<Record<string, number>>((acc, [key, value]) => {
+      if (!key) {
+        return acc
+      }
+      const numericValue = Number(value)
+      if (Number.isFinite(numericValue)) {
+        acc[key] = numericValue
+      }
+      return acc
+    }, {})
+  }, [storedMetadata?.morphTargets])
 
   const effectiveAvatarId = useMemo(() => {
     return (
@@ -189,7 +274,7 @@ export default function QuickMode() {
     const athleticMorphValue = Math.round((athleticLevel / 2) * 100)
 
     const morphTargets = {
-      ...(storedMetadata?.morphTargets ?? {}),
+      ...storedMorphTargets,
       quickModeBodyShape: bodyShapeMorphValue,
       quickModeAthleticLevel: athleticMorphValue,
     }
@@ -200,7 +285,8 @@ export default function QuickMode() {
       : undefined
     const athleticLevelKey = athleticLevelLabels[athleticLevel] ?? undefined
 
-    const avatarName = storedMetadata?.avatarName
+    const avatarName = storedMetadata?.name
+      ?? storedMetadata?.avatarName
       ?? (effectiveAvatarId ? avatars.find(avatar => avatar.id === effectiveAvatarId)?.name : undefined)
       ?? currentAvatar?.avatarName
       ?? 'Avatar'
@@ -208,7 +294,10 @@ export default function QuickMode() {
     const gender = storedMetadata?.gender ?? currentAvatar?.gender ?? 'male'
     const ageRange = storedMetadata?.ageRange ?? currentAvatar?.ageRange ?? '20-29'
     const creationMode: AvatarCreationMode =
-      storedMetadata?.creationMode ?? currentAvatar?.creationMode ?? 'manual'
+      storedMetadata?.creationMode ??
+      (currentAvatar?.creationMode && currentAvatar.creationMode !== 'manual'
+        ? currentAvatar.creationMode
+        : 'preset')
 
     const baseBasicMeasurements =
       storedMetadata?.basicMeasurements ??
@@ -263,7 +352,7 @@ export default function QuickMode() {
         }
       : undefined
 
-    const payload: AvatarPayload = {
+    const basePayload: AvatarPayload = {
       name: avatarName,
       gender,
       ageRange,
@@ -276,15 +365,23 @@ export default function QuickMode() {
       ...(quickModeSettings ? { quickModeSettings } : {}),
     }
 
+    const morphs = buildBackendMorphPayload(basePayload)
+
+    const payload: AvatarPayload = {
+      ...basePayload,
+      ...(morphs ? { morphs } : {}),
+    }
+
+    if (morphs) {
+      delete (payload as { morphTargets?: Record<string, number> }).morphTargets
+    }
+
     setIsSubmitting(true)
     setError(null)
     try {
       const result = await updateAvatarMeasurements(effectiveAvatarId, payload)
 
       const backendAvatar = result.backendAvatar
-      const backendMorphTargets = backendAvatar
-        ? mapBackendMorphTargetsToRecord(backendAvatar.morphTargets)
-        : undefined
 
       const persistedAvatarId =
         backendAvatar?.id ?? result.avatarId ?? effectiveAvatarId
@@ -297,10 +394,38 @@ export default function QuickMode() {
       }
 
       if (typeof window !== 'undefined') {
+        const storageMorphTargets = backendAvatar?.morphTargets
+          ?? (Array.isArray(morphs)
+            ? morphs
+                .map((morph): BackendAvatarMorphTarget | null => {
+                  if (!morph) return null
+                  const key = morph.backendKey ?? morph.id
+                  const value = Number(morph.sliderValue)
+                  if (!key || !Number.isFinite(value)) {
+                    return null
+                  }
+                  return { name: key, value }
+                })
+                .filter((entry): entry is BackendAvatarMorphTarget => Boolean(entry))
+            : undefined)
+          ?? (basePayload.morphTargets
+            ? Object.entries(basePayload.morphTargets).reduce<BackendAvatarMorphTarget[]>((acc, [key, value]) => {
+                if (!key) {
+                  return acc
+                }
+                const numericValue = Number(value)
+                if (Number.isFinite(numericValue)) {
+                  acc.push({ name: key, value: numericValue })
+                }
+                return acc
+              }, [])
+            : undefined)
+
         window.sessionStorage.setItem(
           LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
           JSON.stringify({
             avatarId: persistedAvatarId ?? effectiveAvatarId,
+            name: backendAvatar?.name ?? payload.name,
             avatarName: backendAvatar?.name ?? payload.name,
             gender: backendAvatar?.gender ?? payload.gender,
             ageRange: backendAvatar?.ageRange ?? payload.ageRange,
@@ -308,7 +433,7 @@ export default function QuickMode() {
               backendAvatar?.basicMeasurements ?? payload.basicMeasurements,
             bodyMeasurements:
               backendAvatar?.bodyMeasurements ?? payload.bodyMeasurements,
-            morphTargets: backendMorphTargets ?? payload.morphTargets,
+            morphTargets: storageMorphTargets ?? null,
             quickMode: backendAvatar?.quickMode ?? payload.quickMode,
             creationMode: backendAvatar?.creationMode ?? payload.creationMode,
             quickModeSettings:
@@ -378,10 +503,10 @@ export default function QuickMode() {
     maxAvatars,
     navigate,
     selectedBodyShape,
-    storedMetadata?.morphTargets,
     storedMetadata?.ageRange,
     storedMetadata?.avatarId,
     storedMetadata?.avatarName,
+    storedMetadata?.name,
     storedMetadata?.basicMeasurements,
     storedMetadata?.bodyMeasurements,
     storedMetadata?.creationMode,
@@ -389,6 +514,7 @@ export default function QuickMode() {
     storedMetadata?.quickMode,
     storedMetadata?.quickModeSettings,
     storedMetadata?.source,
+    storedMorphTargets,
     updateAvatarMeasurements,
     updateAvatars,
     waistCircumference,

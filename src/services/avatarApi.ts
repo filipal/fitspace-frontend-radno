@@ -500,7 +500,7 @@ const sanitizeMorphTargetsPayload = (
   return Object.keys(entries).length ? entries : undefined;
 };
 
-const buildBackendMorphPayload = (
+export const buildBackendMorphPayload = (
   payload: AvatarPayload,
 ): AvatarMorphPayload[] | undefined => {
   const result = new Map<string, AvatarMorphPayload>();
