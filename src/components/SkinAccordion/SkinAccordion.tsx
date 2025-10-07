@@ -8,6 +8,8 @@ import { darkenHex, lightenHex } from '../../utils/color'
 import styles from './SkinAccordion.module.scss'
 import { useAvatarApi } from '../../services/avatarApi'
 import { useAvatarConfiguration } from '../../context/AvatarConfigurationContext'
+import { usePixelStreaming } from '../../context/PixelStreamingContext'
+import { useQueuedUnreal } from '../../services/queuedUnreal'
 
 interface SkinAccordionProps {
   defaultRightExpanded?: boolean
@@ -19,9 +21,39 @@ const SKIN_KEYS = {
   variantIndex: 'skinVariant',
 } as const
 
+// Pomoćne funkcije za miješanje boja
+function hexToRgb(hex: string) {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+  if (!m) return { r: 255, g: 255, b: 255 }
+  return { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) }
+}
+function rgbToHex(r: number, g: number, b: number) {
+  const c = (n: number) => n.toString(16).padStart(2, '0')
+  return `#${c(Math.round(r))}${c(Math.round(g))}${c(Math.round(b))}`
+}
+function lerp(a: number, b: number, t: number) {
+  return a + (b - a) * t
+}
+function mixHex(aHex: string, bHex: string, t: number) {
+  const a = hexToRgb(aHex); const b = hexToRgb(bHex)
+  return rgbToHex(lerp(a.r, b.r, t), lerp(a.g, b.g, t), lerp(a.b, b.b, t))
+}
+
 export default function SkinAccordion({ defaultRightExpanded = false }: SkinAccordionProps) {
   const { currentAvatar } = useAvatarConfiguration()
   const { updateAvatarMeasurements } = useAvatarApi()
+
+  const { sendFittingRoomCommand, connectionState } = usePixelStreaming();
+  const simpleState = useMemo<'connected' | 'connecting' | 'disconnected'>(() => {
+    return connectionState === 'connected'
+      ? 'connected'
+      : connectionState === 'connecting'
+        ? 'connecting'
+        : 'disconnected';
+  }, [connectionState])
+
+const sendQueued = useQueuedUnreal(sendFittingRoomCommand, simpleState /*, 50 */)
+
 
   // Paleta baza (svjetlije ←→ tamnije)
   const basePalette = useMemo(
@@ -37,11 +69,6 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
     return Number.isFinite(raw) ? Math.min(Math.max(raw, 0), basePalette.length - 1) : 2
   })()
 
-/*   const initialVariant = (() => {
-    const raw = Number(savedMeas[SKIN_KEYS.variantIndex])
-    return Number.isFinite(raw) ? Math.min(Math.max(raw, 0), 2) : 1
-  })() */
-
   const initialTonePct = (() => {
     const raw = Number(savedMeas[SKIN_KEYS.tonePercent])
     return Number.isFinite(raw) ? Math.min(Math.max(raw, 0), 100) : 50
@@ -55,11 +82,17 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
   const [baseIndex, setBaseIndex] = useState(initialBaseIndex)
   const [tonePct, setTonePct] = useState(initialTonePct)
 
-  // izvedene boje
+  // izvedene boje (za UI prikaz)
   const items = [Skin1, Skin2, Skin3]
   const base = basePalette[baseIndex]
   const light = lightenHex(base)
   const dark = darkenHex(base)
+
+  // BOJA ZA UNREAL (lerp između light i dark po slideru)
+  const toneHex = useMemo(() => {
+    const t = Math.max(0, Math.min(1, tonePct / 100))
+    return mixHex(light, dark, t)
+  }, [light, dark, tonePct])
 
   // orijentacija slidera --- Desni slider: horizontalno na mobu, vertikalno >=1024px ---
   const [isVertical, setIsVertical] = useState(false)
@@ -106,16 +139,11 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
 
     // GUARD: avatarId mora postojati i biti string/number
     const avatarId = currentAvatar?.avatarId
-    if (!avatarId) {
-      console.warn('No avatarId present, skipping skin settings save.')
-      return
-    }
+    if (!avatarId) return
 
     // Siguran payload (fallbackovi za TS)
     const safeName =
-      currentAvatar?.avatarName ??
-      (currentAvatar as any)?.name ??
-      'Avatar'
+      currentAvatar?.avatarName ?? (currentAvatar as any)?.name ?? 'Avatar'
     const safeAgeRange = currentAvatar?.ageRange ?? ''
 
     try {
@@ -143,32 +171,53 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
     saveTimerRef.current = window.setTimeout(flushSave, 500)
   }, [flushSave])
 
+  const pushToUnreal = useCallback(() => {
+    // pretpostavljam da već imaš toneHex; ako nemaš, postavi ga iz base/tonePct
+    sendQueued(
+      'configureAvatar',
+      {
+        action: 'setSkin',
+        baseIndex,
+        variantIndex: focusedIndex ?? 1,
+        tonePercent: tonePct,
+        color: toneHex,
+      },
+      'skin update'
+    )
+  }, [baseIndex, focusedIndex, tonePct, toneHex, sendQueued])
+
+  // Svaka promjena statea šalje u UE + sprema u backend (debounce)
+  useEffect(() => {
+    pushToUnreal()
+    // ne spremamo variant kad je null; bazu/tone spremamo uvijek
+    scheduleSave({
+      [SKIN_KEYS.baseIndex]: baseIndex,
+      [SKIN_KEYS.tonePercent]: tonePct,
+      ...(focusedIndex !== null ? { [SKIN_KEYS.variantIndex]: focusedIndex } : {}),
+    })
+  }, [baseIndex, tonePct, focusedIndex, pushToUnreal, scheduleSave])
+
   // --- Handleri za promjene UI-a + spremanje ---
   const handlePrev = () => {
     if (focusedIndex !== null) {
       const nextVar = (focusedIndex + items.length - 1) % items.length
       setFocusedIndex(nextVar)
-      scheduleSave({ [SKIN_KEYS.variantIndex]: nextVar })
     }
     const nextBase = (baseIndex + basePalette.length - 1) % basePalette.length
     setBaseIndex(nextBase)
-    scheduleSave({ [SKIN_KEYS.baseIndex]: nextBase })
   }
 
   const handleNext = () => {
     if (focusedIndex !== null) {
       const nextVar = (focusedIndex + 1) % items.length
       setFocusedIndex(nextVar)
-      scheduleSave({ [SKIN_KEYS.variantIndex]: nextVar })
     }
     const nextBase = (baseIndex + 1) % basePalette.length
     setBaseIndex(nextBase)
-    scheduleSave({ [SKIN_KEYS.baseIndex]: nextBase })
   }
 
   const onSelectIcon = (idx: number) => {
     setFocusedIndex(idx)
-    scheduleSave({ [SKIN_KEYS.variantIndex]: idx })
   }
 
   const onStartDrag = (startEvent: PointerEvent) => {
@@ -184,7 +233,6 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
       setPosPx(clampedPx)
       const pct = Math.round((clampedPx / length) * 100)
       setTonePct(pct)
-      scheduleSave({ [SKIN_KEYS.tonePercent]: pct })
     }
 
     updateFromCoords(startEvent.clientX, startEvent.clientY)
@@ -220,9 +268,9 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
           ) : (
             <div className={styles.iconOne}>
               <button type="button" className={styles.iconBtn} onClick={() => setFocusedIndex(null)}>
-                {focusedIndex === 0 && <Skin1 className={styles.iconLarge} style={{ color: light }} />}
+                {focusedIndex === 0 && <Skin1 className={styles.iconLarge} style={{ color: lightenHex(base) }} />}
                 {focusedIndex === 1 && <Skin2 className={styles.iconLarge} style={{ color: base }} />}
-                {focusedIndex === 2 && <Skin3 className={styles.iconLarge} style={{ color: dark }} />}
+                {focusedIndex === 2 && <Skin3 className={styles.iconLarge} style={{ color: darkenHex(base) }} />}
               </button>
             </div>
           )}
