@@ -825,10 +825,12 @@ const buildBackendAvatarRequestPayload = (
     request.createdBySession = sanitizedSessionId;
   }
 
+  // Uključi creationMode iz measurements SAMO ako nije zadan na top-levelu
   const basicMeasurements = sanitizeMeasurementPayload(
     payload.basicMeasurements as Record<string, unknown> | undefined,
-    { includeCreationMode: true },
-  );
+    { includeCreationMode: !payload.creationMode },
+  )
+  
   if (basicMeasurements) {
     request.basicMeasurements = basicMeasurements;
   }

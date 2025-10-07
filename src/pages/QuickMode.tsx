@@ -292,7 +292,7 @@ export default function QuickMode() {
 
     const selectedBodyShapeMeta = bodyShapes.find(shape => shape.id === selectedBodyShape)
     const normalizedBodyShape = selectedBodyShapeMeta
-      ? selectedBodyShapeMeta.label.toLowerCase().replace(/\s+/g, '-')
+      ? selectedBodyShapeMeta.label.toLowerCase().replace(/\s+/g, '_')
       : undefined
     const athleticLevelKey = athleticLevelLabels[athleticLevel] ?? undefined
 

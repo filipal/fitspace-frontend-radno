@@ -32,22 +32,28 @@ export default function LoggedInPage() {
 
   const loadButtonRef = useRef<HTMLButtonElement | null>(null)
 
+  // 1) Na mount: očisti “zadnje učitan” i lokalni state
+  useEffect(() => {
+  try {
+    sessionStorage.removeItem(LAST_LOADED_AVATAR_STORAGE_KEY)
+  } catch {}
+  setLoadedAvatarId(null)
+  setSelectedAvatarId(null)
+}, [])
+
+  // 2) Ako nema avatara u memoriji konteksta, dovuci listu
   useEffect(() => {
     if (avatars.length > 0) return
-    refreshAvatars().catch(err => console.error('Failed to refresh avatars', err))
+    refreshAvatars().catch(err => 
+      console.error('Failed to refresh avatars', err))
   }, [avatars.length, refreshAvatars])
 
+  // 3) Sinkronizacija selekcije s listom BEZ auto-odabira
   useEffect(() => {
-    if (avatars.length === 0) {
-      setSelectedAvatarId(null)
-      return
-    }
-    setSelectedAvatarId(prev => {
-      if (prev && avatars.some(a => a.id === prev)) return prev
-      if (loadedAvatarId && avatars.some(a => a.id === loadedAvatarId)) return loadedAvatarId
-      return avatars[0]?.id ?? null
-    })
-  }, [avatars, loadedAvatarId])
+    setSelectedAvatarId(prev =>
+      prev && avatars.some(a => a.id === prev) ? prev : null
+    )
+  }, [avatars])
 
   const handleSelect = (id: string) => setSelectedAvatarId(id)
 

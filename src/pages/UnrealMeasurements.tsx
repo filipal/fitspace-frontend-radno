@@ -43,6 +43,8 @@ import HairAccordion from '../components/HairAccordion/HairAccordion'
 import ExtrasAccordion from '../components/ExtrasAccordion/ExtrasAccordion'
 import styles from './UnrealMeasurements.module.scss'
 
+import { estimateMissingMeasurements } from '../services/anthroEstimator'
+
 interface ControlButton {
   key: string
   width: number
@@ -86,6 +88,33 @@ interface PendingMorphUpdate {
 }
 
 type NavKey = 'Body' | 'Face' | 'Skin' | 'Hair' | 'Extras' | 'Save'
+
+const MEASUREMENT_DESCRIPTORS: MeasurementDescriptor[] = [
+  { source: 'basic', key: 'height', label: 'Height', icon: lengthIcon, unit: 'cm' },
+  { source: 'basic', key: 'weight', label: 'Weight', icon: girthIcon, unit: 'kg' },
+  { source: 'body', key: 'shoulder', label: 'Shoulder', icon: lengthIcon, unit: 'cm' },
+  { source: 'body', key: 'chest', label: 'Chest', icon: girthIcon, unit: 'cm' },
+  { source: 'body', key: 'underchest', label: 'Underchest', icon: girthIcon, unit: 'cm' },
+  { source: 'body', key: 'waist', label: 'Waist', icon: girthIcon, unit: 'cm' },
+  { source: 'body', key: 'highHip', label: 'High Hip', icon: girthIcon, unit: 'cm' },
+  { source: 'body', key: 'lowHip', label: 'Low Hip', icon: girthIcon, unit: 'cm' },
+  { source: 'body', key: 'inseam', label: 'Inseam', icon: lengthIcon, unit: 'cm' },
+  { source: 'body', key: 'highThigh', label: 'High Thigh', icon: girthIcon, unit: 'cm' },
+  { source: 'body', key: 'midThigh', label: 'Mid Thigh', icon: girthIcon, unit: 'cm' },
+  { source: 'body', key: 'knee', label: 'Knee', icon: girthIcon, unit: 'cm' },
+  { source: 'body', key: 'calf', label: 'Calf', icon: girthIcon, unit: 'cm' },
+  { source: 'body', key: 'ankle', label: 'Ankle', icon: girthIcon, unit: 'cm' },
+  { source: 'body', key: 'footLength', label: 'Foot Length', icon: lengthIcon, unit: 'cm' },
+  { source: 'body', key: 'footBreadth', label: 'Foot Breadth', icon: lengthIcon, unit: 'cm' },
+  { source: 'body', key: 'bicep', label: 'Bicep', icon: girthIcon, unit: 'cm' },
+  { source: 'body', key: 'forearm', label: 'Forearm', icon: girthIcon, unit: 'cm' },
+  { source: 'body', key: 'wrist', label: 'Wrist', icon: girthIcon, unit: 'cm' },
+  { source: 'body', key: 'shoulderToWrist', label: 'Shoulder to Wrist', icon: lengthIcon, unit: 'cm' },
+  { source: 'body', key: 'handLength', label: 'Hand Length', icon: lengthIcon, unit: 'cm' },
+  { source: 'body', key: 'handBreadth', label: 'Hand Breadth', icon: lengthIcon, unit: 'cm' },
+  { source: 'body', key: 'neck', label: 'Neck', icon: girthIcon, unit: 'cm' },
+  { source: 'body', key: 'head', label: 'Head', icon: girthIcon, unit: 'cm' },
+];
 
 export default function UnrealMeasurements() {
   const pageRef = useRef<HTMLDivElement | null>(null)
@@ -242,6 +271,52 @@ export default function UnrealMeasurements() {
     return sessionStorage.getItem(LAST_LOADED_AVATAR_STORAGE_KEY)
   }, [avatarIdFromState])
 
+  const computedFallbacks = useMemo(() => {
+    if (!currentAvatar) return {} as Record<string, number>;
+
+    const sex = currentAvatar.gender === 'female' ? 'female' : 'male';
+    const athletic =
+      (currentAvatar.quickModeSettings?.athleticLevel as 'low' | 'medium' | 'high') ?? 'medium';
+
+    const basicMeasurements = currentAvatar.basicMeasurements ?? {};
+    const bodyMeasurements = currentAvatar.bodyMeasurements ?? {};
+    const quickModeMeasurements = currentAvatar.quickModeSettings?.measurements ?? {};
+
+    // Pomoćna funkcija: parsiraj broj ili vrati undefined
+    const toNum = (v: unknown): number | undefined => {
+      if (typeof v === 'number') return Number.isFinite(v) ? v : undefined
+      if (typeof v === 'string') {
+      const n = Number(v.replace(',', '.'))
+      return Number.isFinite(n) ? n : undefined
+      }
+      return undefined
+    };
+
+    const chest = toNum(
+      bodyMeasurements.chest ?? quickModeMeasurements.chest ?? quickModeMeasurements.bustCircumference
+    );
+    const waist = toNum(
+      bodyMeasurements.waist ?? quickModeMeasurements.waist ?? quickModeMeasurements.waistCircumference
+    );
+    const lowHip = toNum(
+      bodyMeasurements.lowHip ?? quickModeMeasurements.lowHip ?? quickModeMeasurements.lowHipCircumference
+    );
+
+    const known = {
+      height: toNum(basicMeasurements.height),
+      weight: toNum(basicMeasurements.weight),
+      chest,
+      waist,
+      lowHip,
+      underchest: toNum(bodyMeasurements.underchest ?? quickModeMeasurements.underchest),
+    };
+
+    const estimated = estimateMissingMeasurements(sex, known, athletic);
+
+    // Vratimo kao običan record da ga lako “indeksiramo” po descriptor.key
+    return estimated as Record<string, number>;
+  }, [currentAvatar]);
+
   const persistMorphTargets = useCallback(async (): Promise<boolean> => {
     if (!currentAvatar) {
       console.warn('No avatar available to persist morph targets')
@@ -281,19 +356,38 @@ export default function UnrealMeasurements() {
         return acc
       }, {})
 
+      const mergedBody: Record<string, number> = { ...(currentAvatar.bodyMeasurements ?? {}) }
+
+      // popuni samo one koje fale
+      for (const d of MEASUREMENT_DESCRIPTORS) {
+        if (d.source !== 'body') continue
+        const key = d.key as string
+        const already = mergedBody[key]
+        const est = (computedFallbacks as Record<string, number | undefined>)[key]
+        if ((already == null || !Number.isFinite(Number(already))) && est != null) {
+          mergedBody[key] = est
+        }
+      }
+
+      // Ukloni creationMode iz basicMeasurements da ne kolidira s top-level creationMode
+      const basicNoMode =
+        currentAvatar.basicMeasurements
+          ? (() => {
+              const { creationMode: _ignore, ...rest } = currentAvatar.basicMeasurements
+              return rest
+            })()
+          : undefined
+
       const basePayload: AvatarPayload = {
         name: currentAvatar.avatarName ?? 'Avatar',
         gender: currentAvatar.gender,
         ageRange: currentAvatar.ageRange ?? '20-29',
-        creationMode: 'manual',
+        creationMode: currentAvatar.creationMode ?? 'manual',
         quickMode: currentAvatar.quickMode ?? true,
-        source: currentAvatar.source ?? 'web',
-        ...(currentAvatar.basicMeasurements
-          ? { basicMeasurements: { ...currentAvatar.basicMeasurements } }
-          : {}),
-        ...(currentAvatar.bodyMeasurements
-          ? { bodyMeasurements: { ...currentAvatar.bodyMeasurements } }
-          : {}),
+        // koristimo basicNoMode (bez creationMode) i NE dodajemo ponovno original
+        ...(basicNoMode ? { basicMeasurements: basicNoMode } : {}),
+        // OVDJE koristimo mergedBody (koji već sadrži postojeće + procijenjene vrijednosti)
+        ...(Object.keys(mergedBody).length ? { bodyMeasurements: mergedBody } : {}),
         ...(currentAvatar.quickModeSettings
           ? {
               quickModeSettings: {
@@ -410,7 +504,7 @@ export default function UnrealMeasurements() {
         setIsSavingMorphs(false)
       }
     }
-  }, [currentAvatar, fetchAvatarById, getActiveAvatarId, loadAvatar, updateAvatarMeasurements])
+  }, [currentAvatar, fetchAvatarById, getActiveAvatarId, loadAvatar, updateAvatarMeasurements, MEASUREMENT_DESCRIPTORS, computedFallbacks])
 
   useEffect(() => {
     if (currentAvatar || loaderState.isLoading) {
@@ -496,45 +590,74 @@ export default function UnrealMeasurements() {
     return unit ? `${formatted} ${unit}` : formatted
   }, [])
 
-  const measurementDescriptors = useMemo<MeasurementDescriptor[]>(() => [
-    { source: 'basic', key: 'height', label: 'Height', icon: lengthIcon, unit: 'cm' },
-    { source: 'basic', key: 'weight', label: 'Weight', icon: girthIcon, unit: 'kg' },
-    { source: 'body', key: 'shoulder', label: 'Shoulder', icon: lengthIcon, unit: 'cm' },
-    { source: 'body', key: 'chest', label: 'Chest', icon: girthIcon, unit: 'cm' },
-    { source: 'body', key: 'underchest', label: 'Underchest', icon: girthIcon, unit: 'cm' },
-    { source: 'body', key: 'waist', label: 'Waist', icon: girthIcon, unit: 'cm' },
-    { source: 'body', key: 'highHip', label: 'High Hip', icon: girthIcon, unit: 'cm' },
-    { source: 'body', key: 'lowHip', label: 'Low Hip', icon: girthIcon, unit: 'cm' },
-    { source: 'body', key: 'inseam', label: 'Inseam', icon: lengthIcon, unit: 'cm' },
-    { source: 'body', key: 'highThigh', label: 'High Thigh', icon: girthIcon, unit: 'cm' },
-    { source: 'body', key: 'midThigh', label: 'Mid Thigh', icon: girthIcon, unit: 'cm' },
-    { source: 'body', key: 'knee', label: 'Knee', icon: girthIcon, unit: 'cm' },
-    { source: 'body', key: 'calf', label: 'Calf', icon: girthIcon, unit: 'cm' },
-    { source: 'body', key: 'ankle', label: 'Ankle', icon: girthIcon, unit: 'cm' },
-    { source: 'body', key: 'footLength', label: 'Foot Length', icon: lengthIcon, unit: 'cm' },
-    { source: 'body', key: 'footBreadth', label: 'Foot Breadth', icon: lengthIcon, unit: 'cm' },
-    { source: 'body', key: 'bicep', label: 'Bicep', icon: girthIcon, unit: 'cm' },
-    { source: 'body', key: 'forearm', label: 'Forearm', icon: girthIcon, unit: 'cm' },
-    { source: 'body', key: 'wrist', label: 'Wrist', icon: girthIcon, unit: 'cm' },
-    { source: 'body', key: 'shoulderToWrist', label: 'Shoulder to Wrist', icon: lengthIcon, unit: 'cm' },
-    { source: 'body', key: 'handLength', label: 'Hand Length', icon: lengthIcon, unit: 'cm' },
-    { source: 'body', key: 'handBreadth', label: 'Hand Breadth', icon: lengthIcon, unit: 'cm' },
-    { source: 'body', key: 'neck', label: 'Neck', icon: girthIcon, unit: 'cm' },
-    { source: 'body', key: 'head', label: 'Head', icon: girthIcon, unit: 'cm' }
-  ], [])
-
   const measurements = useMemo<Measurement[] | null>(() => {
-    if (!currentAvatar?.basicMeasurements && !currentAvatar?.bodyMeasurements) {
+    if (!currentAvatar) return null;
+
+    const basicMeasurements = currentAvatar.basicMeasurements ?? {}
+    const bodyMeasurements = currentAvatar.bodyMeasurements ?? {}
+    const quickModeMeasurements = currentAvatar.quickModeSettings?.measurements ?? {}
+
+    const resolveNumericValue = (value: unknown): number | null => {
+      if (typeof value === 'number' && Number.isFinite(value)) return value;
+
+      if (typeof value === 'string') {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : null;
+      }
+
       return null
     }
 
-    return measurementDescriptors.map(descriptor => {
-      const rawValue = descriptor.source === 'basic'
-        ? currentAvatar?.basicMeasurements?.[descriptor.key]
-        : currentAvatar?.bodyMeasurements?.[descriptor.key]
+    const normalizeMeasurementKey = (key: unknown): string | null => {
+      if (typeof key !== 'string') return null;
+      const normalized = key
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/gu, '')
+        .replace(/[^a-z0-9]/giu, '')
+        .toLowerCase()
 
-      const value = typeof rawValue === 'number'
-        ? formatMeasurementValue(rawValue, descriptor.unit)
+      return normalized || null;
+    }
+
+    const findMeasurementValue = (
+      source: Record<string, unknown> | undefined,
+      descriptorKey: string,
+    ): number | null => {
+      if (!source) return null;
+
+      const directValue = resolveNumericValue((source as any)[descriptorKey]);
+      if (directValue != null) return directValue;
+
+      const normalizedTargetKey = normalizeMeasurementKey(descriptorKey);
+      if (!normalizedTargetKey) return null;
+
+      for (const [candidateKey, candidateValue] of Object.entries(source)) {
+        if (normalizeMeasurementKey(candidateKey) === normalizedTargetKey) {
+          const numericValue = resolveNumericValue(candidateValue);
+          if (numericValue != null) return numericValue;
+        }
+      }
+
+      return null
+    }
+
+    return MEASUREMENT_DESCRIPTORS.map(descriptor => {
+      // 1) Primarni iz basic/body
+      const primaryValue = descriptor.source === 'basic'
+        ? findMeasurementValue(basicMeasurements as Record<string, unknown>, descriptor.key)
+        : findMeasurementValue(bodyMeasurements as Record<string, unknown>, descriptor.key);
+
+      // 2) Fallback iz quickMode settings
+      const fallbackValue = findMeasurementValue(
+        quickModeMeasurements as Record<string, unknown> | undefined,
+        descriptor.key,
+      )
+
+      // 3) Heuristički fallback iz estimator-a
+      const computed = (computedFallbacks as Record<string, number | undefined>)[descriptor.key];
+      const numericValue = primaryValue ?? fallbackValue ?? (computed ?? null);
+      const value = numericValue != null
+        ? formatMeasurementValue(numericValue, descriptor.unit)
         : '—'
 
       return {
@@ -543,10 +666,10 @@ export default function UnrealMeasurements() {
         icon: descriptor.icon
       }
     })
-  }, [currentAvatar, formatMeasurementValue, measurementDescriptors])
+  }, [currentAvatar, formatMeasurementValue, MEASUREMENT_DESCRIPTORS, computedFallbacks]);
 
-  const isLoadingMeasurements = !measurements
-  const skeletonRowCount = measurementDescriptors.length
+  const isLoadingMeasurements = measurements == null && loaderState.isLoading
+  const skeletonRowCount = MEASUREMENT_DESCRIPTORS.length
 
   const controls: ControlButton[] = [
     { key: 'rotate-left', width: 60, Icon: RLeft, marginRight: 50 },
