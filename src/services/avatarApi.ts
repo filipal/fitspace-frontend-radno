@@ -827,9 +827,20 @@ const buildBackendAvatarRequestPayload = (
     request.bodyMeasurements = bodyMeasurements;
   }
 
+  // ⬇️ KLJUČNA PROMJENA: šaljemo morphTargets (ne "morphs")
   const morphs = buildBackendMorphPayload(payload);
   if (morphs) {
-    request.morphs = morphs;
+    const morphTargets: Record<string, number> = {};
+    for (const m of morphs) {
+      const key = (m.backendKey ?? m.id)?.trim();
+      const val = Number(m.sliderValue);
+      if (key && Number.isFinite(val)) {
+        morphTargets[key] = val;
+      }
+    }
+    if (Object.keys(morphTargets).length) {
+      request.morphTargets = morphTargets;
+    }
   }
 
   const quickModeSettings = sanitizeQuickModeSettingsPayload(payload.quickModeSettings);
@@ -839,6 +850,7 @@ const buildBackendAvatarRequestPayload = (
 
   return request;
 };
+
 
 const normalizeBasicMeasurements = (
   section: unknown,

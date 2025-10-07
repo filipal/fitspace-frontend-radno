@@ -5,16 +5,80 @@ import type { MorphAttribute } from '../../data/morphAttributes';
 import { useAvatarConfiguration } from '../../context/AvatarConfigurationContext';
 import styles from './BodyAccordion.module.scss'
 
-const EMPTY_MORPH_VALUES: MorphAttribute[] = []
+import { useAvatarApi } from '../../services/avatarApi';
+import { getBackendKeyForMorphId } from '../../services/avatarTransformationService';
 
+const EMPTY_MORPH_VALUES: MorphAttribute[] = []
 
 export interface BodyAccordionProps {
   updateMorph?: (morphId: number, morphName: string, percentage: number) => void
 }
 
-
 export default function BodyAccordion({ updateMorph }: BodyAccordionProps) {
   const { currentAvatar } = useAvatarConfiguration()
+
+  const { updateAvatarMeasurements } = useAvatarApi()
+
+  const pendingMorphsRef = useRef<Record<string, number>>({})
+  const saveTimerRef = useRef<number | null>(null)
+
+  const queueMorphSave = useCallback((morphId: number, percent: number) => {
+    const backendKey = getBackendKeyForMorphId(morphId)
+    if (!backendKey) return
+
+    const v = Math.max(0, Math.min(100, Math.round(percent)))
+    pendingMorphsRef.current[backendKey] = v
+
+    if (typeof window !== 'undefined' && saveTimerRef.current) {
+      window.clearTimeout(saveTimerRef.current)
+    }
+
+    // pošalji batch nakon 600 ms mirovanja
+    if (typeof window !== 'undefined') {
+      saveTimerRef.current = window.setTimeout(async () => {
+        const batch = pendingMorphsRef.current
+        pendingMorphsRef.current = {}
+
+        if (!currentAvatar?.avatarId) {
+          console.warn('No avatarId; skipping save.')
+          return
+        }
+
+        try {
+          const safeName =
+            currentAvatar?.avatarName ??
+            (currentAvatar as any)?.name ?? // ako postoji staro polje name
+            'Avatar';
+
+          const safeAgeRange = currentAvatar?.ageRange ?? '';
+            
+          await updateAvatarMeasurements(currentAvatar.avatarId, {
+            name: safeName,
+            gender: currentAvatar.gender,
+            ageRange: safeAgeRange,
+            morphTargets: batch,
+          })
+        } catch (e) {
+          console.error('Saving morphs failed', e)
+        }
+      }, 600)
+    }
+  }, [
+    currentAvatar?.avatarId,
+    currentAvatar?.avatarName,
+    currentAvatar?.gender,
+    currentAvatar?.ageRange,
+    updateAvatarMeasurements,
+  ])
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && saveTimerRef.current) {
+        window.clearTimeout(saveTimerRef.current)
+      }
+    }
+  }, [])
+
   // Categories grouped for body editing; values wiring will come later
   const categories = useMemo(
     () => [
@@ -50,6 +114,7 @@ export default function BodyAccordion({ updateMorph }: BodyAccordionProps) {
     () => morphAttributes.filter(attr => attr.category === selected.label),
     [selected.label]
   )
+
   const rowsRef = useRef<HTMLDivElement | null>(null)
   const trackRef = useRef<HTMLDivElement | null>(null)
   const draggingRef = useRef(false)
@@ -84,6 +149,7 @@ export default function BodyAccordion({ updateMorph }: BodyAccordionProps) {
     if (isLarge) return
     setScrollIndex(0)
   }, [selected.label, isLarge])
+
   useEffect(() => {
     if (isLarge) return
     setScrollIndex((i) => clamp(i, 0, Math.max(0, (list.length || 0) - VISIBLE)))
@@ -181,42 +247,48 @@ export default function BodyAccordion({ updateMorph }: BodyAccordionProps) {
   }
   // Mobile: prikaži cijeli popis i oslanjaj se na nativni scroll (.rows overflow-y: auto)
   const view = list
+
   // Slider row component
-
-
   function SliderRow({ attr }: { attr: MorphAttribute }) {
     // Always show thumb and value, start centered at 50%
     const barRef = useRef<HTMLDivElement | null>(null);
     const morphValues = currentAvatar?.morphValues ?? EMPTY_MORPH_VALUES
+
     const getMorphValue = useCallback(() => {
       const morph = morphValues.find(item => item.morphId === attr.morphId)
       return morph?.value ?? 50
     }, [attr.morphId, morphValues])
+
     const [val, setVal] = useState(() => getMorphValue());
     const [barWidth, setBarWidth] = useState(0);
+
     useLayoutEffect(() => {
       setBarWidth(barRef.current?.clientWidth ?? 0);
     }, []);
+
     // Sync slider with backend values when avatar or attribute changes
     useEffect(() => {
       setVal(getMorphValue());
     }, [getMorphValue]);
+
     const onStart = (clientX: number) => {
       const bar = barRef.current;
       if (!bar) return;
       const rect = bar.getBoundingClientRect();
       draggingRef.current = true;
+
       const update = (x: number) => {
         const rel = x - rect.left
         const width = rect.width
         const pct = clamp(Math.round((rel / width) * 100), 0, 100)
         setVal(pct)
-        updateMorph?.(
-          attr.morphId,
-          attr.morphName,
-          pct
-        )
+
+        // lokalni callback za UI
+        updateMorph?.(attr.morphId, attr.morphName, pct)
+        // ⬅️ queue autosave prema backendu
+        queueMorphSave(attr.morphId, pct)
       }
+
       update(clientX);
       const move = (e: PointerEvent) => update(e.clientX);
       const up = () => {
@@ -227,7 +299,9 @@ export default function BodyAccordion({ updateMorph }: BodyAccordionProps) {
       window.addEventListener('pointermove', move);
       window.addEventListener('pointerup', up);
     };
+
     const leftPx = (val / 100) * barWidth;
+
     return (
       <div className={styles.row}>
         <div className={styles.rowLabel} title={attr.labelName}>{attr.labelName}</div>
