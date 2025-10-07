@@ -86,6 +86,11 @@ interface PixelStreamingContextType {
   removeMessageHandler: (handler: (message: any) => void) => void;
 }
 
+type UIInteractionPayload = Parameters<PixelStreaming['emitUIInteraction']>[0];
+
+const isUIInteractionPayload = (payload: unknown): payload is UIInteractionPayload =>
+  typeof payload === 'string' || (typeof payload === 'object' && payload !== null);
+
 const PixelStreamingContext = createContext<PixelStreamingContextType | undefined>(undefined);
 
 export { PixelStreamingContext };
@@ -118,6 +123,52 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
 
   // Message handlers
   const [messageHandlers, setMessageHandlers] = useState<Set<(message: any) => void>>(new Set());
+  const pendingInteractionsRef = React.useRef<Array<{ payload: UIInteractionPayload; description: string }>>([]);
+
+  const flushPendingInteractions = useCallback((targetStream?: PixelStreaming | null) => {
+    const activeStream = targetStream ?? stream;
+    if (!activeStream) {
+      return;
+    }
+
+    if (pendingInteractionsRef.current.length === 0) {
+      return;
+    }
+
+    const queued = [...pendingInteractionsRef.current];
+    pendingInteractionsRef.current = [];
+
+    console.log(`📤 Sending ${queued.length} queued pixel streaming command${queued.length === 1 ? '' : 's'}...`);
+
+    queued.forEach(({ payload, description }, index) => {
+      try {
+        activeStream.emitUIInteraction(payload);
+        console.log(`✅ Sent queued ${description} (${index + 1}/${queued.length})`);
+      } catch (error) {
+        console.error(`Failed to send queued ${description}:`, error);
+      }
+    });
+  }, [stream]);
+
+  const sendOrQueueInteraction = useCallback((payload: unknown, description: string) => {
+    if (!isUIInteractionPayload(payload)) {
+      console.error('Attempted to send invalid pixel streaming payload:', payload);
+      return;
+    }
+
+    if (!stream || connectionState !== 'connected') {
+      pendingInteractionsRef.current.push({ payload, description });
+      console.log(`📦 Queued ${description} until pixel streaming connection is ready`, payload);
+      return;
+    }
+
+    try {
+      stream.emitUIInteraction(payload);
+      console.log(`Sent ${description}:`, payload);
+    } catch (error) {
+      console.error(`Failed to send ${description}:`, error);
+    }
+  }, [stream, connectionState]);
 
   const onMessageReceived = useCallback((handler: (message: any) => void) => {
     setMessageHandlers(prev => new Set([...prev, handler]));
@@ -401,6 +452,8 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
             }
           }, 100);
         }, 3000);
+
+        flushPendingInteractions(newStream);
       });
 
       newStream.addEventListener('webRtcDisconnected', () => {
@@ -661,7 +714,7 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
       setConnectionState('error');
       setConnectionError(error instanceof Error ? error.message : 'Unknown connection error');
     }
-  }, [debugSettings]); // Added debugSettings dependency
+  }, [debugSettings, flushPendingInteractions]); // Keep debug settings and queued command flushing in sync
 
   const disconnect = useCallback(() => {
     if (stream) {
@@ -684,39 +737,22 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
   }, [disconnect, connect]);
 
   const sendFittingRoomCommand = useCallback((
-    type: FittingRoomCommand['type'], 
+    type: FittingRoomCommand['type'],
     data?: Record<string, unknown>
   ) => {
-    if (!stream || connectionState !== 'connected') {
-      console.warn('Cannot send command: not connected to pixel streaming');
-      return;
-    }
-
     const command: FittingRoomCommand = { type, data };
-    
-    try {
-      // Send as UI interaction to Unreal Engine - send object directly
-      stream.emitUIInteraction(command);
-      console.log('Sent fitting room command:', command);
-    } catch (error) {
-      console.error('Failed to send fitting room command:', error);
-    }
-  }, [stream, connectionState]);
+    sendOrQueueInteraction(command, `fitting room command "${type}"`);
+  }, [sendOrQueueInteraction]);
 
   const sendCommand = useCallback((command: string, data?: unknown) => {
-    if (!stream || connectionState !== 'connected') {
-      console.warn('Cannot send command: not connected to pixel streaming');
-      return;
-    }
+    sendOrQueueInteraction({ command, data }, `command "${command}"`);
+  }, [sendOrQueueInteraction]);
 
-    try {
-      // Send as UI interaction to Unreal Engine - send object directly
-      stream.emitUIInteraction({ command, data });
-      console.log('Sent command:', { command, data });
-    } catch (error) {
-      console.error('Failed to send command:', error);
+  React.useEffect(() => {
+    if (connectionState === 'connected') {
+      flushPendingInteractions();
     }
-  }, [stream, connectionState]);
+  }, [connectionState, flushPendingInteractions]);
 
   // Debug function to force resolution adjustment
   const forceResolutionMatch = useCallback(() => {
