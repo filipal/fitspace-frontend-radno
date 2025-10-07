@@ -31,6 +31,7 @@ export interface QuickModeSettingsPayload {
   bodyShape?: string | null;
   athleticLevel?: string | null;
   measurements?: Record<string, number>;
+  updatedAt?: string | Date | null;
 }
 
 export interface AvatarMorphPayload {
@@ -776,11 +777,23 @@ const sanitizeQuickModeSettingsPayload = (
       normalized.measurements = measurements;
     }
   }
-  const updatedAt = normalizeString((settings as QuickModeSettings)?.updatedAt);
-  if (updatedAt) {
-    normalized.updatedAt = updatedAt;
+  const updatedAtSource = (settings as QuickModeSettingsPayload | QuickModeSettings)
+    .updatedAt;
+  if (updatedAtSource instanceof Date) {
+    const timestamp = updatedAtSource.getTime();
+    if (Number.isFinite(timestamp)) {
+      normalized.updatedAt = new Date(timestamp).toISOString();
+    }
+  } else if (typeof updatedAtSource === 'number') {
+    if (Number.isFinite(updatedAtSource)) {
+      normalized.updatedAt = new Date(updatedAtSource).toISOString();
+    }
+  } else if (typeof updatedAtSource === 'string') {
+    const trimmed = updatedAtSource.trim();
+    if (trimmed) {
+      normalized.updatedAt = trimmed;
+    }
   }
-
   return Object.keys(normalized).length ? normalized : undefined;
 };
 

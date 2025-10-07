@@ -75,6 +75,11 @@ const BACKEND_TO_MORPH_MAPPING: Record<string, number> = {
   // This is a foundation that can be extended as needed
 };
 
+const NON_MORPH_METADATA_KEYS = new Set<string>([
+  'quickModeBodyShape',
+  'quickModeAthleticLevel',
+]);
+
 const MORPH_ID_TO_BACKEND_MAPPING: Record<number, string> = Object.entries(
   BACKEND_TO_MORPH_MAPPING,
 ).reduce<Record<number, string>>((acc, [backendKey, morphId]) => {
@@ -157,8 +162,12 @@ export function transformBackendDataToMorphs(
 
   // Apply backend morph values
   Object.entries(morphTargetMap).forEach(([backendKey, backendValue]) => {
+    if (NON_MORPH_METADATA_KEYS.has(backendKey)) {
+      return;
+    }
+
     const morphId = BACKEND_TO_MORPH_MAPPING[backendKey];
-    
+
     if (morphId !== undefined) {
       const morphIndex = updatedMorphs.findIndex(m => m.morphId === morphId);
       
@@ -261,7 +270,7 @@ export function validateBackendMorphData(morphTargetMap: Record<string, number>)
 
   Object.entries(morphTargetMap).forEach(([key, value]) => {
     // Check if key is mapped
-    if (!(key in BACKEND_TO_MORPH_MAPPING)) {
+    if (!(key in BACKEND_TO_MORPH_MAPPING) && !NON_MORPH_METADATA_KEYS.has(key)) {
       warnings.push(`Unknown morph key: ${key}`);
     }
     
