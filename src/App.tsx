@@ -17,6 +17,7 @@ import LoadingScreen from './pages/LoadingScreen.tsx'
 import FaceScanInfo from './pages/FaceScanInfo.tsx'
 import FaceScan from './pages/FaceScan.tsx'
 import FacePhotosCheck from './pages/FacePhotosCheck.tsx'
+import ExitGuestUser from './pages/ExitGuestUser.tsx'
 import PixelStreamingDemo from './pages/PixelStreamingDemo.tsx'
 import DebugOverlay from './components/DebugOverlay/DebugOverlay.tsx'
 import BeforeUnloadHandler from './components/BeforeUnloadHandler/BeforeUnloadHandler.tsx'
@@ -71,8 +72,9 @@ export default function App() {
                 <Routes>
                   <Route path="/" element={<StartPage />} />
                   <Route path="/login" element={<LoginPage />} />
-                  <Route path="/auth/callback" element={<AuthCallback />} />
                   <Route path="/avatar-info" element={<AvatarInfoPage />} />
+                  <Route path="/auth/callback" element={<AuthCallback />} />
+                  <Route path="/exit-guest-user" element={<ExitGuestUser />} />
                   <Route
                     path="/logged-in"
                     element={(

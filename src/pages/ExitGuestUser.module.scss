@@ -1,0 +1,314 @@
+@use '../styles' as s;
+
+/* -------------------------------------------------------
+   Mobile-first canvas (osnova 430x932) – proporcionalno
+   skaliranje do max 800px širine
+------------------------------------------------------- */
+
+.page {
+  width: 100%;
+  min-height: 100svh;
+  background: #eee;
+
+  --base-w: 430;
+  --base-h: 932;
+
+  --vw-safe: calc(100vw - (env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px)));
+  --vh-safe: calc(100svh - (env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px)));
+
+  --scale-x: calc(var(--vw-safe) / (var(--base-w) * 1px));
+  --scale-y: calc(var(--vh-safe) / (var(--base-h) * 1px));
+  --cap:     calc(800px / (var(--base-w) * 1px));
+  --scale:   min(var(--scale-x), var(--scale-y), var(--cap));
+}
+
+.mobileShell {
+  position: relative;
+  width: 100%;
+  height: calc(var(--base-h) * 1px * var(--scale));
+  overflow: hidden;
+
+  /* nije nužno, ali pomaže kod egzotičnih UA-a */
+  display: flex;
+  justify-content: center;
+}
+
+.mobileCanvas {
+  position: absolute;
+  top: 0;
+  left: 50%;
+
+  /* *čista* baza bez paddinga!  */
+  width: calc(var(--base-w) * 1px);
+  height: calc(var(--base-h) * 1px);
+
+  transform-origin: top center;          /* centar je točno na 50% */
+  transform: translateX(-50%) scale(var(--scale));
+  /* NIKAKAV padding ovdje – on bi mijenjao efekt -50% translacije */
+}
+
+/* Sav padding i unutarnji layout ide ovdje */
+.mInner {
+  width: 100%;
+  height: 100%;
+  padding: 0 24px;        /* tvoj raniji padding */
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* LOGO: 180×95 */
+.mLogo {
+  width: 180px;
+  height: 95px;
+  margin-top: 100px;
+  object-fit: contain;
+}
+
+/* Sadržaj */
+.mContent {
+  width: 100%;
+  max-width: 430px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 170px;
+}
+
+/* Naslov – Outfit Light 18px */
+.mTitle {
+  width: 100%;
+  max-width: 330px;
+  max-height: 46px;
+  text-align: center;
+  font-family: 'Outfit', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-weight: 300;
+  font-size: 18px;
+  line-height: 1.25;
+  color: #000;
+  margin-top: 0;
+  margin-bottom: 15px;
+}
+
+/* Input wrap da možemo točno dimenzionirati */
+.mInputWrap {
+  width: 320px;
+  height: 40px;
+  margin-top: 0;
+}
+.mInput {
+  width: 100%;
+  height: 40px; /* vizualna visina; tekst je 16px */
+  padding: 10px 12px;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #000;
+  border-radius: 2px;
+  font-family: 'Outfit', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-weight: 300;
+  font-size: 16px;
+  color: #000;
+
+  &::placeholder { color: #6f6f6f; opacity: 0.7; }
+}
+
+/* Google gumb – 320×50, regular 17px */
+.mGoogleBtn {
+  width: 320px;
+  height: 50px;
+  margin-top: 40px;
+  margin-bottom: 256px;
+  background: #000;
+  color: #fff;
+  border: none;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  cursor: pointer;
+}
+.mGoogleIcon { width: 28px; height: 28px; object-fit: contain; }
+.mGoogleLabel {
+  font-family: 'Outfit', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-weight: 400;
+  font-size: 17px;
+  line-height: 1;
+}
+
+/* Donji red: 320×50 total (100 + 210) */
+.mFooterRow {
+  width: 320px;
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  column-gap: 10px;
+  margin-top: 26px;
+}
+
+.mBackBtn {
+  width: 100px;
+  height: 50px;
+  background: #fff;
+  color: #000;
+  border: 1px solid #000;
+  font-family: 'Outfit', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-weight: 400;
+  font-size: 18px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.mExitBtn {
+  width: 210px;
+  height: 50px;
+  background: #000;
+  color: #fff;
+  border: none;
+  font-family: 'Outfit', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-weight: 400;
+  font-size: 18px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+/* -------------------------------------------------------
+   WEB raspored (min-width: 1024px) – fiksne dimenzije,
+   elementi se raspoređuju ali se ne skaliraju
+------------------------------------------------------- */
+
+.webShell { display: none; }
+
+@media (min-width: 1024px) {
+  /* baza za računanje omjera – bez skaliranja elemenata */
+  .page {
+    --web-base-w: 1440;
+    --web-base-h: 1024;
+
+    --vw-safe: calc(100vw - (env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px)));
+    --vh-safe: calc(100svh - (env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px)));
+
+    /* omjer kojim skaliramo SAMO udaljenosti (ne i veličine) */
+    --k: min(
+      calc(var(--vw-safe) / (var(--web-base-w) * 1px)),
+      calc(var(--vh-safe) / (var(--web-base-h) * 1px))
+    );
+  }
+
+  .webShell {
+    display: block;
+    position: relative;
+    width: 100%;
+    min-height: 100svh;
+    overflow: hidden;
+  }
+  
+  /* Logo: top 71px, right 36px u koordinatama stage-a */
+  .wLogo {
+    position: absolute;
+    top: 71px;
+    right: 36px;
+    width: 136px;
+    height: 71px;
+    object-fit: contain;
+  }
+
+  /* Centralni stack – širina fiksna, top offset skaliran; uvijek centriran */
+  .wStack {
+    position: absolute;
+    top:  calc(291px * var(--k));
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;                  /* fiksno */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;                     /* Title → Input → GoogleBtn = 30px (fiksno po maketi) */
+  }
+
+  .wTitle {
+    width: 600px;
+    text-align: center;
+    font-family: 'Outfit', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    font-weight: 300;
+    font-size: 20px;               /* fiksno */
+    line-height: 1.25;
+    color: #000;
+    margin: 0;
+  }
+
+  /* Input 423×40 */
+  .wInputWrap { width: 423px; }
+  .wInput {
+    width: 423px;
+    height: 40px;
+    padding: 10px 12px;
+    box-sizing: border-box;
+    background: #fff;
+    border: 1px solid #000;
+    border-radius: 2px;
+    font-family: 'Outfit', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    font-weight: 300;
+    font-size: 16px;
+    color: #000;
+
+    &::placeholder { color: #6f6f6f; opacity: 0.7; }
+  }
+
+  /* Google gumb 423×50 – fiksno; razmak do inputa drži .wStack (gap:30px) */
+  .wGoogleBtn {
+    width: 423px;
+    height: 50px;
+    background: #000;
+    color: #fff;
+    border: none;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    cursor: pointer;
+  }
+  .wGoogleIcon  { width: 28px; height: 28px; object-fit: contain; }
+  .wGoogleLabel { font: 400 17px/1 'Outfit', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+
+  /* Footer: fiksne veličine tipki, ali vertikalni odmak 290px skaliramo */
+  .wFooterRow {
+    width: 420px;                  /* 126 + 20 gap + 274 */
+    display: grid;
+    grid-template-columns: 126px 1fr;
+    column-gap: 20px;
+    margin-top: calc(290px * var(--k));  /* skalar samo na razmak */
+  }
+
+  .wBackBtn {
+    width: 126px;
+    height: 50px;
+    background: #fff;
+    color: #000;
+    border: 1px solid #000;
+    border-radius: 2px;
+    font: 400 18px/1 'Outfit', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    cursor: pointer;
+  }
+
+  .wExitBtn {
+    width: 274px;
+    height: 50px;
+    background: #000;
+    color: #fff;
+    border: none;
+    border-radius: 2px;
+    font: 400 18px/1 'Outfit', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    cursor: pointer;
+  }
+
+  .mobileCanvas { display: none; }
+  .mobileShell { display: none; }
+}
+
+/* Sigurnosno: sitni viewports < 360px – malo smanji margine oko loga */
+@media (max-width: 360px) {
+  .mLogo { margin-top: 64px; }
+}

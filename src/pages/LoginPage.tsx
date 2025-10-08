@@ -4,8 +4,8 @@ import { useAuth } from 'react-oidc-context'
 import logo from '../assets/fitspace-logo-gradient-nobkg.svg'
 import exitIcon from '../assets/exit.svg'
 import googleLogo from '../assets/google-logo.svg'
-import appleLogo from '../assets/apple-logo.svg'
-import facebookLogo from '../assets/facebook-logo.svg'
+/* import appleLogo from '../assets/apple-logo.svg'
+import facebookLogo from '../assets/facebook-logo.svg' */
 import styles from './LoginPage.module.scss'
 import { DEFAULT_POST_LOGIN_ROUTE, POST_LOGIN_REDIRECT_KEY } from '../config/authRedirect'
 
@@ -61,18 +61,18 @@ export default function LoginPage() {
                 <img src={googleLogo} alt="Google" className={styles.socialIcon} />
                 <span className={styles.socialLabel}>Log in with Google</span>
               </button>
-              <button type="button" className={styles.socialButton} onClick={handleSignIn}>
+{/*               <button type="button" className={styles.socialButton} onClick={handleSignIn}>
                 <img src={appleLogo} alt="Apple" className={styles.socialIconApple} />
                 <span className={styles.socialLabel}>Log in with Apple</span>
-              </button>
-              <button
+              </button> */}
+{/*               <button
                 type="button"
                 className={`${styles.socialButton} ${styles.socialButtonLast}`}
                 onClick={handleSignIn}
               >
                 <img src={facebookLogo} alt="Facebook" className={styles.socialIcon} />
                 <span className={styles.socialLabel}>Log in with Facebook</span>
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
