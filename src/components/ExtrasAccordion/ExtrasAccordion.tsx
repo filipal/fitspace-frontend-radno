@@ -305,6 +305,13 @@ export default function ExtrasAccordion() {
             <img src={ArrowUp} alt="Up" />
           </button>
 
+
+          {/* MOBILE: jedan swatch 40x40 */}
+          <div className={styles.colorPreview}>
+            <Skin1Icon className={styles.previewIcon} style={{ color: base }} />
+          </div>
+
+          {/* DESKTOP: tri swatcha (40,50,40) */}
           <div className={styles.colorSwatches}>
             <div className={`${styles.swatch} ${styles.swatchSide}`}>
               <Skin1Icon className={styles.previewIcon} style={{ color: leftColor }} />

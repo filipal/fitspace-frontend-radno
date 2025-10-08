@@ -17,6 +17,7 @@ import type { AvatarPayload } from '../services/avatarApi'
 import { useAvatars } from '../context/AvatarContext'
 import { useAvatarConfiguration } from '../context/AvatarConfigurationContext'
 import type { BackendAvatarMorphTarget } from '../context/AvatarConfigurationContext'
+import useIsMobile from '../hooks/useIsMobile';
 
 const ages = ['15-19', ...Array.from({ length: 8 }, (_, i) => {
   const start = 20 + i * 10
@@ -49,6 +50,7 @@ export default function AvatarInfoPage() {
   const ageRange = useMemo(() => ages[age.index] ?? ages[0], [age.index])
   const heightValue = useMemo(() => Number(heights[height.index] ?? heights[0]), [height.index])
   const weightValue = useMemo(() => Number(weights[weight.index] ?? weights[0]), [weight.index])
+  const isMobile = useIsMobile(1024);
 
   const Ghost = ({ className }: { className?: string }) => (
     // sadrži “dummy” tekst širine slične realnom, ali je nevidljiv
@@ -189,12 +191,14 @@ export default function AvatarInfoPage() {
             <div className={styles.action}>     
               <button className={styles.scanButton} 
                 onClick={() => {
-                  if (window.innerWidth >= 1440) {
-                    navigate('/scan-qr-bodyscan')
+                  if (isMobile) {
+                    navigate('/body-scan-info');
                   } else {
-                    navigate('/body-scan-info')
+                    navigate('/scan-qr-bodyscan', { state: { mode: 'body' } });
                   }
-                }}>
+                  }}
+                  type="button"
+                >
                 <img src={cameraIcon} alt="" className={styles.buttonIcon1} />
                 Scan Body
               </button>

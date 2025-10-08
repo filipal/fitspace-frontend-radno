@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import useIsMobile from '../hooks/useIsMobile';
 import Header from '../components/Header/Header'
 import Footer from '../components/Footer/Footer'
 import VoiceInfoOn from '../assets/voice-info-on.svg'
@@ -31,6 +32,42 @@ export default function FaceScan({ onClose }: { onClose?: () => void }) {
   const streamRef = useRef<MediaStream | null>(null)
   const playPromiseRef = useRef<Promise<void> | null>(null)
   const initialSoundEnabled = useRef(soundEnabled)
+
+  const isMobile = useIsMobile(1024);
+  useEffect(() => {
+    if (!isMobile) {
+      navigate('/scan-qr-bodyscan', { replace: true, state: { mode: 'face' } });
+    }
+  }, [isMobile, navigate]);
+
+  if (!isMobile) return null; // spriječi flicker
+
+  // Resetira naslijeđeni scroll + isključi auto-restoration
+  useEffect(() => {
+    const prev = (history as any).scrollRestoration;
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+
+    // hard reset na vrh (bez animacije)
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+
+    // (opcionalno, za svaki slučaj) Zaključaj scroll dok je FaceScan aktivan
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    const prevBodyOverscroll = (document.body.style as any).overscrollBehaviorY || '';
+    document.documentElement.style.overflow = 'hidden';
+    (document.body.style as any).overscrollBehaviorY = 'none';
+
+    return () => {
+      if ('scrollRestoration' in history) {
+        history.scrollRestoration = prev ?? 'auto';
+      }
+      document.documentElement.style.overflow = prevHtmlOverflow;
+      (document.body.style as any).overscrollBehaviorY = prevBodyOverscroll;
+    };
+  }, []);
 
   // Pokreni audio prilikom mounta komponente samo jednom. Ovaj efekt ne
   // ovisi o promjenama `soundEnabled`, nego koristi početnu vrijednost
@@ -197,7 +234,6 @@ export default function FaceScan({ onClose }: { onClose?: () => void }) {
   }, [])
 
   const placeholderImage = orientation === 'front' ? frontImg : sideImg
-  const guideImage = FaceGuide
   const title = orientation === 'front' ? 'Front Face Scan' : 'Side Face Scan'
 
   const actionText =
@@ -241,24 +277,31 @@ export default function FaceScan({ onClose }: { onClose?: () => void }) {
   }
 
   return (
-    <div
-      className={styles.faceScanPage}
-      style={
-        scanPhase === 'initial'
-          ? { backgroundImage: `url(${placeholderImage})` }
-          : undefined
-      }
-    >
-      <video ref={videoRef} className={styles.video} autoPlay playsInline muted />
-      {scanPhase !== 'initial' && (
-        <div className={styles.overlay}>
-          <img
-            src={guideImage}
-            alt={orientation === 'front' ? 'Front guide' : 'Side guide'}
-            className={styles.guideImage}
-          />
-        </div>
+    <div className={styles.faceScanPage}>
+      {/* Placeholder samo u 'initial' */}
+      {scanPhase === 'initial' && (
+        <img
+          src={placeholderImage}
+          alt={orientation === 'front' ? 'Front face placeholder' : 'Side face placeholder'}
+          className={styles.scanImage}
+        />
       )}
+
+      {/* Video je prisutan, ali skriven u 'initial' */}
+      <video
+        ref={videoRef}
+        className={`${styles.video} ${scanPhase === 'initial' ? styles.videoHidden : ''}`}
+        autoPlay
+        playsInline
+        muted
+      />
+
+      {/* Guide je stalno iznad (i iznad placeholdera) */}
+      <div className={styles.overlay}>
+        <img src={FaceGuide} alt="Face guide" className={styles.guideImage} />
+      </div>
+
+
       <Header
         className={styles.scanHeader}
         variant="light"

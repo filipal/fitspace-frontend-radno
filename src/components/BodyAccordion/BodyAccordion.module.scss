@@ -279,7 +279,7 @@ $design-w: 430;
     text-overflow: ellipsis;
   }
   .sliderGroup { grid-column: 1; grid-row: 2; width: 250px; height: 30px; display: flex; align-items: center; justify-content: center; position: relative; }
-  .sliderBar   { width: 236px; height: 10px; margin: 0 auto; background: transparent; box-shadow: inset 0 0 0 1px #000; }
+  .sliderBar   { width: 236px; height: 10px; margin-left: 15px; background: transparent; box-shadow: inset 0 0 0 1px #000; }
   .sliderThumb { width: 30px; height: 30px; top: 50%; transform: translate(-50%, -50%); }
   .rowPct { grid-column: 2; grid-row: 2; align-self: center; justify-self: end; width: 28px; font-size: 10px; line-height: 14px; text-align: right; padding: 0; }
 

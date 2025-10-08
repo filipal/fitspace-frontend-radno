@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import useIsMobile from '../hooks/useIsMobile';
 import Header from '../components/Header/Header'
 import Footer from '../components/Footer/Footer'
 import VoiceInfoOn from '../assets/voice-info-on.svg'
@@ -34,6 +35,42 @@ export default function BodyScan({ onClose }: { onClose?: () => void }) {
   const streamRef = useRef<MediaStream | null>(null)
   const playPromiseRef = useRef<Promise<void> | null>(null)
   const initialSoundEnabled = useRef(soundEnabled)
+
+  const isMobile = useIsMobile(1024);
+  useEffect(() => {
+    if (!isMobile) {
+      navigate('/scan-qr-bodyscan', { replace: true, state: { mode: 'face' } });
+    }
+  }, [isMobile, navigate]);
+
+  if (!isMobile) return null; // spriječi flicker
+
+  // Resetira naslijeđeni scroll + isključi auto-restoration
+  useEffect(() => {
+    const prev = (history as any).scrollRestoration;
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+
+    // hard reset scrolla (bez animacije)
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+
+    // (opcionalno, za svaki slučaj) Zaključaj scroll dok je BodyScan aktivan
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    const prevBodyOverscroll = (document.body.style as any).overscrollBehaviorY || '';
+    document.documentElement.style.overflow = 'hidden';
+    (document.body.style as any).overscrollBehaviorY = 'none';
+
+    return () => {
+      if ('scrollRestoration' in history) {
+        history.scrollRestoration = prev ?? 'auto';
+      }
+      document.documentElement.style.overflow = prevHtmlOverflow;
+      (document.body.style as any).overscrollBehaviorY = prevBodyOverscroll;
+    };
+  }, []);
 
   // Pokreni audio prilikom mounta komponente samo jednom. Ovaj efekt ne
   // ovisi o promjenama `soundEnabled`, nego koristi početnu vrijednost
@@ -245,7 +282,7 @@ export default function BodyScan({ onClose }: { onClose?: () => void }) {
 
   return (
     <div className={styles.bodyScanPage}>
-      {/* Full-bleed background media (izvan platna da pokrije cijeli ekran) */}
+      {/* Placeholder prikaz samo u initial */}
       {scanPhase === 'initial' && (
         <img
           src={placeholderImage}
@@ -253,16 +290,24 @@ export default function BodyScan({ onClose }: { onClose?: () => void }) {
           className={styles.scanImage}
         />
       )}
-      <video ref={videoRef} className={styles.video} autoPlay playsInline muted />
-      {scanPhase !== 'initial' && (
-        <div className={styles.overlay}>
-          <img
-            src={guideImage}
-            alt={orientation === 'front' ? 'Front guide' : 'Side guide'}
-            className={styles.guideImage}
-          />
-        </div>
-      )}
+
+      {/* Video – sakrij u initial */}
+      <video
+        ref={videoRef}
+        className={`${styles.video} ${scanPhase === 'initial' ? styles.videoHidden : ''}`}
+        autoPlay
+        playsInline
+        muted
+      />
+
+      {/* Guide – uvijek renderaj (iznad videa/placeholdera) */}
+      <div className={styles.overlay}>
+        <img
+          src={guideImage}
+          alt={orientation === 'front' ? 'Front guide' : 'Side guide'}
+          className={styles.guideImage}
+        />
+      </div>
 
       <div className={styles.canvas}>
       <Header
@@ -270,6 +315,15 @@ export default function BodyScan({ onClose }: { onClose?: () => void }) {
         variant="light"
         title={title}
         onExit={onClose || (() => navigate(-1))}
+        style={{
+          // Exit 20×20
+          ['--exit-icon-w' as any]: '20px',
+          ['--exit-icon-h' as any]: '20px',
+          // Voice 30×24 + lagano spusti 2px da se poravna s bottom baselineom
+          ['--right-icon-w' as any]: '30px',
+          ['--right-icon-h' as any]: '24px',
+          ['--right-icon-offset' as any]: '-2px',
+        }}
         rightContent={
           <button className={styles.voiceButton} onClick={() => setSoundEnabled(v => !v)} type="button">
             <img src={soundEnabled ? VoiceInfoOn : VoiceInfoOff} alt="Voice Info" />

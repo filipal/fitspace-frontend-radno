@@ -1,5 +1,6 @@
-
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import useIsMobile from '../hooks/useIsMobile';
 import BodyScanIllustration from '../assets/body-scan-illustration.png'
 import Header from '../components/Header/Header'
 import Footer from '../components/Footer/Footer'
@@ -18,6 +19,16 @@ export default function BodyScanInfo() {
   // Na manjim visinama (npr. iPhone 15/15 Pro ~844–852) smanji boxove ~10–12%
   const isTall = typeof window !== 'undefined' && window.innerHeight >= 900
   const tipHeights = isTall ? [75, 51, 75, 97, 75] : [66, 45, 66, 86, 66]
+
+  const isMobile = useIsMobile(1024);
+  useEffect(() => {
+    if (!isMobile) {
+      navigate('/scan-qr-bodyscan', { replace: true, state: { mode: 'face' } });
+    }
+  }, [isMobile, navigate]);
+
+  if (!isMobile) return null; // spriječi flicker
+
 
   return (
     <div className={styles.bodyScanInfoPage}>

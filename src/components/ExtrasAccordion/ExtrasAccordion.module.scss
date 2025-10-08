@@ -4,6 +4,14 @@ $design-w: 430;
   @return calc((#{$px} / #{$base}) * 100cqw);
 }
 
+/* MOBILE (default) */
+.colorPreview {            /* već imaš width/height 40×40 definirane */
+  display: flex;           /* <-- prikaži ga na mobitelu */
+}
+.colorSwatches {
+  display: none;           /* <-- sakrij 3-swatch layout na mobitelu */
+}
+
 /* 430 × 120 */
 .container {
   inline-size: 100%;
@@ -25,25 +33,6 @@ $design-w: 430;
   justify-items: center;
   box-sizing: border-box;
   padding-block: min(cqw(6), 6px);
-}
-
-.vArrow {
-  inline-size: min(cqw(30), 30px);
-  block-size: min(cqw(22), 22px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-
-  img {
-    inline-size: 100%;
-    block-size: 100%;
-    object-fit: contain;
-    display: block;
-  }
 }
 
 .stack {
@@ -95,14 +84,24 @@ $design-w: 430;
     display: block;
   }
 }
+.vArrow {
+  inline-size: min(cqw(30), 30px);
+  block-size: min(cqw(22), 22px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 
-.centerInner .hArrow:first-of-type img { transform: rotate(90deg); }
-.centerInner .hArrow:last-of-type img { transform: rotate(-90deg); }
-
-.hArrowVertical img {
-  transform: none !important;
+  img {
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: contain;
+    display: block;
+  }
 }
-
 /* Strip s ikonama: 46.8 | 78 | 46.8 (centar je “thumbBig”) */
 .centerStrip {
   display: grid;
@@ -177,7 +176,6 @@ $design-w: 430;
   align-items: center;
   justify-content: center;
 }
-
 
 .colorSwatches { display: none; }
 
@@ -287,16 +285,32 @@ $design-w: 430;
     inline-size: 32.81px;
     block-size: 24.01px;
   }
+  .hArrow {
+    inline-size: 32.81px;
+    block-size: 24.01px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+
+    img {
+      inline-size: 24.01px;
+      block-size:  32.81px;
+      object-fit: contain;
+      display: block;
+    }
+  }
   .centerInner .hArrow {
     inline-size: 32.81px;
     block-size: 24.01px;
     align-self: center;
   }
+  .centerInner .hArrow:first-of-type img { transform: rotate(90deg); }
+  .centerInner .hArrow:last-of-type img { transform: rotate(90deg); }
 
-  .centerInner .hArrow:first-of-type img,
-  .centerInner .hArrow:last-of-type img {
-    transform: none;
-  }
 
   .centerStrip {
     inline-size: 126px;
@@ -398,8 +412,6 @@ $design-w: 430;
   .colorSwatches {
     inline-size: 55px;
     block-size: 161px;
-    width: 55px;
-    height: 161px;
     display: flex;
     flex-direction: column;
     align-items: center;

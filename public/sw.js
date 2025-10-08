@@ -65,12 +65,30 @@ self.addEventListener('fetch', (event) => {
 });
 
 function cacheFirst(request, cacheName) {
-  return caches.open(cacheName).then((cache) =>
-    cache.match(request).then((cached) => {
+  // cacheamo samo GET, bez Range headera
+  if (request.method !== 'GET' || request.headers.has('range')) {
+    return fetch(request);
+  }
+
+  return caches.open(cacheName).then(cache =>
+    cache.match(request).then(cached => {
       if (cached) return cached;
-      return fetch(request).then((res) => {
-        cache.put(request, res.clone());
+
+      return fetch(request).then(res => {
+        const okToCache =
+          res &&
+          res.ok &&
+          res.status === 200 &&                          // ne 206
+          res.type === 'basic' &&                        // iz našeg origin-a
+          !res.headers.has('Content-Range');             // sigurnije
+
+        if (okToCache) {
+          cache.put(request, res.clone()).catch(() => {});
+        }
         return res;
+      }).catch(err => {
+        if (cached) return cached;
+        throw err;
       });
     })
   );

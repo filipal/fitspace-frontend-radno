@@ -384,6 +384,7 @@ export default function UnrealMeasurements() {
         ageRange: currentAvatar.ageRange ?? '20-29',
         creationMode: currentAvatar.creationMode ?? 'manual',
         quickMode: currentAvatar.quickMode ?? true,
+        source: currentAvatar.source ?? 'web',
         // koristimo basicNoMode (bez creationMode) i NE dodajemo ponovno original
         ...(basicNoMode ? { basicMeasurements: basicNoMode } : {}),
         // OVDJE koristimo mergedBody (koji već sadrži postojeće + procijenjene vrijednosti)
