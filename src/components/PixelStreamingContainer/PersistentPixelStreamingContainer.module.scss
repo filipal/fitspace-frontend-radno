@@ -1,0 +1,7 @@
+.container {
+  // Base styles for the persistent container
+  background: #000;
+
+  // Ensure smooth transitions when showing/hiding
+  transition: opacity 0.2s ease-in-out;
+}
