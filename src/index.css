@@ -1,85 +1,106 @@
+/* ——— Reset ——— */
 html {
   box-sizing: border-box;
-  -webkit-text-size-adjust: 100%; /* ➊ spriječi čudna povećanja teksta na iOS-u */
+  -webkit-text-size-adjust: 100%;
 }
-
 *, *::before, *::after { box-sizing: inherit; }
-html, body { 
+
+html, body {
   max-width: 100%;
-  overflow-x: clip;     /* modernije od hidden; sprječava trak bez stvaranja scrolla */
+  overflow-x: clip;
 }
-/* Fallback ako treba (staro Safari i sl.) */
 @supports not (overflow: clip) {
   html, body { overflow-x: hidden; }
 }
 
 html, body, #root { height: 100%; margin: 0; }
 * { min-width: 0; }
+
 img, video, canvas, svg { max-width: 100%; height: auto; }
 img, picture, video, canvas, svg, iframe {
   display: block;
   max-inline-size: 100%;
   block-size: auto;
 }
-/* iPhone česti krivci: predulge riječi/URL-ovi -> guraju layout u stranu */
+
 body {
-  overflow-wrap: break-word;     /* ili: anywhere; ako imaš baš ekstremne slučajeve */
-  word-break: break-word;        /* fallback */
-  /* Ako NIKAD ne želiš horizontalni scroll, otkrij i zadrži:
-     (makni ako namjerno imaš horizontalni scroll) */
+  overflow-wrap: break-word;
+  word-break: break-word;
   overflow-x: hidden;
-  /* touch-action: manipulation;  opcionalno – snappier tapovi */
 }
 
+/* ——— Theme + layout varijable ——— */
 :root {
-  /* MOBILE default */
-  --page-max-width: 430px;
-  --page-width: min(100%, var(--page-max-width));
+  /* Primarne varijable (TVOJE) */
+  --page-max-width: 360px;
   --page-height: 100dvh;
+
+  /* Alias radi kompatibilnosti s tuđim modulima/README-om */
+  --page-width: var(--page-max-width);
+
+  /* Korisno kod centriranih wrappera */
+  --page-bg: #ececec;
+  --page-fg: #111;
 
   font-family: 'Outfit', sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  background: #ececec;
-  color: #111;
+  background: var(--page-bg);
+  color: var(--page-fg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Breakpointi neka budu sadržajno-vođeni, ne “po modelima” */
-@media (min-width: 600px)  { :root { --page-max-width: 560px; } }
-@media (min-width: 768px)  { :root { --page-max-width: 720px; } }
-@media (min-width: 1024px) { :root { --page-max-width: 960px; } }
-@media (min-width: 1280px) { :root { --page-max-width: 1200px; } }
-@media (min-width: 1440px) { :root { --page-max-width: 1320px; } }
+/* ——— Breakpointi (zadržavaju tvoj postojeći scale) ——— */
+@media (min-width: 430px)  {
+  :root {
+    --page-max-width: 430px;
+    /* ako želiš fiksnu “dizajn” visinu na ovom breakpointu: */
+    --page-height: 932px;
+  }
+}
+@media (min-width: 768px)  {
+  :root {
+    --page-max-width: 768px;
+    --page-height: 1024px; /* ili ostavi 100dvh ako ti je draže */
+  }
+}
+@media (min-width: 1024px) {
+  :root {
+    --page-max-width: 1024px;
+    --page-height: 953px;
+  }
+}
+@media (min-width: 1280px) {
+  :root {
+    --page-max-width: 1280px;
+    --page-height: 953px;
+  }
+}
+@media (min-width: 1440px) {
+  :root {
+    --page-max-width: 1440px;
+    --page-height: 953px;
+  }
+}
 
-
-/* Wrapper stranice – primijeni varijable ovdje */
+/* ——— Generički page wrapper (ako ga koristiš) ——— */
 .page {
-  width: var(--page-width);
+  width: var(--page-width);               /* alias → ne kvari ništa */
   min-height: var(--page-height);
   margin-inline: auto;
   padding: 16px;
-  /* safe-area za iPhone notch/toolbare */
   padding-top: calc(16px + env(safe-area-inset-top));
   padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
+/* ——— Sitnice ——— */
+a { font-weight: 500; color: #646cff; text-decoration: inherit; }
+a:hover { color: #535bf2; }
+
+h1 { font-size: 3.2em; line-height: 1.1; }
 
 button:focus,
 button:focus-visible,
@@ -87,5 +108,6 @@ button:active {
   outline: none !important;
   box-shadow: none !important;
 }
-/* iOS “zoom-on-focus” izbjegavanje: drži 16px+ */
+
+/* iOS “zoom-on-focus” zaštita */
 input, select, textarea, button { font-size: 16px; }

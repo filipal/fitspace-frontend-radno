@@ -586,9 +586,18 @@ export default function UnrealMeasurements() {
       minimumFractionDigits: Number.isInteger(value) ? 0 : 1,
       maximumFractionDigits: 1
     })
-
+    // Zadržavam za buduću upotrebu (spriječi no-unused-vars)
+    void formatMeasurementValue;
+    
     const formatted = formatter.format(value)
     return unit ? `${formatted} ${unit}` : formatted
+  }, [])
+
+  const formatNumber = useCallback((value: number) => {
+    return new Intl.NumberFormat(undefined, {
+      minimumFractionDigits: Number.isInteger(value) ? 0 : 1,
+      maximumFractionDigits: 1,
+    }).format(value)
   }, [])
 
   const measurements = useMemo<Measurement[] | null>(() => {
@@ -658,7 +667,7 @@ export default function UnrealMeasurements() {
       const computed = (computedFallbacks as Record<string, number | undefined>)[descriptor.key];
       const numericValue = primaryValue ?? fallbackValue ?? (computed ?? null);
       const value = numericValue != null
-        ? formatMeasurementValue(numericValue, descriptor.unit)
+        ? formatNumber(numericValue)
         : '—'
 
       return {
@@ -667,7 +676,7 @@ export default function UnrealMeasurements() {
         icon: descriptor.icon
       }
     })
-  }, [currentAvatar, formatMeasurementValue, MEASUREMENT_DESCRIPTORS, computedFallbacks]);
+  }, [currentAvatar, formatNumber, /* MEASUREMENT_DESCRIPTORS, */ computedFallbacks]);
 
   const isLoadingMeasurements = measurements == null && loaderState.isLoading
   const skeletonRowCount = MEASUREMENT_DESCRIPTORS.length
@@ -885,7 +894,7 @@ export default function UnrealMeasurements() {
 
         {selectedNav === 'Body' && (
           <div className={styles.dataPanelWrapper}>
-            <DataPanel title="Body Measurements" measurements={measurements ?? undefined}>
+            <DataPanel title="Body Measurements (cm)" measurements={measurements ?? undefined}>
               {isLoadingMeasurements && (
                 <div className={styles.measurementsSkeleton} aria-busy="true" aria-live="polite">
                   {Array.from({ length: skeletonRowCount }).map((_, idx) => (
