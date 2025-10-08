@@ -11,6 +11,12 @@ export function usePixelStreamingConnection() {
   const instanceManagement = useInstanceManagement()
   const connectionAttemptRef = useRef(false)
   const lastAttemptedUrlRef = useRef<string | null>(null)
+  const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const retryCountRef = useRef(0)
+  const maxRetries = 3
+  
+  // Detect mobile environment
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
   
   const {
     connect: connectPixelStreaming,
@@ -58,7 +64,42 @@ export function usePixelStreamingConnection() {
       lastAttemptedUrlRef.current = instanceData.url
       
       console.log(`🔗 Connecting to WebSocket: ${instanceData.url}`)
+      console.log(`📱 Mobile device detected: ${isMobile}`)
+      console.log(`🔄 Retry attempt: ${retryCountRef.current + 1}/${maxRetries}`)
       addDebugMessage(`🔗 Connecting to WebSocket: ${instanceData.url}`)
+      addDebugMessage(`📱 Mobile: ${isMobile}, Attempt: ${retryCountRef.current + 1}/${maxRetries}`)
+      
+      // Clear any existing timeout
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current)
+        connectionTimeoutRef.current = null
+      }
+      
+      // Set up mobile-specific timeout for connection monitoring
+      const timeoutDuration = isMobile ? 20000 : 15000 // Longer timeout for mobile
+      connectionTimeoutRef.current = setTimeout(() => {
+        if (connectionState === 'connecting') {
+          console.error(`⏰ Connection timeout after ${timeoutDuration}ms (Mobile: ${isMobile})`)
+          addDebugMessage(`⏰ Connection timeout after ${timeoutDuration}ms`)
+          
+          // Attempt retry if we haven't exceeded max retries
+          if (retryCountRef.current < maxRetries) {
+            retryCountRef.current++
+            console.log(`🔄 Retrying connection (${retryCountRef.current}/${maxRetries})`)
+            addDebugMessage(`🔄 Retrying connection (${retryCountRef.current}/${maxRetries})`)
+            
+            // Reset flags and try again
+            connectionAttemptRef.current = false
+            setTimeout(() => {
+              connectToInstance()
+            }, 2000) // Wait 2 seconds before retry
+          } else {
+            console.error('❌ Max retries exceeded, giving up')
+            addDebugMessage('❌ Max retries exceeded, connection failed')
+            retryCountRef.current = 0 // Reset for next URL
+          }
+        }
+      }, timeoutDuration)
       
       // Update pixel streaming settings with the new URL
       const newSettings = {
@@ -83,6 +124,23 @@ export function usePixelStreamingConnection() {
       // Connect to pixel streaming with URL override to avoid timing issues
       console.log('🔌 Calling connectPixelStreaming with URL override:', instanceData.url)
       addDebugMessage(`🔌 Attempting connection with URL: ${instanceData.url}`)
+      
+      // Add immediate debugging check after connect call
+      setTimeout(() => {
+        addDebugMessage('🔍 2-second post-connect check: Monitoring WebSocket state...')
+        console.log('🔍 2-second post-connect check: Monitoring WebSocket state...')
+      }, 2000)
+      
+      setTimeout(() => {
+        addDebugMessage('⏱️ 5-second check: Connection should be progressing...')
+        console.log('⏱️ 5-second check: Connection should be progressing...')
+      }, 5000)
+      
+      setTimeout(() => {
+        addDebugMessage('⚠️ 10-second check: If no progress, connection may be hanging')
+        console.log('⚠️ 10-second check: If no progress, connection may be hanging')
+      }, 10000)
+      
       await connectPixelStreaming(instanceData.url)
       
       console.log('✅ Pixel streaming connection initiated')
@@ -107,7 +165,10 @@ export function usePixelStreamingConnection() {
     connectPixelStreaming, 
     updateSettings, 
     setDebugSettings, 
-    debugMode
+    debugMode,
+    isMobile,
+    maxRetries,
+    connectionState
   ])
   
   // Auto-connect when instance becomes ready (only once per URL)
@@ -148,9 +209,25 @@ export function usePixelStreamingConnection() {
 
   // Reset connection attempt flag when connection succeeds or fails definitively
   useEffect(() => {
-    if (connectionState === 'connected' || connectionState === 'error') {
-      console.log(`🔄 Connection state changed to ${connectionState}, resetting attempt flag`)
+    if (connectionState === 'connected') {
+      console.log(`✅ Connection successful, resetting retry count and clearing timeout`)
       connectionAttemptRef.current = false
+      retryCountRef.current = 0 // Reset retry count on success
+      
+      // Clear timeout on successful connection
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current)
+        connectionTimeoutRef.current = null
+      }
+    } else if (connectionState === 'error') {
+      console.log(`❌ Connection error, resetting attempt flag`)
+      connectionAttemptRef.current = false
+      
+      // Clear timeout on error
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current)
+        connectionTimeoutRef.current = null
+      }
     }
   }, [connectionState])
 
@@ -159,6 +236,13 @@ export function usePixelStreamingConnection() {
     return () => {
       connectionAttemptRef.current = false
       lastAttemptedUrlRef.current = null
+      retryCountRef.current = 0
+      
+      // Clear any pending timeout
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current)
+        connectionTimeoutRef.current = null
+      }
     }
   }, [])
   
@@ -173,9 +257,16 @@ export function usePixelStreamingConnection() {
     console.log('🔄 Manual retry requested')
     addDebugMessage('🔄 Manual connection retry requested')
     
-    // Reset tracking to allow a new attempt
+    // Reset all tracking to allow a new attempt
     connectionAttemptRef.current = false
     lastAttemptedUrlRef.current = null
+    retryCountRef.current = 0 // Reset retry count for manual retry
+    
+    // Clear any existing timeout
+    if (connectionTimeoutRef.current) {
+      clearTimeout(connectionTimeoutRef.current)
+      connectionTimeoutRef.current = null
+    }
     
     // Attempt connection if conditions are met
     if (isReady && instanceData?.url) {

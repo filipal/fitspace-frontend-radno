@@ -19,7 +19,7 @@ export default function TopAccordion() {
       const newIndex = (i + carouselItems.length - 1) % carouselItems.length
       // Send selectClothing command for tops (map to 0-2 range)
       if (connectionState === 'connected') {
-        const itemId = (newIndex % 3).toString()
+        const itemId = (newIndex % 2).toString()
         sendFittingRoomCommand('selectClothing', { itemId, category: 'top' })
         console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
       }
@@ -31,7 +31,7 @@ export default function TopAccordion() {
       const newIndex = (i + 1) % carouselItems.length
       // Send selectClothing command for tops (map to 0-2 range)
       if (connectionState === 'connected') {
-        const itemId = (newIndex % 3).toString()
+        const itemId = (newIndex % 2).toString()
         sendFittingRoomCommand('selectClothing', { itemId, category: 'top' })
         console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
       }

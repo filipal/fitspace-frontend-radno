@@ -1,35 +1,28 @@
-import { useCallback } from 'react'
-import { useLocation, type Location } from 'react-router-dom'
 import { useAuth } from 'react-oidc-context'
+import { loginWithGoogle /* , loginWithApple, loginWithFacebook */ } from '../utils/authHelpers'
 import logo from '../assets/fitspace-logo-gradient-nobkg.svg'
 import exitIcon from '../assets/exit.svg'
 import googleLogo from '../assets/google-logo.svg'
 /* import appleLogo from '../assets/apple-logo.svg'
 import facebookLogo from '../assets/facebook-logo.svg' */
 import styles from './LoginPage.module.scss'
-import { DEFAULT_POST_LOGIN_ROUTE, POST_LOGIN_REDIRECT_KEY } from '../config/authRedirect'
 
 export default function LoginPage() {
   const auth = useAuth()
-  const location = useLocation()
 
-  const handleSignIn = useCallback(() => {
-    const state = location.state as { from?: Location } | undefined
-    const redirectTarget = state?.from
-      ? `${state.from.pathname ?? ''}${state.from.search ?? ''}${state.from.hash ?? ''}`
-      : DEFAULT_POST_LOGIN_ROUTE
+  // spriječi dvostruke klikove tijekom redirecta
+  const isBusy = auth.isLoading || auth.activeNavigator === 'signinRedirect'
 
-    sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, redirectTarget)
+  // (opcionalno) ako želiš zapamtiti kamo da se vrati nakon login-a:
+  const returnUrlState = { state: { returnUrl: '/logged-in' } }
 
-    if (auth.signinRedirect) {
-      auth
-        .signinRedirect({ state: redirectTarget })
-        .catch(e => console.error('signinRedirect failed', e))
-    } else {
-      console.warn('signinRedirect not available', auth)
-    }
-  }, [auth, location])
-  // AuthProvider handles the OIDC redirect callback via onSigninCallback in src/main.tsx.
+  // Google
+  const handleGoogle = () => loginWithGoogle(auth, returnUrlState)
+  // Apple (ostavi za kasnije)
+  // const handleApple  = () => loginWithApple(auth, returnUrlState)
+  // Facebook (ostavi za kasnije)
+  // const handleFacebook = () => loginWithFacebook(auth, returnUrlState)
+
 
   return (
     <div className={styles.loginPage}>
@@ -57,22 +50,37 @@ export default function LoginPage() {
             </span>
 
             <div className={styles.loginForm}>
-              <button type="button" className={styles.socialButton} onClick={handleSignIn}>
+              <button
+                type="button"
+                className={styles.socialButton}
+                onClick={handleGoogle}
+                disabled={isBusy}
+                aria-busy={isBusy}
+              >
                 <img src={googleLogo} alt="Google" className={styles.socialIcon} />
                 <span className={styles.socialLabel}>Log in with Google</span>
               </button>
-{/*               <button type="button" className={styles.socialButton} onClick={handleSignIn}>
+              {/*
+              <button
+                type="button"
+                className={styles.socialButton}
+                onClick={handleApple}
+                disabled={isBusy}
+              >
                 <img src={appleLogo} alt="Apple" className={styles.socialIconApple} />
                 <span className={styles.socialLabel}>Log in with Apple</span>
-              </button> */}
-{/*               <button
+              </button>
+
+              <button
                 type="button"
                 className={`${styles.socialButton} ${styles.socialButtonLast}`}
-                onClick={handleSignIn}
+                onClick={handleFacebook}
+                disabled={isBusy}
               >
                 <img src={facebookLogo} alt="Facebook" className={styles.socialIcon} />
                 <span className={styles.socialLabel}>Log in with Facebook</span>
-              </button> */}
+              </button>
+              */}
             </div>
           </div>
         </div>

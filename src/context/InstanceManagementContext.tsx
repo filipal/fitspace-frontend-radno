@@ -1,4 +1,4 @@
-import { createContext, useState, useCallback, useContext } from 'react'
+import { createContext, useState, useCallback, useContext, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import type { AuthDataContextType } from './AuthDataContext'
 
@@ -74,6 +74,14 @@ export function InstanceManagementProvider({ children }: InstanceManagementProvi
     const timestamp = new Date().toLocaleTimeString()
     setDebugMessages(prev => [...prev, `[${timestamp}] ${message}`])
   }, [])
+  
+  // Set up global reference for cross-context debugging
+  useEffect(() => {
+    (window as any).addFitspaceDebugMessage = addDebugMessage;
+    return () => {
+      delete (window as any).addFitspaceDebugMessage;
+    };
+  }, [addDebugMessage]);
   
   // Clear debug messages
   const clearDebugMessages = useCallback(() => {
