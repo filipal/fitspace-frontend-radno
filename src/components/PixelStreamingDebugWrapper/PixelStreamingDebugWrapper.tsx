@@ -25,6 +25,7 @@ export const PixelStreamingWrapper = ({
     connectionError,
     application,
     settings,
+    devMode,
     setDebugMode,
     setDebugSettings,
     connect,
@@ -58,7 +59,7 @@ export const PixelStreamingWrapper = ({
   useEffect(() => {
     let mounted = true;
     if (!debugMode && mounted) {
-      setDebugMode(true);
+      setDebugMode(false);
     }
     return () => {
       mounted = false;
@@ -66,6 +67,29 @@ export const PixelStreamingWrapper = ({
       // Let the user control it via the UI
     };
   }, []); // Empty dependency array prevents infinite re-renders
+
+  // Auto-set signalling URL based on devMode
+  useEffect(() => {
+    if (devMode === 'localhost') {
+      const localhostUrl = 'ws://localhost:80';
+      if (signallingUrl !== localhostUrl) {
+        console.log('🏠 Localhost mode detected, setting URL to:', localhostUrl);
+        setSignallingUrl(localhostUrl);
+        
+        // Enable debug mode to ensure settings override works
+        if (!debugMode) {
+          console.log('🔧 Enabling debug mode for localhost override');
+          setDebugMode(true);
+        }
+        
+        // Update debug settings to override main app settings
+        const next = { ss: localhostUrl } as Partial<AllSettings>;
+        setDebugSettings(next);
+        onDebugSettingsChange?.(next);
+        console.log('🔧 Set debug settings for localhost:', next);
+      }
+    }
+  }, [devMode, signallingUrl, setDebugSettings, onDebugSettingsChange, debugMode, setDebugMode]); // Run when devMode changes
 
   // Mount the main application's UI when available and in native mode
   // DISABLED: Don't move the application.rootElement to debug panel as it breaks the main app
@@ -108,10 +132,29 @@ export const PixelStreamingWrapper = ({
   const handleConnect = () => {
     // Ensure URL is set in debug settings before connecting
     if (signallingUrl !== settings.ss) {
-      setDebugSettings({ ss: signallingUrl });
-      console.log('Updated debug signalling URL to:', signallingUrl);
-      onDebugSettingsChange?.({ ss: signallingUrl });
+      const debugSettingsUpdate = { ss: signallingUrl };
+      setDebugSettings(debugSettingsUpdate);
+      console.log('🔧 Updated debug signalling URL to:', signallingUrl);
+      console.log('🔧 Current settings.ss:', settings.ss);
+      console.log('🔧 Debug settings update:', debugSettingsUpdate);
+      onDebugSettingsChange?.(debugSettingsUpdate);
     }
+    
+    // For localhost mode, ensure debug mode is enabled and settings are applied
+    if (devMode === 'localhost') {
+      if (!debugMode) {
+        console.log('🏠 Enabling debug mode for localhost connection');
+        setDebugMode(true);
+      }
+      
+      // Force the debug settings again to ensure they take effect
+      const localhostSettings = { ss: 'ws://localhost:80' };
+      setDebugSettings(localhostSettings);
+      console.log('🏠 Forced localhost debug settings before connect:', localhostSettings);
+      onDebugSettingsChange?.(localhostSettings);
+    }
+    
+    console.log('🚀 Attempting to connect with current effective settings...');
     connect();
   };
 
@@ -184,6 +227,19 @@ export const PixelStreamingWrapper = ({
           MAIN: {connectionState.toUpperCase()}
         </div>
 
+        {/* Dev Mode Indicator */}
+        <div style={{ 
+          fontSize: '11px',
+          padding: '2px 6px',
+          borderRadius: '3px',
+          backgroundColor: devMode === 'prod' ? '#e2e3e5' : 
+                          devMode === 'dev' ? '#cce5ff' : '#ffe0b3',
+          color: devMode === 'prod' ? '#383d41' : 
+                devMode === 'dev' ? '#004085' : '#7a4f00'
+        }}>
+          MODE: {devMode.toUpperCase()}
+        </div>
+
         {/* Exit instructions */}
         <div style={{ 
           fontSize: '10px',
@@ -204,6 +260,19 @@ export const PixelStreamingWrapper = ({
           color: '#856404'
         }}>
           🔧 Debug settings are overriding main app settings
+        </div>
+      )}
+
+      {devMode === 'localhost' && (
+        <div style={{ 
+          marginBottom: '10px', 
+          padding: '8px', 
+          backgroundColor: '#ffe0b3', 
+          borderRadius: '4px',
+          fontSize: '11px',
+          color: '#7a4f00'
+        }}>
+          🏠 Localhost mode active - Signalling URL auto-set to ws://localhost:80
         </div>
       )}
 
@@ -528,6 +597,20 @@ export const PixelStreamingWrapper = ({
               }}>
                 {connectionState.toUpperCase()}
               </span>
+            </div>
+            
+            <div style={{ fontSize: '12px', marginBottom: '8px' }}>
+              <strong>Dev Mode:</strong> <span style={{
+                color: devMode === 'prod' ? '#6c757d' : 
+                       devMode === 'dev' ? '#007bff' : '#ffc107'
+              }}>
+                {devMode.toUpperCase()}
+              </span>
+              {devMode === 'localhost' && (
+                <span style={{ fontSize: '10px', color: '#7a4f00', marginLeft: '8px' }}>
+                  (Auto-connects to localhost)
+                </span>
+              )}
             </div>
             
             {connectionError && (

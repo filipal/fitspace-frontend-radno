@@ -1,4 +1,3 @@
-// src/oidcConfig.ts
 import { WebStorageStateStore, type UserManagerSettings } from 'oidc-client-ts'
 
 const redirectUri =

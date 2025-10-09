@@ -8,18 +8,13 @@ import {
   PixelStreamingApplicationStyle 
 } from '@epicgames-ps/lib-pixelstreamingfrontend-ui-ue5.6';
 import type { AllSettings } from '@epicgames-ps/lib-pixelstreamingfrontend-ue5.6/dist/types/Config/Config';
+import { getPixelStreamingConfig } from '../config/pixelStreamingConfig';
 
-  // Default settings that will be used across the app
+// Get platform-specific default settings
 const defaultSettings: Partial<AllSettings> = {
-  AutoPlayVideo: true,
+  ...getPixelStreamingConfig(),
   AutoConnect: false, // Changed to false - we'll handle connection manually
   ss: '', // Start with empty URL - will be set when instance is ready
-  StartVideoMuted: true,
-  HoveringMouse: true,
-  SuppressBrowserKeys: false, 
-  WaitForStreamer: true,
-  MatchViewportRes: true, // Enable match viewport resolution by default
-  WebRTCFPS: 30 // Set max FPS to 30
 };
 
 // Fitting room specific command types
@@ -54,8 +49,8 @@ interface PixelStreamingContextType {
   getEffectiveSettings: () => Partial<AllSettings>;
   
   // Dev mode for instance creation
-  devMode: boolean;
-  setDevMode: (enabled: boolean) => void;
+  devMode: 'dev' | 'prod' | 'localhost';
+  setDevMode: (mode: 'dev' | 'prod' | 'localhost') => void;
   
   // Native overlay visibility control
   hideNativeOverlay: boolean;
@@ -86,11 +81,6 @@ interface PixelStreamingContextType {
   removeMessageHandler: (handler: (message: any) => void) => void;
 }
 
-type UIInteractionPayload = Parameters<PixelStreaming['emitUIInteraction']>[0];
-
-const isUIInteractionPayload = (payload: unknown): payload is UIInteractionPayload =>
-  typeof payload === 'string' || (typeof payload === 'object' && payload !== null);
-
 const PixelStreamingContext = createContext<PixelStreamingContextType | undefined>(undefined);
 
 export { PixelStreamingContext };
@@ -116,59 +106,13 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
   const [debugSettings, setDebugSettings] = useState<Partial<AllSettings> | null>(null);
 
   // Dev mode state
-  const [devMode, setDevMode] = useState<boolean>(true);
+  const [devMode, setDevMode] = useState<'dev' | 'prod' | 'localhost'>('dev');
 
   // Native overlay visibility state
   const [hideNativeOverlay, setHideNativeOverlay] = useState<boolean>(true);
 
   // Message handlers
   const [messageHandlers, setMessageHandlers] = useState<Set<(message: any) => void>>(new Set());
-  const pendingInteractionsRef = React.useRef<Array<{ payload: UIInteractionPayload; description: string }>>([]);
-
-  const flushPendingInteractions = useCallback((targetStream?: PixelStreaming | null) => {
-    const activeStream = targetStream ?? stream;
-    if (!activeStream) {
-      return;
-    }
-
-    if (pendingInteractionsRef.current.length === 0) {
-      return;
-    }
-
-    const queued = [...pendingInteractionsRef.current];
-    pendingInteractionsRef.current = [];
-
-    console.log(`📤 Sending ${queued.length} queued pixel streaming command${queued.length === 1 ? '' : 's'}...`);
-
-    queued.forEach(({ payload, description }, index) => {
-      try {
-        activeStream.emitUIInteraction(payload);
-        console.log(`✅ Sent queued ${description} (${index + 1}/${queued.length})`);
-      } catch (error) {
-        console.error(`Failed to send queued ${description}:`, error);
-      }
-    });
-  }, [stream]);
-
-  const sendOrQueueInteraction = useCallback((payload: unknown, description: string) => {
-    if (!isUIInteractionPayload(payload)) {
-      console.error('Attempted to send invalid pixel streaming payload:', payload);
-      return;
-    }
-
-    if (!stream || connectionState !== 'connected') {
-      pendingInteractionsRef.current.push({ payload, description });
-      console.log(`📦 Queued ${description} until pixel streaming connection is ready`, payload);
-      return;
-    }
-
-    try {
-      stream.emitUIInteraction(payload);
-      console.log(`Sent ${description}:`, payload);
-    } catch (error) {
-      console.error(`Failed to send ${description}:`, error);
-    }
-  }, [stream, connectionState]);
 
   const onMessageReceived = useCallback((handler: (message: any) => void) => {
     setMessageHandlers(prev => new Set([...prev, handler]));
@@ -288,6 +232,40 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
       setConnectionState('connecting');
       setConnectionError(null);
 
+      // Helper function to add debug messages (try to use global debug if available)
+      const addDebugMsg = (message: string) => {
+        console.log(message);
+        // Try to access global debug function if available
+        if (typeof (window as any).addFitspaceDebugMessage === 'function') {
+          (window as any).addFitspaceDebugMessage(message);
+        }
+      };
+
+      // Detect mobile environment
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const userAgent = navigator.userAgent;
+      const platform = navigator.platform;
+      
+      addDebugMsg('📱 PixelStreaming connect() called with mobile detection');
+      addDebugMsg(`📱 Mobile device: ${isMobile}`);
+      addDebugMsg(`🔗 Connection URL: ${overrideUrl || effectiveSettings.ss}`);
+      addDebugMsg(`🎥 AutoPlayVideo setting: ${effectiveSettings.AutoPlayVideo} (${isMobile ? 'disabled for mobile' : 'enabled for desktop'})`);
+      
+      console.log('📱 Device detection:', {
+        isMobile,
+        userAgent,
+        platform,
+        screenSize: `${window.screen.width}x${window.screen.height}`,
+        viewport: `${window.innerWidth}x${window.innerHeight}`,
+        devicePixelRatio: window.devicePixelRatio,
+        autoPlayVideo: effectiveSettings.AutoPlayVideo,
+        connection: (navigator as any).connection ? {
+          effectiveType: (navigator as any).connection.effectiveType,
+          downlink: (navigator as any).connection.downlink,
+          rtt: (navigator as any).connection.rtt
+        } : 'not available'
+      });
+
       // Apply pixel streaming styles
       const pixelStreamingStyles = new PixelStreamingApplicationStyle();
       pixelStreamingStyles.applyStyleSheet();
@@ -299,7 +277,11 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
 
       console.log('🔍 Connection settings being used:', connectionSettings);
       console.log('🔍 Override URL provided:', overrideUrl);
-      console.log('🔍 Default settings applied:', defaultSettings);
+      console.log('🔍 Effective settings:', effectiveSettings);
+      console.log('🔍 Debug mode active:', debugMode);
+      console.log('🔍 Debug settings:', debugSettings);
+      console.log('🔍 Base settings:', settings);
+      console.log('🔍 Final signalling URL (ss):', connectionSettings.ss);
 
       // Use the connection settings for config
       const config = new Config({ 
@@ -374,8 +356,27 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
         originalDisconnect.call(newStream);
       };
 
+      // Set up connection timeout for mobile devices
+      const connectionTimeout = setTimeout(() => {
+        if (connectionState === 'connecting') {
+          console.error('⏰ Connection timeout after 30 seconds');
+          setConnectionState('error');
+          setConnectionError('Connection timeout - WebSocket or WebRTC handshake failed');
+          
+          // Try to disconnect the hanging connection
+          try {
+            if (newStream) {
+              newStream.disconnect();
+            }
+          } catch (error) {
+            console.warn('Error disconnecting timed out connection:', error);
+          }
+        }
+      }, 30000); // 30 second timeout
+
       // Set up event listeners for connection state
       newStream.addEventListener('webRtcConnected', () => {
+        clearTimeout(connectionTimeout); // Clear timeout on successful connection
         setConnectionState('connected');
         console.log('🎥 WebRTC Connected - checking resolution...');
         
@@ -452,18 +453,97 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
             }
           }, 100);
         }, 3000);
-
-        flushPendingInteractions(newStream);
       });
 
       newStream.addEventListener('webRtcDisconnected', () => {
+        clearTimeout(connectionTimeout); // Clear timeout on disconnect
         setConnectionState('disconnected');
       });
 
       newStream.addEventListener('webRtcFailed', () => {
+        clearTimeout(connectionTimeout); // Clear timeout on failure
         setConnectionState('error');
         setConnectionError('WebRTC connection failed');
       });
+
+      // Enhanced WebSocket monitoring for mobile debugging
+      const setupWebSocketMonitoring = () => {
+        const wsController = (newStream as any)._webSocketController;
+        
+        if (wsController) {
+          console.log('🔌 Setting up WebSocket event monitoring...');
+          addDebugMsg('🔌 Setting up WebSocket event monitoring...');
+          
+          // Store original handlers to avoid double-wrapping
+          if (!wsController._fitspaceMonitoringSetup) {
+            wsController._fitspaceMonitoringSetup = true;
+            
+            const originalOnOpen = wsController.onopen;
+            wsController.onopen = (event: Event) => {
+              addDebugMsg('✅ WebSocket opened successfully!');
+              console.log('✅ WebSocket opened successfully');
+              console.log('📱 Mobile WebSocket open event:', {
+                isMobile,
+                timestamp: new Date().toISOString(),
+                url: wsController.webSocket?.url
+              });
+              if (originalOnOpen) originalOnOpen.call(wsController, event);
+            };
+            
+            const originalOnClose = wsController.onclose;
+            wsController.onclose = (event: CloseEvent) => {
+              addDebugMsg(`🔌 WebSocket closed: ${event.code} ${event.reason || 'No reason'}`);
+              console.log('🔌 WebSocket closed:', {
+                code: event.code,
+                reason: event.reason,
+                wasClean: event.wasClean,
+                isMobile,
+                timestamp: new Date().toISOString()
+              });
+              clearTimeout(connectionTimeout);
+              if (originalOnClose) originalOnClose.call(wsController, event);
+            };
+            
+            const originalOnError = wsController.onerror;
+            wsController.onerror = (event: Event) => {
+              addDebugMsg(`❌ WebSocket error occurred (Mobile: ${isMobile})`);
+              console.error('❌ WebSocket error:', {
+                event,
+                isMobile,
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent.substring(0, 50) + '...'
+              });
+              clearTimeout(connectionTimeout);
+              setConnectionState('error');
+              setConnectionError(`WebSocket connection error (Mobile: ${isMobile})`);
+              if (originalOnError) originalOnError.call(wsController, event);
+            };
+            
+            const originalOnMessage = wsController.onmessage;
+            wsController.onmessage = (event: MessageEvent) => {
+              addDebugMsg('📨 WebSocket message received');
+              console.log('📨 WebSocket message received:', {
+                dataType: typeof event.data,
+                size: event.data?.length || event.data?.byteLength || 0,
+                timestamp: new Date().toISOString()
+              });
+              if (originalOnMessage) originalOnMessage.call(wsController, event);
+            };
+          }
+        } else {
+          //addDebugMsg('⏳ WebSocket controller not ready yet, will retry...');
+          //console.log('⏳ WebSocket controller not ready yet, will retry...');
+          // Retry after a short delay
+          setTimeout(setupWebSocketMonitoring, 100);
+        }
+      };
+      
+      // Start monitoring immediately and retry if needed
+      setupWebSocketMonitoring();
+      
+      // Also set up monitoring for when the controller is created later
+      setTimeout(setupWebSocketMonitoring, 500);
+      setTimeout(setupWebSocketMonitoring, 1000);
 
       // Data channel events
       newStream.addEventListener('dataChannelOpen', () => {
@@ -699,7 +779,148 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
       
       if (shouldConnect) {
         console.log('✅ Valid URL found, connecting to signalling server:', connectionSettings.ss);
+        
+        // Additional debugging for mobile connections
+        console.log('🔍 Pre-connection debugging:', {
+          timestamp: new Date().toISOString(),
+          url: connectionSettings.ss,
+          isMobile,
+          windowSize: `${window.innerWidth}x${window.innerHeight}`,
+          screenSize: `${window.screen.width}x${window.screen.height}`,
+          userAgent: navigator.userAgent.substring(0, 100) + '...'
+        });
+        
+        // Test WebSocket connectivity before attempting connection
+        addDebugMsg('🧪 Testing WebSocket connectivity...');
+        console.log('🧪 Testing WebSocket connectivity...');
+        try {
+          if (connectionSettings.ss) {
+            addDebugMsg(`🔗 Creating test WebSocket to: ${connectionSettings.ss}`);
+            const testWs = new WebSocket(connectionSettings.ss);
+            testWs.onopen = () => {
+              addDebugMsg('✅ WebSocket test connection opened successfully');
+              console.log('✅ WebSocket test connection opened successfully');
+              testWs.close();
+            };
+            testWs.onerror = (error) => {
+              addDebugMsg('❌ WebSocket test connection failed');
+              console.error('❌ WebSocket test connection failed:', error);
+            };
+            testWs.onclose = (event) => {
+              addDebugMsg(`🔌 WebSocket test closed: ${event.code} ${event.reason}`);
+              console.log('🔌 WebSocket test connection closed:', event.code, event.reason);
+            };
+            
+            // Close test connection after 5 seconds
+            setTimeout(() => {
+              if (testWs.readyState === WebSocket.CONNECTING || testWs.readyState === WebSocket.OPEN) {
+                testWs.close();
+              }
+            }, 5000);
+          } else {
+            addDebugMsg('❌ Cannot test WebSocket: URL is undefined');
+            console.error('❌ Cannot test WebSocket: URL is undefined');
+          }
+        } catch (testError) {
+          addDebugMsg('❌ Failed to create test WebSocket');
+          console.error('❌ Failed to create test WebSocket:', testError);
+        }
+        
+        addDebugMsg('🚀 About to call newStream.connect()...');
+        console.log('🚀 Calling newStream.connect()...');
         newStream.connect();
+        addDebugMsg('✅ newStream.connect() call completed, monitoring for events...');
+        console.log('✅ newStream.connect() call completed, waiting for events...');
+        
+        // Add immediate post-connection debugging
+        setTimeout(() => {
+          addDebugMsg('🔍 5-second diagnostic: Checking connection state...');
+          console.log('🔍 5-second post-connection check:');
+          console.log('  - Connection state:', connectionState);
+          console.log('  - Stream object:', !!newStream);
+          console.log('  - Stream config:', (newStream as any).config?.getStreamingSettings?.());
+          
+          // Check internal WebSocket state
+          try {
+            const wsController = (newStream as any)._webSocketController;
+            if (wsController) {
+              addDebugMsg(`🔌 WebSocket controller found, state: ${wsController.webSocket?.readyState}`);
+              console.log('  - WebSocket controller exists:', !!wsController);
+              console.log('  - WebSocket ready state:', wsController.webSocket?.readyState);
+              console.log('  - WebSocket URL:', wsController.webSocket?.url);
+              
+              const readyStateMap: Record<number, string> = {
+                0: 'CONNECTING',
+                1: 'OPEN', 
+                2: 'CLOSING',
+                3: 'CLOSED'
+              };
+              
+              const readyStateText = readyStateMap[wsController.webSocket?.readyState as number] || 'UNKNOWN';
+              
+              addDebugMsg(`🔌 WebSocket state: ${readyStateText}`);
+              console.log('  - WebSocket state text:', readyStateText);
+            } else {
+              addDebugMsg('❌ No WebSocket controller found yet');
+              console.log('  - No WebSocket controller found');
+            }
+          } catch (wsError) {
+            addDebugMsg('❌ Error checking WebSocket state');
+            console.error('  - Error checking WebSocket state:', wsError);
+          }
+          
+          // Check WebRTC state
+          try {
+            const webRtcController = (newStream as any)._webRtcController;
+            if (webRtcController) {
+              addDebugMsg('📡 WebRTC controller found');
+              console.log('  - WebRTC controller exists:', !!webRtcController);
+              console.log('  - Peer connection state:', webRtcController.peerConnection?.connectionState);
+              console.log('  - ICE connection state:', webRtcController.peerConnection?.iceConnectionState);
+              console.log('  - Signaling state:', webRtcController.peerConnection?.signalingState);
+            } else {
+              addDebugMsg('⏳ No WebRTC controller found yet (normal)');
+              console.log('  - No WebRTC controller found yet');
+            }
+          } catch (rtcError) {
+            addDebugMsg('❌ Error checking WebRTC state');
+            console.error('  - Error checking WebRTC state:', rtcError);
+          }
+        }, 5000);
+        
+        // Add longer timeout check
+        setTimeout(() => {
+          if (connectionState === 'connecting') {
+            addDebugMsg('⚠️ Still connecting after 15 seconds - possible hang detected');
+            console.warn('⚠️ Still connecting after 15 seconds, this suggests a hang');
+            console.log('🔍 15-second detailed diagnostic:');
+            
+            // Force detailed inspection
+            try {
+              const wsController = (newStream as any)._webSocketController;
+              if (wsController?.webSocket) {
+                const ws = wsController.webSocket;
+                console.log('  - Final WebSocket check:');
+                console.log('    - Ready state:', ws.readyState);
+                console.log('    - URL:', ws.url);
+                console.log('    - Protocol:', ws.protocol);
+                console.log('    - Extensions:', ws.extensions);
+                
+                // Test if we can send a ping
+                if (ws.readyState === WebSocket.OPEN) {
+                  console.log('  - WebSocket is OPEN, testing ping...');
+                  try {
+                    ws.ping?.();
+                  } catch (pingError) {
+                    console.error('  - Ping failed:', pingError);
+                  }
+                }
+              }
+            } catch (diagError) {
+              console.error('  - Diagnostic error:', diagError);
+            }
+          }
+        }, 15000);
       } else {
         console.log('❌ Skipping connection - invalid URL or localhost without debug mode. Current ss:', connectionSettings.ss);
         console.log('❌ Debug - ss value:', JSON.stringify(connectionSettings.ss));
@@ -714,7 +935,7 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
       setConnectionState('error');
       setConnectionError(error instanceof Error ? error.message : 'Unknown connection error');
     }
-  }, [debugSettings, flushPendingInteractions]); // Keep debug settings and queued command flushing in sync
+  }, [debugSettings]); // Added debugSettings dependency
 
   const disconnect = useCallback(() => {
     if (stream) {
@@ -740,19 +961,36 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
     type: FittingRoomCommand['type'],
     data?: Record<string, unknown>
   ) => {
+    if (!stream || connectionState !== 'connected') {
+      console.warn('Cannot send command: not connected to pixel streaming');
+      return;
+    }
+
     const command: FittingRoomCommand = { type, data };
-    sendOrQueueInteraction(command, `fitting room command "${type}"`);
-  }, [sendOrQueueInteraction]);
+    
+    try {
+      // Send as UI interaction to Unreal Engine - send object directly
+      stream.emitUIInteraction(command);
+      console.log('Sent fitting room command:', command);
+    } catch (error) {
+      console.error('Failed to send fitting room command:', error);
+    }
+  }, [stream, connectionState]);
 
   const sendCommand = useCallback((command: string, data?: unknown) => {
-    sendOrQueueInteraction({ command, data }, `command "${command}"`);
-  }, [sendOrQueueInteraction]);
-
-  React.useEffect(() => {
-    if (connectionState === 'connected') {
-      flushPendingInteractions();
+    if (!stream || connectionState !== 'connected') {
+      console.warn('Cannot send command: not connected to pixel streaming');
+      return;
     }
-  }, [connectionState, flushPendingInteractions]);
+
+    try {
+      // Send as UI interaction to Unreal Engine - send object directly
+      stream.emitUIInteraction({ command, data });
+      console.log('Sent command:', { command, data });
+    } catch (error) {
+      console.error('Failed to send command:', error);
+    }
+  }, [stream, connectionState]);
 
   // Debug function to force resolution adjustment
   const forceResolutionMatch = useCallback(() => {

@@ -74,6 +74,7 @@ export const PixelStreamingView: React.FC<PixelStreamingViewProps> = ({
       style={{ width: '100%', height: '100%', position: 'relative', ...style }}
       className={className}
     >
+      {/* Mobile autoplay hint overlay */}
       {showMobileHint && (
         <div
           role="status"

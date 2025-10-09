@@ -4,6 +4,7 @@ import { usePixelStreamingSettings } from '../../hooks/usePixelStreamingSettings
 import { usePixelStreaming } from '../../context/PixelStreamingContext'
 import { useAuthData } from '../../hooks/useAuthData'
 import { useUserSettings } from '../../hooks/useUserSettings'
+import { useInstanceManagement } from '../../context/InstanceManagementContext'
 import { PixelStreamingWrapper } from '../PixelStreamingDebugWrapper/PixelStreamingDebugWrapper'
 import packageJson from '../../../package.json'
 import styles from './DebugOverlay.module.scss'
@@ -14,11 +15,14 @@ export default function DebugOverlay() {
   const { devMode, setDevMode, hideNativeOverlay, setHideNativeOverlay } = usePixelStreaming()
   const globalAuthData = useAuthData()
   const userSettings = useUserSettings()
+  const { instanceData } = useInstanceManagement()
 
   // State for collapsible sections
   const [isAuthExpanded, setIsAuthExpanded] = useState(false)
   const [isSettingsExpanded, setIsSettingsExpanded] = useState(false)
   const [isGeneralExpanded, setIsGeneralExpanded] = useState(false)
+  const [isServerControlsExpanded, setIsServerControlsExpanded] = useState(false)
+  const [isMobileDebugExpanded, setIsMobileDebugExpanded] = useState(false)
 
   const handleLogGlobalAuthData = () => {
     console.group('🌐 Global Auth Data (from Context)')
@@ -41,6 +45,45 @@ export default function DebugOverlay() {
     console.groupEnd()
   }
 
+  // Terminate UE server function
+  const handleTerminateUEServer = async () => {
+    if (!instanceData?.instanceId) {
+      console.error('❌ No instance ID available for termination');
+      alert('No instance ID available for termination');
+      return;
+    }
+
+    try {
+      console.log('🔥 Terminating UE server for instance:', instanceData.instanceId);
+      
+      const response = await fetch('https://hfijogsomw73ojgollhdr75oqq0osdlq.lambda-url.eu-central-1.on.aws/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          instanceId: instanceData.instanceId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Terminate UE server response:', result);
+      
+      if (result.status === 'TERMINATED') {
+        alert(`Server terminated successfully! Instance: ${result.instanceId}`);
+      } else {
+        alert('Server termination initiated, check console for details');
+      }
+    } catch (error) {
+      console.error('❌ Failed to terminate UE server:', error);
+      alert(`Failed to terminate UE server: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ctrl+Shift+D to toggle debug mode (case-insensitive)
@@ -57,8 +100,22 @@ export default function DebugOverlay() {
       }
     }
 
+    const handleTouchStart = (e: TouchEvent) => {
+      // Three-finger tap to toggle debug mode on mobile
+      if (e.touches.length === 3) {
+        e.preventDefault()
+        e.stopPropagation()
+        toggleDebug()
+      }
+    }
+
     window.addEventListener('keydown', handleKeyDown, { capture: true })
-    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true })
+    window.addEventListener('touchstart', handleTouchStart, { capture: true, passive: false })
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, { capture: true })
+      window.removeEventListener('touchstart', handleTouchStart, { capture: true })
+    }
   }, [toggleDebug, isDebug])
 
   if (!isDebug) return null
@@ -70,7 +127,7 @@ export default function DebugOverlay() {
           <h3>Debug Mode v{packageJson.version}</h3>
         </div>
         <div className={styles.debugControls}>
-          <span className={styles.shortcutHint}>Ctrl+Shift+D or Escape to toggle</span>
+          <span className={styles.shortcutHint}>Ctrl+Shift+D, 3-finger tap, or Escape to toggle</span>
           <button 
             className={styles.closeButton}
             onClick={(e) => {
@@ -109,33 +166,38 @@ export default function DebugOverlay() {
             }}>
               <div style={{ marginBottom: '12px' }}>
                 <label style={{ 
-                  display: 'flex', 
-                  alignItems: 'center',
+                  display: 'block', 
                   fontSize: '12px',
                   color: '#ccc',
-                  cursor: 'pointer'
+                  marginBottom: '4px'
                 }}>
-                  <input 
-                    type="checkbox"
-                    checked={devMode}
-                    onChange={(e) => setDevMode(e.target.checked)}
-                    style={{ 
-                      marginRight: '8px',
-                      width: '16px',
-                      height: '16px'
-                    }}
-                  />
-                  <span>
-                    <strong>Dev Mode:</strong> Skip lambda calls and redirect directly to virtual-try-on
-                  </span>
+                  <strong>Dev Mode:</strong> Control instance creation behavior
                 </label>
+                <select 
+                  value={devMode}
+                  onChange={(e) => setDevMode(e.target.value as 'dev' | 'prod' | 'localhost')}
+                  style={{ 
+                    width: '100%',
+                    padding: '4px 8px',
+                    fontSize: '12px',
+                    backgroundColor: '#2a2a2a',
+                    color: '#ccc',
+                    border: '1px solid #444',
+                    borderRadius: '4px'
+                  }}
+                >
+                  <option value="dev">Dev - Skip lambda, go to try-on page</option>
+                  <option value="prod">Prod - Trigger lambda calls normally</option>
+                  <option value="localhost">Localhost - Connect to ws://localhost:80</option>
+                </select>
                 <div style={{ 
                   fontSize: '10px', 
                   color: '#888',
-                  marginTop: '4px',
-                  marginLeft: '24px'
+                  marginTop: '4px'
                 }}>
-                  When enabled, instance creation will bypass lambda calls and redirect directly to /virtual-try-on
+                  • <strong>Dev:</strong> Bypass lambda calls and redirect directly to /virtual-try-on<br/>
+                  • <strong>Prod:</strong> Normal lambda provisioning workflow<br/>
+                  • <strong>Localhost:</strong> Skip lambda, connect to local websocket server
                 </div>
               </div>
               
@@ -168,6 +230,56 @@ export default function DebugOverlay() {
                   marginLeft: '24px'
                 }}>
                   When enabled, hides the uiFeatures overlay in the upper left corner of the Pixel Streaming view
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className={styles.debugSection}>
+          <div style={{ 
+            display: 'flex',
+            alignItems: 'center',
+            marginBottom: '8px',
+            cursor: 'pointer'
+          }}
+          onClick={() => setIsServerControlsExpanded(!isServerControlsExpanded)}>
+            <h4 style={{ margin: 0, marginRight: '8px' }}>Server Controls</h4>
+            <span style={{ fontSize: '14px', color: '#888' }}>
+              {isServerControlsExpanded ? '▼' : '▶'}
+            </span>
+          </div>
+          {isServerControlsExpanded && (
+            <div style={{ 
+              marginBottom: '16px',
+              padding: '12px',
+              border: '1px solid #444',
+              borderRadius: '4px',
+              backgroundColor: '#1a1a1a'
+            }}>
+              <div style={{ marginBottom: '8px' }}>
+                <button 
+                  onClick={handleTerminateUEServer}
+                  style={{ 
+                    padding: '8px 16px', 
+                    fontSize: '12px', 
+                    borderRadius: '4px',
+                    backgroundColor: '#dc3545',
+                    color: 'white',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: 'bold'
+                  }}
+                  title={instanceData?.instanceId ? `Terminate instance: ${instanceData.instanceId}` : 'No instance ID available'}
+                >
+                  🔥 Terminate UE Server
+                </button>
+                <div style={{ 
+                  fontSize: '10px', 
+                  color: '#888',
+                  marginTop: '4px'
+                }}>
+                  Terminates the current UE server instance{instanceData?.instanceId ? ` (${instanceData.instanceId})` : ' (no instance ID available)'}
                 </div>
               </div>
             </div>
@@ -314,6 +426,150 @@ export default function DebugOverlay() {
                     lastUpdated: userSettings.settings.lastUpdated
                   }, null, 2)}
                 </pre>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className={styles.debugSection}>
+          <div style={{ 
+            display: 'flex',
+            alignItems: 'center',
+            marginBottom: '8px',
+            cursor: 'pointer'
+          }}
+          onClick={() => setIsMobileDebugExpanded(!isMobileDebugExpanded)}>
+            <h4 style={{ margin: 0, marginRight: '8px' }}>Mobile & Connection Debug</h4>
+            <span style={{ fontSize: '14px', color: '#888' }}>
+              {isMobileDebugExpanded ? '▼' : '▶'}
+            </span>
+          </div>
+          {isMobileDebugExpanded && (
+            <div style={{ 
+              marginBottom: '16px',
+              padding: '12px',
+              border: '1px solid #444',
+              borderRadius: '4px',
+              backgroundColor: '#1a1a1a'
+            }}>
+              <div style={{ marginBottom: '12px' }}>
+                <strong style={{ fontSize: '12px', color: '#f39c12' }}>Device Information:</strong>
+                <pre style={{ 
+                  fontSize: '10px', 
+                  color: '#ccc', 
+                  margin: '4px 0',
+                  whiteSpace: 'pre-wrap',
+                  border: '1px solid #333',
+                  padding: '6px',
+                  borderRadius: '2px'
+                }}>
+                  {JSON.stringify({
+                    userAgent: navigator.userAgent,
+                    platform: navigator.platform,
+                    isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+                    autoPlayVideo: settings.AutoPlayVideo,
+                    autoPlayPolicy: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+                      ? 'disabled (requires user gesture)' 
+                      : 'enabled (desktop)',
+                    screenSize: `${window.screen.width}x${window.screen.height}`,
+                    viewport: `${window.innerWidth}x${window.innerHeight}`,
+                    devicePixelRatio: window.devicePixelRatio,
+                    connection: (navigator as any).connection ? {
+                      effectiveType: (navigator as any).connection.effectiveType,
+                      downlink: (navigator as any).connection.downlink,
+                      rtt: (navigator as any).connection.rtt,
+                      saveData: (navigator as any).connection.saveData
+                    } : 'not available',
+                    languages: navigator.languages,
+                    cookieEnabled: navigator.cookieEnabled,
+                    doNotTrack: navigator.doNotTrack,
+                    maxTouchPoints: navigator.maxTouchPoints,
+                    timestamp: new Date().toISOString()
+                  }, null, 2)}
+                </pre>
+              </div>
+              
+              <div style={{ 
+                marginBottom: '12px',
+                padding: '8px',
+                backgroundColor: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? '#2d1b69' : '#1a5a3e',
+                borderRadius: '4px',
+                border: '1px solid ' + (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? '#5b21b6' : '#10b981')
+              }}>
+                <strong style={{ fontSize: '12px', color: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? '#a78bfa' : '#6ee7b7' }}>
+                  Video Autoplay Policy:
+                </strong>
+                <div style={{ fontSize: '11px', color: '#ccc', marginTop: '4px' }}>
+                  {/Android|webOS|iPhone|iPad|IPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? (
+                    <>
+                      🔇 <strong>Mobile:</strong> AutoPlayVideo disabled - requires user tap/gesture to start video stream.
+                      This is intentional to comply with mobile browser autoplay policies.
+                    </>
+                  ) : (
+                    <>
+                      🔊 <strong>Desktop:</strong> AutoPlayVideo enabled - video will start automatically when connected.
+                    </>
+                  )}
+                </div>
+              </div>
+              
+              <div style={{ marginBottom: '12px' }}>
+                <button 
+                  onClick={() => {
+                    console.group('📱 Mobile Debug Information');
+                    console.log('User Agent:', navigator.userAgent);
+                    console.log('Platform:', navigator.platform);
+                    console.log('Screen Size:', `${window.screen.width}x${window.screen.height}`);
+                    console.log('Viewport:', `${window.innerWidth}x${window.innerHeight}`);
+                    console.log('Device Pixel Ratio:', window.devicePixelRatio);
+                    console.log('Connection:', (navigator as any).connection);
+                    console.log('Touch Points:', navigator.maxTouchPoints);
+                    console.log('Languages:', navigator.languages);
+                    console.log('Online:', navigator.onLine);
+                    console.log('WebSocket Support:', 'WebSocket' in window);
+                    console.log('WebRTC Support:', 'RTCPeerConnection' in window);
+                    console.groupEnd();
+                  }}
+                  style={{ 
+                    padding: '6px 12px', 
+                    marginRight: '8px',
+                    backgroundColor: '#e74c3c',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '3px',
+                    fontSize: '12px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Log Mobile Debug to Console
+                </button>
+                
+                <button 
+                  onClick={() => {
+                    // Test network connectivity
+                    fetch('https://www.google.com/favicon.ico', { 
+                      mode: 'no-cors',
+                      cache: 'no-cache'
+                    })
+                    .then(() => {
+                      console.log('✅ Network connectivity test: PASSED');
+                    })
+                    .catch((error) => {
+                      console.error('❌ Network connectivity test: FAILED', error);
+                    });
+                  }}
+                  style={{ 
+                    padding: '6px 12px',
+                    backgroundColor: '#3498db',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '3px',
+                    fontSize: '12px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Test Network Connectivity
+                </button>
               </div>
             </div>
           )}

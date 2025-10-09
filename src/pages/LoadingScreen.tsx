@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useInstanceProvisioning } from '../hooks/useInstanceProvisioning'
 import { usePixelStreamingConnection } from '../hooks/usePixelStreamingConnection'
 import { usePixelStreaming } from '../context/PixelStreamingContext'
@@ -7,9 +7,13 @@ import styles from './LoadingScreen.module.scss'
 
 export default function LoadingScreen() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const destination = searchParams.get('destination') || 'unreal-measurements' // Default to unreal-measurements
   const [progress, setProgress] = useState(0)
   const [showDebugMessages, setShowDebugMessages] = useState(false)
+  const [connectionTimeout, setConnectionTimeout] = useState(false)
   const hasStartedProvisioning = useRef(false)
+  const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const { devMode } = usePixelStreaming()
   
   const {
@@ -39,13 +43,25 @@ export default function LoadingScreen() {
       hasStartedProvisioning.current = true
       
       // Check if dev mode is enabled
-      if (devMode) {
-        console.log('🔧 LoadingScreen: Dev mode enabled, skipping lambda calls and redirecting to /virtual-try-on')
+      if (devMode === 'dev') {
+        console.log(`🔧 LoadingScreen: Dev mode enabled, skipping lambda calls and redirecting to /${destination}`)
         setProgress(100)
         
         // Simulate loading for visual feedback
         setTimeout(() => {
-          navigate('/virtual-try-on')
+          navigate(`/${destination}`)
+        }, 1500)
+        return
+      }
+      
+      // Check if localhost mode is enabled
+      if (devMode === 'localhost') {
+        console.log(`🔧 LoadingScreen: Localhost mode enabled, skipping lambda calls and redirecting to /${destination}`)
+        setProgress(100)
+        
+        // Simulate loading for visual feedback
+        setTimeout(() => {
+          navigate(`/${destination}`)
         }, 1500)
         return
       }
@@ -69,12 +85,12 @@ export default function LoadingScreen() {
     }
     
     // No cleanup function to prevent re-mounting issues
-  }, [devMode, navigate]) // Added devMode and navigate to dependencies
+  }, [devMode, navigate, destination]) // Added devMode, navigate and destination to dependencies
   
   // Update progress based on provisioning status
   useEffect(() => {
-    // Skip normal progress updates in dev mode
-    if (devMode) {
+    // Skip normal progress updates in dev mode or localhost mode
+    if (devMode === 'dev' || devMode === 'localhost') {
       return
     }
     
@@ -84,17 +100,43 @@ export default function LoadingScreen() {
     // Navigate when fully connected
     if (isConnectedToInstance && connectionState === 'connected') {
       setTimeout(() => {
-        navigate('/unreal-measurements')
+        navigate(`/${destination}`)
       }, 1000) // Small delay to show completion
     }
-  }, [devMode, getProgressData, isConnectedToInstance, connectionState, navigate])
+  }, [devMode, getProgressData, isConnectedToInstance, connectionState, navigate, destination])
   
   // Auto-show debug messages on error
   useEffect(() => {
-    if (isError || error) {
+    if (isError || error || connectionTimeout) {
       setShowDebugMessages(true)
     }
-  }, [isError, error])
+  }, [isError, error, connectionTimeout])
+
+  // Monitor for connection timeout when instance is ready but connection hangs
+  useEffect(() => {
+    if (isReady && connectionState === 'connecting' && !connectionTimeoutRef.current) {
+      // Start timeout timer when we start connecting
+      connectionTimeoutRef.current = setTimeout(() => {
+        console.warn('⏰ LoadingScreen: Connection timeout detected after 25 seconds');
+        setConnectionTimeout(true);
+      }, 25000); // 25 second timeout
+    } else if (connectionState === 'connected' || connectionState === 'error') {
+      // Clear timeout if connection succeeds or fails
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+      }
+      setConnectionTimeout(false);
+    }
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+      }
+    };
+  }, [isReady, connectionState])
 
   const handleExit = () => {
     navigate('/')
@@ -105,7 +147,9 @@ export default function LoadingScreen() {
   }
   
   const progressData = getProgressData()
-  const currentStage = devMode ? 'Dev Mode: Redirecting to Virtual Try-On...' : progressData.stage
+  const currentStage = devMode === 'dev' ? `Dev Mode: Redirecting to ${destination}...` : 
+                      devMode === 'localhost' ? `Localhost Mode: Redirecting to ${destination}...` : 
+                      progressData.stage
 
   return (
     <div className={styles.loadingScreenPage}>
@@ -130,19 +174,49 @@ export default function LoadingScreen() {
         
         {/* Connection Status */}
         <div className={styles.statusInfo}>
-          {devMode && (
+          {devMode === 'dev' && (
             <div className={styles.successStatus}>
               🔧 Dev Mode Active: Skipping provisioning workflow
             </div>
           )}
           
-          {!devMode && isError && (
+          {devMode === 'localhost' && (
+            <div className={styles.successStatus}>
+              🔧 Localhost Mode Active: Skipping provisioning workflow
+            </div>
+          )}
+          
+          {devMode === 'prod' && isError && (
             <div className={styles.errorStatus}>
               ❌ Error: {error || 'Unknown error occurred'}
             </div>
           )}
           
-          {!devMode && isReady && !isConnectedToInstance && connectionState === 'error' && (
+          {devMode === 'prod' && connectionTimeout && (
+            <div className={styles.errorStatus}>
+              ⏰ Connection timeout detected - this often happens on mobile networks. 
+              Check debug messages for details.
+              <button 
+                onClick={() => {
+                  setConnectionTimeout(false);
+                  retryConnection();
+                }}
+                style={{ 
+                  marginLeft: '10px', 
+                  padding: '5px 10px', 
+                  background: '#007acc', 
+                  color: 'white', 
+                  border: 'none', 
+                  borderRadius: '4px', 
+                  cursor: 'pointer' 
+                }}
+              >
+                Retry Connection
+              </button>
+            </div>
+          )}
+          
+          {devMode === 'prod' && isReady && !isConnectedToInstance && connectionState === 'error' && (
             <div className={styles.errorStatus}>
               ❌ Connection failed: {connectionError || 'WebSocket connection error'}
               <button 
@@ -162,13 +236,13 @@ export default function LoadingScreen() {
             </div>
           )}
           
-          {!devMode && isReady && !isConnectedToInstance && connectionState !== 'error' && (
+          {devMode === 'prod' && isReady && !isConnectedToInstance && connectionState !== 'error' && (
             <div className={styles.connectingStatus}>
               🔗 Instance ready, establishing connection...
             </div>
           )}
           
-          {!devMode && isConnectedToInstance && (
+          {devMode === 'prod' && isConnectedToInstance && (
             <div className={styles.successStatus}>
               ✅ Connected! Redirecting...
             </div>
