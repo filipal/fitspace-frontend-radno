@@ -380,3 +380,41 @@
     height: 71px;
   }
 }
+
+.errorBanner {
+  position: absolute;
+  top: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+  animation: slideDown 0.3s ease-out;
+  z-index: 1000;
+}
+
+.errorIcon {
+  font-size: 1.25rem;
+}
+
+.errorText {
+  color: #c33;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}

@@ -68,19 +68,19 @@ interface Measurement {
 
 type MeasurementDescriptor =
   | {
-    source: 'basic'
-    key: keyof Pick<BasicMeasurements, 'height' | 'weight'>
-    label: string
-    unit?: string
-    icon: string
-  }
+      source: 'basic'
+      key: keyof Pick<BasicMeasurements, 'height' | 'weight'>
+      label: string
+      unit?: string
+      icon: string
+    }
   | {
-    source: 'body'
-    key: keyof BodyMeasurements
-    label: string
-    unit?: string
-    icon: string
-  }
+      source: 'body'
+      key: keyof BodyMeasurements
+      label: string
+      unit?: string
+      icon: string
+    }
 
 interface PendingMorphUpdate {
   morphId: number
@@ -128,6 +128,7 @@ export default function UnrealMeasurements() {
   const [saveError, setSaveError] = useState<string | null>(null)
   const [hasDirtyMorphs, setHasDirtyMorphs] = useState(false)
   const [isSavingMorphs, setIsSavingMorphs] = useState(false)
+
   const lastAutoLoadedIdRef = useRef<string | null>(null)
   const hasDirtyMorphsRef = useRef(false)
   const isSavingMorphsRef = useRef(false)
@@ -136,12 +137,10 @@ export default function UnrealMeasurements() {
   useLayoutEffect(() => {
     const el = pageRef.current
     if (!el) return
-
     const update = () => {
       const w = el.clientWidth
       el.style.setProperty('--page-w-px', `${w}px`)
     }
-
     update()
     const onResize = () => update()
     window.addEventListener('resize', onResize)
@@ -156,20 +155,16 @@ export default function UnrealMeasurements() {
     const page = pageRef.current
     const header = document.querySelector('[data-app-header]') as HTMLElement | null
     if (!page || !header) return
-
     const set = () => {
       // uključuje sve paddinge/bordere (i safe-area) jer je to realna visina u layoutu
       const h = Math.round(header.getBoundingClientRect().height)
       page.style.setProperty('--header-real-h', `${h}px`)
     }
-
     set()
     const ro = new ResizeObserver(set)
     ro.observe(header)
-
     window.addEventListener('resize', set)
     window.addEventListener('orientationchange', set)
-
     return () => {
       ro.disconnect()
       window.removeEventListener('resize', set)
@@ -182,7 +177,6 @@ export default function UnrealMeasurements() {
     const header = document.querySelector('[data-app-header]') as HTMLElement | null
     const bottom = bottomRef.current
     if (!page || !header || !bottom) return
-
     const set = () => {
       const docEl = document.documentElement
       const headerH = Math.round(header.getBoundingClientRect().height)
@@ -227,7 +221,19 @@ export default function UnrealMeasurements() {
 
   const navigate = useNavigate()
   const location = useLocation()
-  const { sendFittingRoomCommand, connectionState, application } = usePixelStreaming()
+
+  // Pixel Streaming context (+ localhost dev helpers)
+  const { sendFittingRoomCommand, connectionState, application, devMode, setDebugMode, setDebugSettings } = usePixelStreaming()
+
+  // Ensure localhost mode forces debug settings so Pixel Streaming connects to local UE
+  useEffect(() => {
+    if (devMode === 'localhost') {
+      console.log('🏠 UnrealMeasurements: Localhost mode detected, enabling debug Pixel Streaming settings')
+      setDebugMode(true)
+      setDebugSettings({ ss: 'ws://localhost:80' })
+    }
+  }, [devMode, setDebugMode, setDebugSettings])
+
   const { updateMorphValue, currentAvatar } = useAvatarConfiguration()
   const { loadAvatar, loaderState } = useAvatarLoader()
   const { fetchAvatarById, updateAvatarMeasurements } = useAvatarApi()
@@ -242,97 +248,82 @@ export default function UnrealMeasurements() {
 
   const dispatchMorphUpdate = useCallback((morphId: number, sliderPercentage: number) => {
     const morphAttribute = findMorphAttribute(morphId)
-
     if (!morphAttribute) {
       console.warn('Unable to find morph attribute for update', { morphId })
       return
     }
 
     const unrealValue = convertSliderValueToUnrealValue(sliderPercentage, morphAttribute)
-
     sendFittingRoomCommand('updateMorph', {
       morphId: String(morphId),
       value: unrealValue
     })
   }, [findMorphAttribute, sendFittingRoomCommand])
 
-  const locationState = location.state as { avatarId?: number | string } | null
+  const locationState = location.state as { avatarId?: number | string; openSkinRight?: boolean } | null
   const avatarIdFromState = locationState?.avatarId
+  const openSkinRight = locationState?.openSkinRight
 
   const getActiveAvatarId = useCallback((): string | null => {
-    if (avatarIdFromState != null) {
-      return String(avatarIdFromState)
-    }
-
-    if (typeof window === 'undefined') {
-      return null
-    }
-
+    if (avatarIdFromState != null) return String(avatarIdFromState)
+    if (typeof window === 'undefined') return null
     return sessionStorage.getItem(LAST_LOADED_AVATAR_STORAGE_KEY)
   }, [avatarIdFromState])
 
   const computedFallbacks = useMemo(() => {
-    if (!currentAvatar) return {} as Record<string, number>;
+    if (!currentAvatar) return {} as Record<string, number>
 
-    const sex = currentAvatar.gender === 'female' ? 'female' : 'male';
+    const sex = currentAvatar.gender === 'female' ? 'female' : 'male'
     const athletic =
-      (currentAvatar.quickModeSettings?.athleticLevel as 'low' | 'medium' | 'high') ?? 'medium';
+      (currentAvatar.quickModeSettings?.athleticLevel as 'low' | 'medium' | 'high') ?? 'medium'
 
-    const basicMeasurements = currentAvatar.basicMeasurements ?? {};
-    const bodyMeasurements = currentAvatar.bodyMeasurements ?? {};
-    const quickModeMeasurements = currentAvatar.quickModeSettings?.measurements ?? {};
+    const basicMeasurements = currentAvatar.basicMeasurements ?? {}
+    const bodyMeasurements = currentAvatar.bodyMeasurements ?? {}
+    const quickModeMeasurements = currentAvatar.quickModeSettings?.measurements ?? {}
 
     // Pomoćna funkcija: parsiraj broj ili vrati undefined
     const toNum = (v: unknown): number | undefined => {
       if (typeof v === 'number') return Number.isFinite(v) ? v : undefined
       if (typeof v === 'string') {
-      const n = Number(v.replace(',', '.'))
-      return Number.isFinite(n) ? n : undefined
+        const n = Number(v.replace(',', '.'))
+        return Number.isFinite(n) ? n : undefined
       }
       return undefined
-    };
+    }
 
     const chest = toNum(
-      bodyMeasurements.chest ?? quickModeMeasurements.chest ?? quickModeMeasurements.bustCircumference
-    );
+      (bodyMeasurements as any).chest ?? (quickModeMeasurements as any).chest ?? (quickModeMeasurements as any).bustCircumference
+    )
     const waist = toNum(
-      bodyMeasurements.waist ?? quickModeMeasurements.waist ?? quickModeMeasurements.waistCircumference
-    );
+      (bodyMeasurements as any).waist ?? (quickModeMeasurements as any).waist ?? (quickModeMeasurements as any).waistCircumference
+    )
     const lowHip = toNum(
-      bodyMeasurements.lowHip ?? quickModeMeasurements.lowHip ?? quickModeMeasurements.lowHipCircumference
-    );
+      (bodyMeasurements as any).lowHip ?? (quickModeMeasurements as any).lowHip ?? (quickModeMeasurements as any).lowHipCircumference
+    )
 
     const known = {
-      height: toNum(basicMeasurements.height),
-      weight: toNum(basicMeasurements.weight),
+      height: toNum((basicMeasurements as any).height),
+      weight: toNum((basicMeasurements as any).weight),
       chest,
       waist,
       lowHip,
-      underchest: toNum(bodyMeasurements.underchest ?? quickModeMeasurements.underchest),
-    };
+      underchest: toNum((bodyMeasurements as any).underchest ?? (quickModeMeasurements as any).underchest),
+    }
 
-    const estimated = estimateMissingMeasurements(sex, known, athletic);
-
+    const estimated = estimateMissingMeasurements(sex, known, athletic)
     // Vratimo kao običan record da ga lako “indeksiramo” po descriptor.key
-    return estimated as Record<string, number>;
-  }, [currentAvatar]);
+    return estimated as Record<string, number>
+  }, [currentAvatar])
 
   const persistMorphTargets = useCallback(async (): Promise<boolean> => {
     if (!currentAvatar) {
       console.warn('No avatar available to persist morph targets')
       return false
     }
-
-    if (!hasDirtyMorphsRef.current) {
-      return true
-    }
-
-    if (isSavingMorphsRef.current) {
-      return false
-    }
+    if (!hasDirtyMorphsRef.current) return true
+    if (isSavingMorphsRef.current) return false
 
     const activeAvatarId = getActiveAvatarId()
-
     if (!activeAvatarId) {
       console.warn('Cannot persist morph targets without an avatar identifier')
       return false
@@ -347,11 +338,7 @@ export default function UnrealMeasurements() {
 
       const morphTargets = currentAvatar.morphValues.reduce<Record<string, number>>((acc, morph) => {
         const backendKey = getBackendKeyForMorphId(morph.morphId)
-
-        if (!backendKey) {
-          return acc
-        }
-
+        if (!backendKey) return acc
         acc[backendKey] = convertMorphValueToBackendValue(morph.value, morph)
         return acc
       }, {})
@@ -403,49 +390,42 @@ export default function UnrealMeasurements() {
       }
 
       const morphs = buildBackendMorphPayload({ ...basePayload })
-
-      const payload: AvatarPayload = {
-        ...basePayload,
-        ...(morphs ? { morphs } : {}),
-      }
-
-      if (morphs) {
-        delete (payload as { morphTargets?: Record<string, number> }).morphTargets
-      }
+      const payload: AvatarPayload = { ...basePayload, ...(morphs ? { morphs } : {}) }
+      if (morphs) delete (payload as { morphTargets?: Record<string, number> }).morphTargets
 
       const result = await updateAvatarMeasurements(activeAvatarId, payload)
 
       const backendAvatar = result.backendAvatar
-      const persistedAvatarId =
-        backendAvatar?.id ?? result.avatarId ?? String(activeAvatarId)
+      const persistedAvatarId = backendAvatar?.id ?? result.avatarId ?? String(activeAvatarId)
 
       if (typeof window !== 'undefined') {
         sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, persistedAvatarId)
-        const storageMorphTargets = backendAvatar?.morphTargets
-          ?? (Array.isArray(morphs)
+
+        const storageMorphTargets =
+          backendAvatar?.morphTargets ??
+          (Array.isArray(morphs)
             ? morphs
                 .map((morph): { name: string; value: number } | null => {
                   if (!morph) return null
                   const key = morph.backendKey ?? morph.id
                   const value = Number(morph.sliderValue)
-                  if (!key || !Number.isFinite(value)) {
-                    return null
-                  }
+                  if (!key || !Number.isFinite(value)) return null
                   return { name: key, value }
                 })
                 .filter((entry): entry is { name: string; value: number } => Boolean(entry))
-            : undefined)
-          ?? (basePayload.morphTargets
-            ? Object.entries(basePayload.morphTargets).reduce<{ name: string; value: number }[]>((acc, [key, value]) => {
-                if (!key) {
+            : undefined) ??
+          (basePayload.morphTargets
+            ? Object.entries(basePayload.morphTargets).reduce<{ name: string; value: number }[]>(
+                (acc, [key, value]) => {
+                  if (!key) return acc
+                  const numericValue = Number(value)
+                  if (Number.isFinite(numericValue)) {
+                    acc.push({ name: key, value: numericValue })
+                  }
                   return acc
-                }
-                const numericValue = Number(value)
-                if (Number.isFinite(numericValue)) {
-                  acc.push({ name: key, value: numericValue })
-                }
-                return acc
-              }, [])
+                },
+                []
+              )
             : undefined)
 
         sessionStorage.setItem(
@@ -456,38 +436,29 @@ export default function UnrealMeasurements() {
             avatarName: backendAvatar?.name ?? payload.name,
             gender: backendAvatar?.gender ?? payload.gender,
             ageRange: backendAvatar?.ageRange ?? payload.ageRange,
-            basicMeasurements:
-              backendAvatar?.basicMeasurements ?? payload.basicMeasurements,
-            bodyMeasurements:
-              backendAvatar?.bodyMeasurements ?? payload.bodyMeasurements,
+            basicMeasurements: backendAvatar?.basicMeasurements ?? payload.basicMeasurements,
+            bodyMeasurements: backendAvatar?.bodyMeasurements ?? payload.bodyMeasurements,
             morphTargets: storageMorphTargets ?? null,
             quickMode: backendAvatar?.quickMode ?? payload.quickMode,
             creationMode: backendAvatar?.creationMode ?? payload.creationMode,
-            quickModeSettings:
-              backendAvatar?.quickModeSettings ?? payload.quickModeSettings ?? null,
+            quickModeSettings: backendAvatar?.quickModeSettings ?? payload.quickModeSettings ?? null,
             source: backendAvatar?.source ?? payload.source,
-          }),
+          })
         )
       }
 
       if (isMountedRef.current) {
         try {
-          const backendAvatar = result.backendAvatar ?? await fetchAvatarById(persistedAvatarId)
-          const loadResult = await loadAvatar(backendAvatar)
-
-          if (!loadResult.success) {
-            throw new Error(loadResult.error ?? 'Failed to refresh avatar configuration')
-          }
+          const backendAvatarFresh = result.backendAvatar ?? (await fetchAvatarById(persistedAvatarId))
+          const loadResult = await loadAvatar(backendAvatarFresh)
+          if (!loadResult.success) throw new Error(loadResult.error ?? 'Failed to refresh avatar configuration')
         } catch (refreshError) {
           console.error('Failed to refresh avatar after saving morph targets', refreshError)
           if (isMountedRef.current) {
-            setSaveError(refreshError instanceof Error
-              ? refreshError.message
-              : 'Failed to refresh avatar after saving morph targets')
+            setSaveError(refreshError instanceof Error ? refreshError.message : 'Failed to refresh avatar after saving morph targets')
           }
           return false
         }
-
         setHasDirtyMorphs(false)
       }
 
@@ -495,22 +466,18 @@ export default function UnrealMeasurements() {
       return true
     } catch (error) {
       console.error('Failed to persist morph targets', error)
-      if (isMountedRef.current) {
-        setSaveError(error instanceof Error ? error.message : 'Failed to save morph changes')
-      }
+      if (isMountedRef.current) setSaveError(error instanceof Error ? error.message : 'Failed to save morph changes')
       return false
     } finally {
       isSavingMorphsRef.current = false
-      if (isMountedRef.current) {
-        setIsSavingMorphs(false)
-      }
+      if (isMountedRef.current) setIsSavingMorphs(false)
     }
-  }, [currentAvatar, fetchAvatarById, getActiveAvatarId, loadAvatar, updateAvatarMeasurements, MEASUREMENT_DESCRIPTORS, computedFallbacks])
+  }, [currentAvatar, fetchAvatarById, getActiveAvatarId, loadAvatar, updateAvatarMeasurements, computedFallbacks])
 
+  // Auto-load avatar if none loaded
+  const { isLoading: isAvatarLoading } = loaderState
   useEffect(() => {
-    if (currentAvatar || loaderState.isLoading) {
-      return
-    }
+    if (currentAvatar || isAvatarLoading) return
 
     const storedAvatarId = avatarIdFromState != null
       ? String(avatarIdFromState)
@@ -518,13 +485,8 @@ export default function UnrealMeasurements() {
         ? sessionStorage.getItem(LAST_LOADED_AVATAR_STORAGE_KEY)
         : null
 
-    if (!storedAvatarId) {
-      return
-    }
-
-    if (lastAutoLoadedIdRef.current === storedAvatarId) {
-      return
-    }
+    if (!storedAvatarId) return
+    if (lastAutoLoadedIdRef.current === storedAvatarId) return
 
     let cancelled = false
     lastAutoLoadedIdRef.current = storedAvatarId
@@ -534,11 +496,7 @@ export default function UnrealMeasurements() {
         setAutoLoadError(null)
         const avatarData = await fetchAvatarById(storedAvatarId)
         const result = await loadAvatar(avatarData)
-
-        if (!result.success) {
-          throw new Error(result.error ?? 'Failed to load avatar configuration')
-        }
-
+        if (!result.success) throw new Error(result.error ?? 'Failed to load avatar configuration')
         if (typeof window !== 'undefined') {
           sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, storedAvatarId)
         }
@@ -550,48 +508,24 @@ export default function UnrealMeasurements() {
         console.error('Failed to auto-load avatar', error)
       }
     }
-
     void load()
+    return () => { cancelled = true }
+  }, [avatarIdFromState, currentAvatar, fetchAvatarById, loadAvatar, isAvatarLoading])
 
-    return () => {
-      cancelled = true
-    }
-  }, [avatarIdFromState, currentAvatar, fetchAvatarById, loadAvatar, loaderState.isLoading])
-
-  // TODO: Consider debouncing or batching updates via generateUnrealMorphUpdateCommand for performance.
+  // Flush queued morph updates when connected
   useEffect(() => {
     if (connectionState !== 'connected') return
     if (!pendingMorphUpdatesRef.current.length) return
-
-    const queuedUpdates = [...pendingMorphUpdatesRef.current]
+    const queued = [...pendingMorphUpdatesRef.current]
     pendingMorphUpdatesRef.current = []
-
-    queuedUpdates.forEach(({ morphId, sliderValue }) => {
+    queued.forEach(({ morphId, sliderValue }) => {
       dispatchMorphUpdate(morphId, sliderValue)
     })
   }, [connectionState, dispatchMorphUpdate])
 
-  const openSkinRight = (
-    location.state as { openSkinRight?: boolean } | undefined
-  )?.openSkinRight
-
   useEffect(() => {
-    if (openSkinRight) {
-      setSelectedNav('Skin')
-    }
+    if (openSkinRight) setSelectedNav('Skin')
   }, [openSkinRight])
-
-  const formatMeasurementValue = useCallback((value: number, unit?: string) => {
-    const formatter = new Intl.NumberFormat(undefined, {
-      minimumFractionDigits: Number.isInteger(value) ? 0 : 1,
-      maximumFractionDigits: 1
-    })
-    // Zadržavam za buduću upotrebu (spriječi no-unused-vars)
-    void formatMeasurementValue;
-    
-    const formatted = formatter.format(value)
-    return unit ? `${formatted} ${unit}` : formatted
-  }, [])
 
   const formatNumber = useCallback((value: number) => {
     return new Intl.NumberFormat(undefined, {
@@ -601,53 +535,48 @@ export default function UnrealMeasurements() {
   }, [])
 
   const measurements = useMemo<Measurement[] | null>(() => {
-    if (!currentAvatar) return null;
+    if (!currentAvatar) return null
 
     const basicMeasurements = currentAvatar.basicMeasurements ?? {}
     const bodyMeasurements = currentAvatar.bodyMeasurements ?? {}
     const quickModeMeasurements = currentAvatar.quickModeSettings?.measurements ?? {}
 
     const resolveNumericValue = (value: unknown): number | null => {
-      if (typeof value === 'number' && Number.isFinite(value)) return value;
-
+      if (typeof value === 'number' && Number.isFinite(value)) return value
       if (typeof value === 'string') {
-        const parsed = Number(value);
-        return Number.isFinite(parsed) ? parsed : null;
+        const parsed = Number(value)
+        return Number.isFinite(parsed) ? parsed : null
       }
-
       return null
     }
 
     const normalizeMeasurementKey = (key: unknown): string | null => {
-      if (typeof key !== 'string') return null;
+      if (typeof key !== 'string') return null
       const normalized = key
         .normalize('NFKD')
         .replace(/[\u0300-\u036f]/gu, '')
         .replace(/[^a-z0-9]/giu, '')
         .toLowerCase()
-
-      return normalized || null;
+      return normalized || null
     }
 
     const findMeasurementValue = (
       source: Record<string, unknown> | undefined,
       descriptorKey: string,
     ): number | null => {
-      if (!source) return null;
+      if (!source) return null
+      const directValue = resolveNumericValue((source as any)[descriptorKey])
+      if (directValue != null) return directValue
 
-      const directValue = resolveNumericValue((source as any)[descriptorKey]);
-      if (directValue != null) return directValue;
-
-      const normalizedTargetKey = normalizeMeasurementKey(descriptorKey);
-      if (!normalizedTargetKey) return null;
+      const normalizedTargetKey = normalizeMeasurementKey(descriptorKey)
+      if (!normalizedTargetKey) return null
 
       for (const [candidateKey, candidateValue] of Object.entries(source)) {
         if (normalizeMeasurementKey(candidateKey) === normalizedTargetKey) {
-          const numericValue = resolveNumericValue(candidateValue);
-          if (numericValue != null) return numericValue;
+          const numericValue = resolveNumericValue(candidateValue)
+          if (numericValue != null) return numericValue
         }
       }
-
       return null
     }
 
@@ -655,7 +584,7 @@ export default function UnrealMeasurements() {
       // 1) Primarni iz basic/body
       const primaryValue = descriptor.source === 'basic'
         ? findMeasurementValue(basicMeasurements as Record<string, unknown>, descriptor.key)
-        : findMeasurementValue(bodyMeasurements as Record<string, unknown>, descriptor.key);
+        : findMeasurementValue(bodyMeasurements as Record<string, unknown>, descriptor.key)
 
       // 2) Fallback iz quickMode settings
       const fallbackValue = findMeasurementValue(
@@ -664,11 +593,9 @@ export default function UnrealMeasurements() {
       )
 
       // 3) Heuristički fallback iz estimator-a
-      const computed = (computedFallbacks as Record<string, number | undefined>)[descriptor.key];
-      const numericValue = primaryValue ?? fallbackValue ?? (computed ?? null);
-      const value = numericValue != null
-        ? formatNumber(numericValue)
-        : '—'
+      const computed = (computedFallbacks as Record<string, number | undefined>)[descriptor.key]
+      const numericValue = primaryValue ?? fallbackValue ?? (computed ?? null)
+      const value = numericValue != null ? formatNumber(numericValue) : '—'
 
       return {
         name: descriptor.label,
@@ -676,7 +603,7 @@ export default function UnrealMeasurements() {
         icon: descriptor.icon
       }
     })
-  }, [currentAvatar, formatNumber, /* MEASUREMENT_DESCRIPTORS, */ computedFallbacks]);
+  }, [currentAvatar, formatNumber, computedFallbacks])
 
   const isLoadingMeasurements = measurements == null && loaderState.isLoading
   const skeletonRowCount = MEASUREMENT_DESCRIPTORS.length
@@ -700,8 +627,10 @@ export default function UnrealMeasurements() {
 
   const avatarImage = selectedNav === 'Body' ? unrealFBBodyButton : avatarSrc
 
+  // Your real updateMorph: receives slider %, updates state + UE value, queues if offline
   const updateMorph = (morphId: number, morphName: string, sliderPercentage: number) => {
     updateMorphValue(morphId, sliderPercentage)
+
     if (!hasDirtyMorphsRef.current) {
       hasDirtyMorphsRef.current = true
       setHasDirtyMorphs(true)
@@ -709,6 +638,7 @@ export default function UnrealMeasurements() {
 
     if (connectionState === 'connected') {
       dispatchMorphUpdate(morphId, sliderPercentage)
+      console.log('🧬 Sent live morph update', { morphId, morphName, sliderPercentage })
       return
     }
 
@@ -716,13 +646,10 @@ export default function UnrealMeasurements() {
     const existingIndex = queue.findIndex(update => update.morphId === morphId)
     const queuedUpdate: PendingMorphUpdate = { morphId, sliderValue: sliderPercentage }
 
-    if (existingIndex >= 0) {
-      queue[existingIndex] = queuedUpdate
-    } else {
-      queue.push(queuedUpdate)
-    }
+    if (existingIndex >= 0) queue[existingIndex] = queuedUpdate
+    else queue.push(queuedUpdate)
 
-    console.info('Queued morph update until connection resumes', {
+    console.info('⏸️ Queued morph update until connection resumes', {
       morphId,
       morphName,
       sliderPercentage,
@@ -732,8 +659,7 @@ export default function UnrealMeasurements() {
 
   const handleControlClick = (controlKey: string) => {
     // Update selected control state
-    setSelectedControl(prev => (prev === controlKey ? null : controlKey))
-    
+    setSelectedControl(prev => (prev === controlKey ? null : controlKey))    
     // Send pixel streaming commands for rotate buttons
     if (connectionState === 'connected') {
       switch (controlKey) {
@@ -766,34 +692,28 @@ export default function UnrealMeasurements() {
 
   const handleNavClick = useCallback(async (btnKey: NavKey) => {
     if (btnKey === 'Save') {
+      console.log('💾 Save pressed → persisting morphs...')
       const saved = await persistMorphTargets()
-
       if (saved) {
+        console.log('✅ Morphs persisted → navigating to /virtual-try-on')
         navigate('/virtual-try-on')
+      } else {
+        console.warn('⚠️ Persist failed; staying on page.')
       }
       return
     }
-
     setSelectedNav(prev => (prev === btnKey ? null : btnKey))
-    }, [navigate, persistMorphTargets])
+  }, [navigate, persistMorphTargets])
 
   useEffect(() => {
-    if (!hasDirtyMorphs) {
-      return
-    }
-
+    if (!hasDirtyMorphs) return
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!hasDirtyMorphsRef.current) {
-        return
-      }
-
+      if (!hasDirtyMorphsRef.current) return
       void persistMorphTargets()
       event.preventDefault()
       event.returnValue = ''
     }
-
     window.addEventListener('beforeunload', handleBeforeUnload)
-
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload)
     }
@@ -802,30 +722,19 @@ export default function UnrealMeasurements() {
   useEffect(() => {
     return () => {
       isMountedRef.current = false
-      if (hasDirtyMorphsRef.current) {
-        void persistMorphTargets()
-      }
+      if (hasDirtyMorphsRef.current) void persistMorphTargets()
     }
   }, [persistMorphTargets])
 
   const loaderMessage = useMemo(() => {
-    if (!loaderState.isLoading) {
-      return null
-    }
-
+    if (!loaderState.isLoading) return null
     switch (loaderState.stage) {
-      case 'validation':
-        return 'Validating avatar data…'
-      case 'transformation':
-        return 'Preparing avatar morphs…'
-      case 'command_generation':
-        return 'Generating avatar commands…'
-      case 'unreal_communication':
-        return 'Sending avatar to Unreal Engine…'
-      case 'complete':
-        return 'Avatar ready!'
-      default:
-        return 'Loading avatar…'
+      case 'validation': return 'Validating avatar data…'
+      case 'transformation': return 'Preparing avatar morphs…'
+      case 'command_generation': return 'Generating avatar commands…'
+      case 'unreal_communication': return 'Sending avatar to Unreal Engine…'
+      case 'complete': return 'Avatar ready!'
+      default: return 'Loading avatar…'
     }
   }, [loaderState.isLoading, loaderState.stage])
 
@@ -842,7 +751,12 @@ export default function UnrealMeasurements() {
           </button>
         )}
       />
-
+      {devMode === 'localhost' && (
+        <div className={styles.devBadge} title="Pixel Streaming Localhost">
+          <span className={styles.devDot} />
+          DEV · localhost
+        </div>
+      )}
       {loaderState.isLoading && (
         <div className={styles.avatarLoaderBanner}>
           <span>{loaderMessage}</span>
@@ -863,19 +777,15 @@ export default function UnrealMeasurements() {
       <div className={`${styles.centralWrapper} ${selectedNav ? styles.withAccordion : ''} ${selectedNav === 'Body' ? styles.accBody : ''} ${selectedNav === 'Face' ? styles.accFace : ''} ${selectedNav === 'Skin' ? styles.accSkin : ''} ${selectedNav === 'Hair' ? styles.accHair : ''} ${selectedNav === 'Extras' ? styles.accExtras : ''}`}>
         <div className={`${styles.avatarSection} ${selectedNav ? styles.avatarShifted : ''} ${selectedNav === 'Body' ? styles.bodySelected : ''} ${selectedNav === 'Face' ? styles.faceSelected : ''} ${selectedNav === 'Skin' ? styles.skinSelected : ''} ${selectedNav === 'Hair' ? styles.hairSelected : ''} ${selectedNav === 'Extras' ? styles.extrasSelected : ''}`}>
 
-          {/* Conditional render: PixelStreaming when connected, fallback image otherwise */}
-          {connectionState === 'connected' && application ? (
+          {/* PixelStreaming when connected OR in localhost mode; fallback image otherwise */}
+          {((connectionState === 'connected' && application) || devMode === 'localhost') ? (
             <PixelStreamingView
               className={styles.avatarImage}
-              autoConnect={false}
+              autoConnect={devMode === 'localhost'}
             />
           ) : (
             <img src={avatarImage} alt="Avatar" className={styles.avatarImage} />
           )}
-
-          {/* Body measurements panel positioned separately */}
-
-          {/* Body accordion renders below in centralWrapper to preserve position */}
 
           <div className={styles.controlGroup}>
             {controls.map(control => (
@@ -910,6 +820,7 @@ export default function UnrealMeasurements() {
           </div>
         )}
       </div>
+
       {selectedNav === 'Body' && (
         <div ref={accordionRef} className={styles.accordion}>
           <BodyAccordion updateMorph={updateMorph} />

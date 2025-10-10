@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header/Header'
 import Footer from '../components/Footer/Footer'
+
 import BodyShape1 from '../assets/bodyshape-1.svg?react'
 import BodyShape2 from '../assets/bodyshape-2.svg?react'
 import BodyShape3 from '../assets/bodyshape-3.svg?react'
@@ -13,24 +14,31 @@ import athleticThin from '../assets/athletic-thin.svg'
 import athleticNormal from '../assets/athletic-normal.svg'
 import athleticMuscular from '../assets/athletic-muscular.svg'
 import styles from './QuickMode.module.scss'
+
 import {
   LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
   LAST_LOADED_AVATAR_STORAGE_KEY,
   buildBackendMorphPayload,
   useAvatarApi,
+  type AvatarPayload,
   type AvatarMorphPayload,
   type QuickModeSettingsPayload,
-  type AvatarPayload,
 } from '../services/avatarApi'
+
 import { useAvatars } from '../context/AvatarContext'
 import {
   useAvatarConfiguration,
   type BasicMeasurements,
   type AvatarCreationMode,
-  type QuickModeSettings,
   type BackendAvatarMorphTarget,
+  type QuickModeSettings,
 } from '../context/AvatarConfigurationContext'
+
 import { mapBackendMorphTargetsToRecord } from '../services/avatarTransformationService'
+import { deriveMissingMeasurements } from '../utils/deriveMeasurements'
+import type { CreateAvatarCommand } from '../types/provisioning'
+
+const USE_LOADING_ROUTE = import.meta.env.VITE_USE_LOADING_ROUTE === 'true'
 
 const bodyShapes = [
   { id: 1, Icon: BodyShape1, label: 'Shape 1', width: 33, height: 55 },
@@ -45,23 +53,28 @@ const athleticLevelLabels = ['low', 'medium', 'high'] as const
 
 export default function QuickMode() {
   const navigate = useNavigate()
+
+  // API & konteksti
   const { updateAvatarMeasurements } = useAvatarApi()
-  const { avatars, refreshAvatars } = useAvatars()
+  const { refreshAvatars } = useAvatars()
   const { currentAvatar, loadAvatarFromBackend } = useAvatarConfiguration()
 
+  // lokalni state
   const [selectedBodyShape, setSelectedBodyShape] = useState(3)
   const [athleticLevel, setAthleticLevel] = useState(1) // 0, 1, 2
   const [bustCircumference, setBustCircumference] = useState('')
   const [waistCircumference, setWaistCircumference] = useState('')
   const [lowHipCircumference, setLowHipCircumference] = useState('')
-
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // sessionStorage meta (kompatibilno s postojećim)
   const [storedAvatarId, setStoredAvatarId] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null
     return window.sessionStorage.getItem(LAST_LOADED_AVATAR_STORAGE_KEY)
   })
 
+  // --------- Stored metadata kompat sloj ---------
   type StoredAvatarMetadata = {
     avatarId?: string
     name?: string
@@ -91,6 +104,7 @@ export default function QuickMode() {
     }
   }, [])
 
+  // morphTargets iz storage-a (legacy kompat)
   type LegacyStoredMorphEntry =
     | BackendAvatarMorphTarget
     | AvatarMorphPayload
@@ -100,102 +114,69 @@ export default function QuickMode() {
 
   const storedMorphTargets = useMemo(() => {
     const source = storedMetadata?.morphTargets
-    if (!source) {
-      return {}
-    }
+    if (!source) return {}
 
     const toFiniteNumber = (value: unknown): number | undefined => {
-      const numericValue = Number(value)
-      return Number.isFinite(numericValue) ? numericValue : undefined
+      const n = Number(value)
+      return Number.isFinite(n) ? n : undefined
     }
 
-    const normalizeLegacyEntry = (
-      entry: LegacyStoredMorphEntry,
-    ): BackendAvatarMorphTarget | null => {
-      if (!entry || typeof entry !== 'object') {
-        return null
+    const normalizeLegacyEntry = (entry: LegacyStoredMorphEntry): BackendAvatarMorphTarget | null => {
+      if (!entry || typeof entry !== 'object') return null
+      const c = entry as Record<string, unknown>
+
+      if (typeof c.name === 'string') {
+        const v = toFiniteNumber(c.value) ?? toFiniteNumber(c.sliderValue)
+        return v !== undefined ? { name: c.name, value: v } : null
       }
-
-      const candidate = entry as Record<string, unknown>
-
-      if (typeof candidate.name === 'string') {
-        const numericValue =
-          toFiniteNumber(candidate.value) ?? toFiniteNumber(candidate.sliderValue)
-        if (numericValue !== undefined) {
-          return { name: candidate.name, value: numericValue }
-        }
-        return null
+      if (typeof c.backendKey === 'string') {
+        const v =
+          toFiniteNumber(c.sliderValue) ??
+          toFiniteNumber(c.value) ??
+          toFiniteNumber(c.unrealValue) ??
+          toFiniteNumber(c.defaultValue)
+        return v !== undefined ? { name: c.backendKey, value: v } : null
       }
-
-      if (typeof candidate.backendKey === 'string') {
-        const numericValue =
-          toFiniteNumber(candidate.sliderValue) ??
-          toFiniteNumber(candidate.value) ??
-          toFiniteNumber(candidate.unrealValue) ??
-          toFiniteNumber(candidate.defaultValue)
-        if (numericValue !== undefined) {
-          return { name: candidate.backendKey, value: numericValue }
-        }
-        return null
+      if (typeof c.id === 'string') {
+        const v =
+          toFiniteNumber(c.sliderValue) ??
+          toFiniteNumber(c.value) ??
+          toFiniteNumber(c.unrealValue) ??
+          toFiniteNumber(c.defaultValue)
+        return v !== undefined ? { name: c.id, value: v } : null
       }
-
-      if (typeof candidate.id === 'string') {
-        const numericValue =
-          toFiniteNumber(candidate.sliderValue) ??
-          toFiniteNumber(candidate.value) ??
-          toFiniteNumber(candidate.unrealValue) ??
-          toFiniteNumber(candidate.defaultValue)
-        if (numericValue !== undefined) {
-          return { name: candidate.id, value: numericValue }
-        }
-      }
-
       return null
     }
 
     if (Array.isArray(source)) {
-      const normalizedTargets = source.reduce<BackendAvatarMorphTarget[]>((acc, entry) => {
-        const normalized = normalizeLegacyEntry(entry as LegacyStoredMorphEntry)
-        if (normalized) {
-          acc.push(normalized)
-        }
+      const normalized = source.reduce<BackendAvatarMorphTarget[]>((acc, entry) => {
+        const n = normalizeLegacyEntry(entry as LegacyStoredMorphEntry)
+        if (n) acc.push(n)
         return acc
       }, [])
-
-      if (normalizedTargets.length === 0) {
-        return {}
-      }
-
-      return mapBackendMorphTargetsToRecord(normalizedTargets)
+      return normalized.length ? mapBackendMorphTargetsToRecord(normalized) : {}
     }
 
-    return Object.entries(source).reduce<Record<string, number>>((acc, [key, value]) => {
-      if (!key) {
-        return acc
-      }
-      const numericValue = toFiniteNumber(value)
-      if (numericValue !== undefined) {
-        acc[key] = numericValue
-      }
+    return Object.entries(source).reduce<Record<string, number>>((acc, [k, v]) => {
+      if (!k) return acc
+      const n = toFiniteNumber(v)
+      if (n !== undefined) acc[k] = n
       return acc
     }, {})
   }, [storedMetadata?.morphTargets])
 
+  // koji avatar ID je “trenutni” u legacy/update toku
   const effectiveAvatarId = useMemo(() => {
-    return (
-      currentAvatar?.avatarId ||
-      storedAvatarId ||
-      storedMetadata?.avatarId ||
-      null
-    )
+    return currentAvatar?.avatarId || storedAvatarId || storedMetadata?.avatarId || null
   }, [currentAvatar?.avatarId, storedAvatarId, storedMetadata?.avatarId])
 
+  // helpers
   const parseMeasurement = (value: string) => {
     const parsed = Number(value)
     return Number.isFinite(parsed) ? parsed : undefined
   }
 
-  // Helper to get slider value from X position
+  // slider helpers
   const getSliderValue = (clientX: number, slider: HTMLDivElement | null) => {
     if (!slider) return athleticLevel
     const rect = slider.getBoundingClientRect()
@@ -204,8 +185,6 @@ export default function QuickMode() {
     const newLevel = Math.round(percentage * 2)
     return Math.max(0, Math.min(2, newLevel))
   }
-
-  // Mouse events
   const handleSliderMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     const slider = e.currentTarget as HTMLDivElement
     const newLevel = getSliderValue(e.clientX, slider)
@@ -213,20 +192,16 @@ export default function QuickMode() {
     window.addEventListener('mousemove', handleSliderMouseMove)
     window.addEventListener('mouseup', handleSliderMouseUp)
   }
-
   const handleSliderMouseMove = (e: MouseEvent) => {
     const slider = document.getElementById('athletic-slider-track') as HTMLDivElement | null
     if (!slider) return
     const newLevel = getSliderValue(e.clientX, slider)
     setAthleticLevel(newLevel)
   }
-
   const handleSliderMouseUp = () => {
     window.removeEventListener('mousemove', handleSliderMouseMove)
     window.removeEventListener('mouseup', handleSliderMouseUp)
   }
-
-  // Touch events
   const handleSliderTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     const slider = e.currentTarget as HTMLDivElement
     const touch = e.touches[0]
@@ -235,7 +210,6 @@ export default function QuickMode() {
     window.addEventListener('touchmove', handleSliderTouchMove)
     window.addEventListener('touchend', handleSliderTouchEnd)
   }
-
   const handleSliderTouchMove = (e: TouchEvent) => {
     const slider = document.getElementById('athletic-slider-track') as HTMLDivElement | null
     if (!slider) return
@@ -243,191 +217,100 @@ export default function QuickMode() {
     const newLevel = getSliderValue(touch.clientX, slider)
     setAthleticLevel(newLevel)
   }
-
   const handleSliderTouchEnd = () => {
     window.removeEventListener('touchmove', handleSliderTouchMove)
     window.removeEventListener('touchend', handleSliderTouchEnd)
   }
 
+  // GLAVNA AKCIJA
   const handleGenerateAvatar = useCallback(async () => {
+    console.log('🚀 Starting avatar generation from QuickMode')
+
     if (isSubmitting) return
-    if (!effectiveAvatarId) {
-      setError('Please create an avatar before continuing')
-      return
-    }
 
-    const bust = parseMeasurement(bustCircumference)
+    // 1) Tri QuickMode mjere
+    const chest = parseMeasurement(bustCircumference)
     const waist = parseMeasurement(waistCircumference)
-    const hip = parseMeasurement(lowHipCircumference)
+    const lowHip = parseMeasurement(lowHipCircumference)
 
+    // 2) Skupi poznate + QuickMode mjere
     const bodyMeasurements: Record<string, number> = {}
     if (currentAvatar?.bodyMeasurements) {
-      Object.entries(currentAvatar.bodyMeasurements).forEach(([key, value]) => {
-        if (typeof value === 'number' && Number.isFinite(value)) {
-          bodyMeasurements[key] = value
-        }
-      })
+      for (const [k, v] of Object.entries(currentAvatar.bodyMeasurements)) {
+        if (typeof v === 'number' && Number.isFinite(v)) bodyMeasurements[k] = v
+      }
     }
-    if (storedMetadata?.bodyMeasurements) {
-      Object.entries(storedMetadata.bodyMeasurements).forEach(([key, value]) => {
-        if (typeof value === 'number' && Number.isFinite(value)) {
-          bodyMeasurements[key] = value
-        }
-      })
-    }
-    if (typeof bust === 'number') bodyMeasurements.chest = bust
+    if (typeof chest === 'number') bodyMeasurements.chest = chest
     if (typeof waist === 'number') bodyMeasurements.waist = waist
-    if (typeof hip === 'number') bodyMeasurements.lowHip = hip
+    if (typeof lowHip === 'number') bodyMeasurements.lowHip = lowHip
 
-    const bodyShapeMorphValue = Math.round(
-      ((selectedBodyShape - 1) / Math.max(1, bodyShapes.length - 1)) * 100,
-    )
+    // 3) za derivaciju
+    const height = currentAvatar?.basicMeasurements?.height ?? storedMetadata?.basicMeasurements?.height
+    const weight = currentAvatar?.basicMeasurements?.weight ?? storedMetadata?.basicMeasurements?.weight
+
+    // 4) Popuni ostatak (bez hardkodiranja)
+    const completeBody = deriveMissingMeasurements(bodyMeasurements, { height, weight })
+
+    // 5) QuickMode morph “features” → naš BE
+    const bodyShapeMorphValue = Math.round(((selectedBodyShape - 1) / Math.max(1, bodyShapes.length - 1)) * 100)
     const athleticMorphValue = Math.round((athleticLevel / 2) * 100)
-
     const morphTargets = {
       ...storedMorphTargets,
       quickModeBodyShape: bodyShapeMorphValue,
       quickModeAthleticLevel: athleticMorphValue,
     }
 
-    const selectedBodyShapeMeta = bodyShapes.find(shape => shape.id === selectedBodyShape)
-    const normalizedBodyShape = selectedBodyShapeMeta
-      ? selectedBodyShapeMeta.label.toLowerCase().replace(/\s+/g, '_')
-      : undefined
-    const athleticLevelKey = athleticLevelLabels[athleticLevel] ?? undefined
+    // 6) Odaberi tok
+    const haveExisting = Boolean(effectiveAvatarId)
 
-    const avatarName = storedMetadata?.name
-      ?? storedMetadata?.avatarName
-      ?? (effectiveAvatarId ? avatars.find(avatar => avatar.id === effectiveAvatarId)?.name : undefined)
-      ?? currentAvatar?.avatarName
-      ?? 'Avatar'
-
-    const gender = storedMetadata?.gender ?? currentAvatar?.gender ?? 'male'
-    const ageRange = storedMetadata?.ageRange ?? currentAvatar?.ageRange ?? '20-29'
-    const creationMode: AvatarCreationMode =
-      storedMetadata?.creationMode ??
-      (currentAvatar?.creationMode && currentAvatar.creationMode !== 'manual'
-        ? currentAvatar.creationMode
-        : 'preset')
-
-    const baseBasicMeasurements =
-      storedMetadata?.basicMeasurements ??
-      (currentAvatar?.basicMeasurements as Partial<BasicMeasurements> | undefined) ??
-      {}
-    const basicMeasurements: Partial<BasicMeasurements> = {
-      ...baseBasicMeasurements,
-      ...(creationMode ? { creationMode } : {}),
-    }
-
-    const quickModeFlag = storedMetadata?.quickMode ?? currentAvatar?.quickMode ?? true
-    const source = storedMetadata?.source ?? currentAvatar?.source ?? 'web'
-
-    const baseQuickModeSettings: (QuickModeSettings | QuickModeSettingsPayload | null | undefined) =
-      storedMetadata?.quickModeSettings ?? currentAvatar?.quickModeSettings ?? null
-
-    const quickModeMeasurements: Record<string, number> = {}
-    if (baseQuickModeSettings?.measurements) {
-      Object.entries(baseQuickModeSettings.measurements).forEach(([key, value]) => {
-        const numericValue = Number(value)
-        if (Number.isFinite(numericValue)) {
-          quickModeMeasurements[key] = numericValue
+    if (!USE_LOADING_ROUTE && haveExisting) {
+      // ─── A) LEGACY/UPDATE (tvoj stari tok) ─────────────────────────────
+      setIsSubmitting(true); setError(null)
+      try {
+        const payload: AvatarPayload = {
+          name: currentAvatar?.avatarName ?? 'Avatar',
+          gender: currentAvatar?.gender ?? 'male',
+          ageRange: currentAvatar?.ageRange ?? '20-29',
+          creationMode: currentAvatar?.creationMode ?? 'preset',
+          quickMode: true,
+          source: currentAvatar?.source ?? 'web',
+          basicMeasurements: currentAvatar?.basicMeasurements ?? {},
+          bodyMeasurements: completeBody,
+          morphTargets,
         }
-      })
-    }
-    if (typeof bust === 'number') quickModeMeasurements.chest = bust
-    if (typeof waist === 'number') quickModeMeasurements.waist = waist
-    if (typeof hip === 'number') quickModeMeasurements.lowHip = hip
 
-    const normalizedQuickModeMeasurements = Object.entries(quickModeMeasurements).reduce<Record<string, number>>(
-      (acc, [key, value]) => {
-        if (Number.isFinite(value)) {
-          acc[key] = Number(value)
-        }
-        return acc
-      },
-      {},
-    )
+        const morphs = buildBackendMorphPayload(payload)
+        const finalPayload: AvatarPayload = morphs ? { ...payload, morphs } : payload
+        if (morphs) delete (finalPayload as { morphTargets?: Record<string, number> }).morphTargets
 
-    const hasQuickModeSettings =
-      Boolean(normalizedBodyShape) ||
-      Boolean(athleticLevelKey) ||
-      Object.keys(normalizedQuickModeMeasurements).length > 0
+        const result = await updateAvatarMeasurements(effectiveAvatarId!, finalPayload)
 
-    const quickModeSettings: QuickModeSettingsPayload | undefined = hasQuickModeSettings
-      ? {
-          ...(normalizedBodyShape ? { bodyShape: normalizedBodyShape } : {}),
-          ...(athleticLevelKey ? { athleticLevel: athleticLevelKey } : {}),
-          ...(Object.keys(normalizedQuickModeMeasurements).length
-            ? { measurements: normalizedQuickModeMeasurements }
-            : {}),
-        }
-      : undefined
+        const backendAvatar = result.backendAvatar
+        const persistedAvatarId = backendAvatar?.id ?? result.avatarId ?? effectiveAvatarId
 
-    const basePayload: AvatarPayload = {
-      name: avatarName,
-      gender,
-      ageRange,
-      creationMode,
-      quickMode: quickModeFlag,
-      source,
-      basicMeasurements,
-      bodyMeasurements,
-      morphTargets,
-      ...(quickModeSettings ? { quickModeSettings } : {}),
-    }
-
-    const morphs = buildBackendMorphPayload(basePayload)
-
-    const payload: AvatarPayload = {
-      ...basePayload,
-      ...(morphs ? { morphs } : {}),
-    }
-
-    if (morphs) {
-      delete (payload as { morphTargets?: Record<string, number> }).morphTargets
-    }
-
-    setIsSubmitting(true)
-    setError(null)
-    try {
-      const result = await updateAvatarMeasurements(effectiveAvatarId, payload)
-
-      const backendAvatar = result.backendAvatar
-
-      const persistedAvatarId =
-        backendAvatar?.id ?? result.avatarId ?? effectiveAvatarId
-
-      if (persistedAvatarId) {
-        setStoredAvatarId(persistedAvatarId)
-        if (typeof window !== 'undefined') {
+        if (persistedAvatarId) {
+          setStoredAvatarId(persistedAvatarId)
           window.sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, persistedAvatarId)
         }
-      }
 
-      if (typeof window !== 'undefined') {
-        const storageMorphTargets = backendAvatar?.morphTargets
-          ?? (Array.isArray(morphs)
-            ? morphs
-                .map((morph): BackendAvatarMorphTarget | null => {
-                  if (!morph) return null
-                  const key = morph.backendKey ?? morph.id
-                  const value = Number(morph.sliderValue)
-                  if (!key || !Number.isFinite(value)) {
-                    return null
-                  }
-                  return { name: key, value }
+        // spremi metapodatke (kao i prije)
+        const storageMorphTargets =
+          backendAvatar?.morphTargets ??
+          (Array.isArray(morphs)
+            ? (morphs
+                .map((m): BackendAvatarMorphTarget | null => {
+                  if (!m) return null
+                  const key = m.backendKey ?? m.id
+                  const val = Number(m.sliderValue)
+                  if (!key || !Number.isFinite(val)) return null
+                  return { name: key, value: val }
                 })
-                .filter((entry): entry is BackendAvatarMorphTarget => Boolean(entry))
-            : undefined)
-          ?? (basePayload.morphTargets
-            ? Object.entries(basePayload.morphTargets).reduce<BackendAvatarMorphTarget[]>((acc, [key, value]) => {
-                if (!key) {
-                  return acc
-                }
-                const numericValue = Number(value)
-                if (Number.isFinite(numericValue)) {
-                  acc.push({ name: key, value: numericValue })
-                }
+                .filter(Boolean) as BackendAvatarMorphTarget[])
+            : undefined) ??
+          (payload.morphTargets
+            ? Object.entries(payload.morphTargets).reduce<BackendAvatarMorphTarget[]>((acc, [k, v]) => {
+                const n = Number(v)
+                if (k && Number.isFinite(n)) acc.push({ name: k, value: n })
                 return acc
               }, [])
             : undefined)
@@ -440,89 +323,118 @@ export default function QuickMode() {
             avatarName: backendAvatar?.name ?? payload.name,
             gender: backendAvatar?.gender ?? payload.gender,
             ageRange: backendAvatar?.ageRange ?? payload.ageRange,
-            basicMeasurements:
-              backendAvatar?.basicMeasurements ?? payload.basicMeasurements,
-            bodyMeasurements:
-              backendAvatar?.bodyMeasurements ?? payload.bodyMeasurements,
+            basicMeasurements: backendAvatar?.basicMeasurements ?? payload.basicMeasurements,
+            bodyMeasurements: backendAvatar?.bodyMeasurements ?? payload.bodyMeasurements,
             morphTargets: storageMorphTargets ?? null,
             quickMode: backendAvatar?.quickMode ?? payload.quickMode,
             creationMode: backendAvatar?.creationMode ?? payload.creationMode,
-            quickModeSettings:
-              backendAvatar?.quickModeSettings ?? payload.quickModeSettings ?? null,
+            quickModeSettings: backendAvatar?.quickModeSettings ?? payload.quickModeSettings ?? null,
             source: backendAvatar?.source ?? payload.source,
           }),
         )
-      }
 
-      if (backendAvatar) {
-        await loadAvatarFromBackend(
-          backendAvatar,
-          undefined,
-          persistedAvatarId ?? effectiveAvatarId,
-        )
-      }
-
-      if (persistedAvatarId) {
-        try {
-          await refreshAvatars()
-        } catch (refreshError) {
-          console.error('Failed to refresh avatars after saving measurements', refreshError)
+        if (backendAvatar) {
+          await loadAvatarFromBackend(backendAvatar, undefined, persistedAvatarId ?? effectiveAvatarId ?? undefined)
         }
+
+        if (persistedAvatarId) {
+          try { await refreshAvatars() } catch (e) { console.error('Failed to refresh avatars', e) }
+        }
+
+        navigate('/unreal-measurements')
+      } catch (err) {
+        console.error('Failed to update avatar measurements', err)
+        setError(err instanceof Error ? err.message : 'Failed to update avatar measurements')
+      } finally {
+        setIsSubmitting(false)
+      }
+    } else {
+      // ─── B) LOADING ROUTE (kolegin tok → Unreal) ───────────────────────
+      const cmd: CreateAvatarCommand = {
+        type: 'createAvatar',
+        data: {
+          avatarName: currentAvatar?.avatarName ?? `QuickMode Avatar ${Date.now()}`,
+          gender: currentAvatar?.gender ?? 'female',
+          ageRange: currentAvatar?.ageRange ?? '25-35',
+          basicMeasurements: {
+            ...(typeof height === 'number' ? { height } : {}),
+            ...(typeof weight === 'number' ? { weight } : {}),
+            creationMode: 'quickMode',
+          },
+          bodyMeasurements: completeBody,
+          // UE-morph map (kolegin očekivani ključevni set)
+          morphTargets: {
+            lowerBellyMoveUpDown: 50 + (selectedBodyShape - 3) * 5,
+            upperBellyWidth: 45 + (selectedBodyShape - 3) * 3,
+            pelvicDepth: 55 - (selectedBodyShape - 3) * 2,
+            shoulderSize: 50 + (selectedBodyShape - 3) * 8,
+            armsMuscular: athleticLevel * 25,
+            bodyMuscular: athleticLevel * 30,
+            chestSize: 50 + (selectedBodyShape - 3) * 7,
+          },
+          quickModeSettings: {
+            bodyShape: ['shape_1', 'shape_2', 'shape_3', 'shape_4', 'shape_5'][selectedBodyShape - 1] ?? null,
+            athleticLevel: athleticLevelLabels[athleticLevel] ?? null,
+            measurements: {
+              ...(typeof chest === 'number' ? { chest } : {}),
+              ...(typeof waist === 'number' ? { waist } : {}),
+              ...(typeof lowHip === 'number' ? { lowHip } : {}),
+            },
+            updatedAt: new Date().toISOString(),
+          },
+        },
       }
 
-      navigate('/unreal-measurements')
-    } catch (err) {
-      console.error('Failed to update avatar measurements', err)
-      setError(err instanceof Error ? err.message : 'Failed to update avatar measurements')
-    } finally {
-      setIsSubmitting(false)
+      try {
+        localStorage.setItem('pendingAvatarData', JSON.stringify(cmd))
+        navigate('/loading?destination=unreal-measurements')
+      } catch (e) {
+        console.error('Failed to start loading flow', e)
+        setError(e instanceof Error ? e.message : 'Failed to start loading flow')
+      }
     }
   }, [
-    athleticLevel,
+    // routing & guard
+    isSubmitting,
+    navigate,
+
+    // legacy grana
+    effectiveAvatarId,
+    updateAvatarMeasurements,
+    loadAvatarFromBackend,
+    refreshAvatars,
+
+    // quickmode inputi
     bustCircumference,
-    avatars,
-    currentAvatar?.ageRange,
+    waistCircumference,
+    lowHipCircumference,
+    selectedBodyShape,
+    athleticLevel,
+
+    // kontekst
     currentAvatar?.avatarName,
+    currentAvatar?.gender,
+    currentAvatar?.ageRange,
+    currentAvatar?.creationMode,
+    currentAvatar?.source,
     currentAvatar?.basicMeasurements,
     currentAvatar?.bodyMeasurements,
-    currentAvatar?.creationMode,
-    currentAvatar?.gender,
-    currentAvatar?.quickMode,
-    currentAvatar?.quickModeSettings,
-    currentAvatar?.source,
-    effectiveAvatarId,
-    loadAvatarFromBackend,
-    lowHipCircumference,
-    navigate,
-    selectedBodyShape,
-    storedMetadata?.ageRange,
-    storedMetadata?.avatarId,
-    storedMetadata?.avatarName,
-    storedMetadata?.name,
-    refreshAvatars,
+
+    // storage fallbacki
     storedMetadata?.basicMeasurements,
-    storedMetadata?.bodyMeasurements,
-    storedMetadata?.creationMode,
-    storedMetadata?.gender,
-    storedMetadata?.quickMode,
-    storedMetadata?.quickModeSettings,
-    storedMetadata?.source,
     storedMorphTargets,
-    updateAvatarMeasurements,
-    waistCircumference,
-    isSubmitting,
   ])
 
   return (
     <div className={styles.quickmodePage}>
       <div className={styles.canvas}>
-        {/* Header */}
         <Header
           title="Body Shape & Fitness"
           variant="dark"
           onExit={() => navigate('/')}
           onInfo={() => navigate('/use-of-data')}
         />
+
         <div className={styles.quickmodeContent}>
           {/* Body Shape */}
           <div className={styles.section}>
@@ -562,12 +474,9 @@ export default function QuickMode() {
                 <img
                   src={athleticCircle}
                   alt=""
-                  className={`${styles.athleticCircle} ${athleticLevel === 0
-                      ? styles.level0
-                      : athleticLevel === 1
-                        ? styles.level1
-                        : styles.level2
-                    }`}
+                  className={`${styles.athleticCircle} ${
+                    athleticLevel === 0 ? styles.level0 : athleticLevel === 1 ? styles.level1 : styles.level2
+                  }`}
                   draggable={false}
                 />
               </div>
@@ -595,6 +504,7 @@ export default function QuickMode() {
               </select>
               <span className={styles.measureUnit}>cm</span>
             </div>
+
             <div className={styles.measureRow}>
               <div className={styles.measureLabel}>Waist Circumference</div>
               <select
@@ -609,6 +519,7 @@ export default function QuickMode() {
               </select>
               <span className={styles.measureUnit}>cm</span>
             </div>
+
             <div className={styles.measureRow}>
               <div className={styles.measureLabel}>Low Hip Circumference</div>
               <select
@@ -624,6 +535,7 @@ export default function QuickMode() {
               <span className={styles.measureUnit}>cm</span>
             </div>
           </div>
+
           {error ? <div className={styles.errorMessage}>{error}</div> : null}
         </div>
 

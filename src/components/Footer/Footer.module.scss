@@ -194,3 +194,76 @@
     width: 23.2558cqw;
   }
 }
+
+/* ────────────────────────────────────────────────────────────────
+   TABLET / MID RANGE: 580px–1279px
+   • Load Avatar (single gumb): max 422px
+   • Dvostruki gumbi: 132px + 12px (gap) + 278px = 422px
+   • Bez rastezanja po širini
+   ────────────────────────────────────────────────────────────────*/
+@media (min-width: 580px) and (max-width: 1279.98px) {
+  /* red s jednim gumbom (Load Avatar) */
+  .footerTopButton,
+  .buttonSingle {
+    width: 100%;
+    max-width: 422px;
+    box-sizing: border-box;
+    margin-inline: auto;
+    flex: 0 0 auto;
+  }
+
+  /* red s dva gumba (Back + Create) */
+  .footerActions,
+  .footerActionsRow {
+    width: 100%;
+    max-width: 422px;
+    margin-inline: auto;
+    gap: 12px;                /* 132 + 12 + 278 = 422 */
+    justify-content: center;  /* centriraj set */
+  }
+
+  /* točne širine za split gumbe */
+  .footerActions .buttonBack,
+  .footerActionsRow .buttonBack {
+    width: 132px;
+    max-width: 132px;
+    flex: 0 0 132px;
+  }
+  .footerActions .buttonPrimary,
+  .footerActions .buttonBlack,
+  .footerActionsRow .buttonPrimary,
+  .footerActionsRow .buttonBlack {
+    width: 278px;
+    max-width: 278px;
+    flex: 0 0 278px;
+  }
+
+  /* onemogući rastezanje djece */
+  .footerActions > button,
+  .footerActionsRow > button {
+    flex: 0 0 auto;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────────
+   DESKTOP 1280px+: zadrži 422px (ako već imaš pravila, ovo je “safety”)
+   ────────────────────────────────────────────────────────────────*/
+@media (min-width: 1280px) {
+  .footerTopButton,
+  .footerActions,
+  .footerActionsRow,
+  .buttonSingle {
+    max-width: 422px;
+    margin-inline: auto;
+  }
+  .footerActions,
+  .footerActionsRow {
+    gap: 12px; /* neka i na desktopu bude savršenih 422 u zbiru */
+  }
+  .footerActions .buttonBack,
+  .footerActionsRow .buttonBack { width: 132px; max-width: 132px; flex: 0 0 132px; }
+  .footerActions .buttonPrimary,
+  .footerActions .buttonBlack,
+  .footerActionsRow .buttonPrimary,
+  .footerActionsRow .buttonBlack { width: 278px; max-width: 278px; flex: 0 0 278px; }
+}

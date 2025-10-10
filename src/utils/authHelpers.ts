@@ -3,15 +3,13 @@ import type { SigninRedirectArgs } from 'oidc-client-ts'
 import oidcConfig from '../oidcConfig'
 
 /* ────────────────────────────────────────────────────────────────────────────
-   Provider helperi — preporučeni put (koristi postojeći OIDC klijent)
-   Cognito Hosted UI očekuje identity_provider nazive koji odgovaraju
-   konfiguraciji u User Poolu (tipično: Google, Facebook, SignInWithApple).
+   Hosted UI helperi
    ──────────────────────────────────────────────────────────────────────────── */
 export type HostedUiProvider =
   | 'Google'
   | 'Facebook'
   | 'SignInWithApple'
-  | (string & {}) // dozvoli custom naziv ako je drugačije imenovano u Cognitu
+  | (string & {}) // dopušta custom naziv iz Cognita
 
 /** Pripremi opcije za auth.signinRedirect s identity_provider parametrom */
 export const buildProviderSigninArgs = (
@@ -25,7 +23,7 @@ export const buildProviderSigninArgs = (
   },
 })
 
-/** “Gumbi” (wrappere) koje vežeš direktno na onClick u UI-ju */
+/** Gumbi */
 export const loginWithGoogle = (auth: AuthContextProps, extra?: SigninRedirectArgs) =>
   auth.signinRedirect(buildProviderSigninArgs('Google', extra))
 
@@ -45,9 +43,7 @@ export const cleanCallbackUrl = () => {
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   (Opcionalno) Direct URL helper ako baš treba ići mimo OIDC klijenta.
-   Za ovo postavi VITE_COGNITO_DOMAIN, npr.:
-   https://yourprefix.auth.eu-north-1.amazoncognito.com
+   (Opcionalno) Direct URL helper — koristi samo ako baš treba mimo OIDC klijenta
    ──────────────────────────────────────────────────────────────────────────── */
 export const createDirectAuthUrl = (provider: HostedUiProvider): string => {
   const domain = import.meta.env.VITE_COGNITO_DOMAIN
@@ -56,11 +52,19 @@ export const createDirectAuthUrl = (provider: HostedUiProvider): string => {
       'VITE_COGNITO_DOMAIN nije postavljen. Preporuka: koristite auth.signinRedirect() helpere.'
     )
   }
+
+  // Fallback vrijednosti kako TypeScript ne bi prigovarao na “string | undefined”
+  const clientId = oidcConfig.client_id as string
+  const responseType = (oidcConfig.response_type ?? 'code') as string
+  const scope = (oidcConfig.scope ?? 'openid email') as string
+  const redirectUri = (oidcConfig.redirect_uri ??
+    `${window.location.origin}/auth/callback`) as string
+
   const url = new URL('/oauth2/authorize', domain)
-  url.searchParams.set('client_id', oidcConfig.client_id)
-  url.searchParams.set('response_type', oidcConfig.response_type)
-  url.searchParams.set('scope', oidcConfig.scope)
-  url.searchParams.set('redirect_uri', oidcConfig.redirect_uri)
+  url.searchParams.set('client_id', clientId)
+  url.searchParams.set('response_type', responseType)
+  url.searchParams.set('scope', scope)
+  url.searchParams.set('redirect_uri', redirectUri)
   url.searchParams.set('identity_provider', provider)
   return url.toString()
 }

@@ -221,6 +221,43 @@ $design-w: 430; /* jedan izvor istine */
   }
 }
 
+
+/* Badge */
+.devBadge {
+  position: absolute;
+  top: calc(var(--header-real-h, 56px) + 8px);
+  right: 12px;
+  z-index: 10;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 6px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0.3px;
+
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid #4ade80; /* match tvoj “hint” zelenilo */
+  color: #e6ffe6;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+}
+
+.devDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: #4ade80;
+  animation: devPulse 1.3s ease-in-out infinite alternate;
+}
+
+@keyframes devPulse {
+  from { transform: scale(0.9); opacity: 0.8; }
+  to   { transform: scale(1.1); opacity: 1;   }
+}
+
 @media (min-width: 1024px) {
   .measurementsSkeleton {
     gap: calc(18px * var(--panel-scale, 1));

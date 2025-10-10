@@ -55,7 +55,10 @@ interface ControlButton {
 
 export default function VirtualTryOn() {
   const navigate = useNavigate()
-  const { sendFittingRoomCommand, connectionState, application } = usePixelStreaming()
+  const { sendFittingRoomCommand, connectionState, application, devMode } = usePixelStreaming()
+  
+  // Connection is now managed by the persistent PixelStreamingContainer
+  // No need for reconnection logic here - the container handles seamless transitions
   const [view, setView] = useState<ViewState>({ focus: 'top', detail: false })
   const [selectedControl, setSelectedControl] = useState<string | null>(null)
   const [topOpen, setTopOpen] = useState(false)
@@ -71,7 +74,7 @@ export default function VirtualTryOn() {
       const newIndex = (i + 5 - 1) % 5
       // Send selectClothing command for tops (map to 0-2 range)
       if (connectionState === 'connected') {
-        const itemId = (newIndex % 3).toString()
+        const itemId = (newIndex % 2).toString()
         sendFittingRoomCommand('selectClothing', { itemId, category: 'top' })
         console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
       }
@@ -83,7 +86,7 @@ export default function VirtualTryOn() {
       const newIndex = (i + 1) % 5
       // Send selectClothing command for tops (map to 0-2 range)
       if (connectionState === 'connected') {
-        const itemId = (newIndex % 3).toString()
+        const itemId = (newIndex % 2).toString()
         sendFittingRoomCommand('selectClothing', { itemId, category: 'top' })
         console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
       }
@@ -162,7 +165,7 @@ export default function VirtualTryOn() {
       const newIndex = (i + dir + jacketImages.length) % jacketImages.length
       // Send selectClothing command for tops (map to 0-2 range)
       if (connectionState === 'connected') {
-        const itemId = (newIndex % 3).toString()
+        const itemId = (newIndex % 2).toString()
         sendFittingRoomCommand('selectClothing', { itemId, category: 'top' })
         console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
       }
@@ -271,11 +274,11 @@ export default function VirtualTryOn() {
 
   <div className={`${styles.canvasWrapper} ${accordionOpen ? styles.withAccordion : ''} ${(topOpen && !(fullBodyMode && fullBodyDetail)) ? styles.topZoom : ''} ${(bottomOpen && !(fullBodyMode && fullBodyDetail)) ? styles.bottomZoom : ''} ${topExpandedFooter ? styles.footerTopExpanded : ''} ${bottomExpandedFooter ? styles.footerBotExpanded : ''} ${(fullBodyMode && fullBodyDetail) ? styles.fullBodyDetail : ''}`}>
         
-        {/* Conditional render: PixelStreaming when connected, fallback image otherwise */}
-        {connectionState === 'connected' && application ? (
+        {/* Conditional render: PixelStreaming when connected OR in localhost mode, fallback image otherwise */}
+        {(connectionState === 'connected' && application) || devMode === 'localhost' ? (
           <PixelStreamingView 
             className={styles.avatarImage}
-            autoConnect={false}
+            autoConnect={devMode === 'localhost'}
           />
         ) : (
           <img src={avatarBg} alt="Avatar" className={styles.avatarImage} />

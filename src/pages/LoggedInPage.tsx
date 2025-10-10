@@ -8,6 +8,8 @@ import { useAvatarLoader } from '../hooks/useAvatarLoader'
 import { LAST_LOADED_AVATAR_STORAGE_KEY, useAvatarApi } from '../services/avatarApi'
 import { useAvatars } from '../context/AvatarContext'
 
+const USE_LOADING_ROUTE = import.meta.env.VITE_USE_LOADING_ROUTE === 'true';
+
 export default function LoggedInPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -57,26 +59,45 @@ export default function LoggedInPage() {
 
   const handleSelect = (id: string) => setSelectedAvatarId(id)
 
+   // NOVO
   const handleLoad = useCallback(async () => {
-    if (selectedAvatarId === null || loaderState.isLoading) return
-    try {
-      setFetchError(null)
-      const avatarData = await fetchAvatarById(selectedAvatarId)
-      const result = await loadAvatar(avatarData)
-      if (!result.success) throw new Error(result.error ?? 'Failed to load avatar configuration')
+    if (!selectedAvatarId || loaderState.isLoading) return;
 
-      setLoadedAvatarId(selectedAvatarId)
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, String(selectedAvatarId))
+    const targetRoute = locationState?.nextRoute ?? '/virtual-try-on';
+
+    // 1) Loading-route grana: ništa ne fetchamo/loada-mo ovdje.
+    if (USE_LOADING_ROUTE) {
+      try {
+        setFetchError(null);
+        // Loading page može sama dovući sve na temelju ID-a (ili spremi cijeli objekt ako tako očekuje)
+        localStorage.setItem('pendingAvatarId', selectedAvatarId);
+        navigate(`/loading?destination=${encodeURIComponent(targetRoute)}`, {
+          state: { avatarId: selectedAvatarId },
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Failed to init loading flow';
+        setFetchError(msg);
+        console.error('Init loading flow failed', e);
       }
-      const targetRoute = locationState?.nextRoute ?? '/virtual-try-on'
-      navigate(targetRoute, { state: { avatarId: selectedAvatarId } })
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Failed to load avatar'
-      setFetchError(msg)
-      console.error('Failed to load avatar', e)
+      return; // važno: prekini jer Loading preuzima dalje
     }
-  }, [fetchAvatarById, loadAvatar, loaderState.isLoading, locationState?.nextRoute, navigate, selectedAvatarId])
+
+    // 2) Default (postojeći flow): fetch + load + navigate
+    try {
+      setFetchError(null);
+      const avatarData = await fetchAvatarById(selectedAvatarId);
+      const result = await loadAvatar(avatarData);
+      if (!result.success) throw new Error(result.error ?? 'Failed to load avatar configuration');
+
+      setLoadedAvatarId(selectedAvatarId);
+      sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, selectedAvatarId);
+      navigate(targetRoute, { state: { avatarId: selectedAvatarId } });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to load avatar';
+      setFetchError(msg);
+      console.error('Failed to load avatar', e);
+    }
+  }, [selectedAvatarId, loaderState.isLoading, locationState?.nextRoute, fetchAvatarById, loadAvatar, navigate]);
 
   // ▼ Klik na “X” – prikaži inline potvrdu
   const handleDeleteClick = useCallback((id: string) => {
