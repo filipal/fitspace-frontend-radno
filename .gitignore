@@ -7,7 +7,7 @@ build/
 
 # env
 !.env
-.env.*
+!.env.*
 !.env.example
 
 # editors & OS
