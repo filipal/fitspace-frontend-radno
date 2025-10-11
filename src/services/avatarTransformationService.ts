@@ -116,24 +116,61 @@ export function convertMorphValueToBackendValue(
 /**
  * Main transformation function that converts backend JSON to updated morphAttributes
  */
+type BackendMorphTargetCandidate = Partial<BackendAvatarMorphTarget> & {
+  backendKey?: unknown
+  id?: unknown
+  sliderValue?: unknown
+  unrealValue?: unknown
+};
+
 export function mapBackendMorphTargetsToRecord(
   morphTargets: BackendAvatarMorphTarget[],
 ): Record<string, number> {
   return morphTargets.reduce<Record<string, number>>((acc, target) => {
     if (!target || typeof target !== 'object') {
-      return acc;
+      return acc
     }
-    const { name, value } = target;
-    if (!name) {
-      return acc;
+    
+    const candidate = target as BackendMorphTargetCandidate
+
+    const key = (() => {
+      const name = candidate.name
+      if (typeof name === 'string' && name.trim()) return name.trim()
+
+      const backendKey = candidate.backendKey
+      if (typeof backendKey === 'string' && backendKey.trim()) return backendKey.trim()
+
+      const id = candidate.id
+      if (typeof id === 'string' && id.trim()) return id.trim()
+
+      return undefined
+    })()
+
+    if (!key) {
+      return acc
     }
-    const numericValue = Number(value);
-    if (!Number.isFinite(numericValue)) {
-      return acc;
+
+    const sliderValue = Number(candidate.sliderValue)
+    const explicitValue = Number(candidate.value)
+    const unrealValue = Number(candidate.unrealValue)
+
+    let numericValue: number | undefined
+
+    if (Number.isFinite(sliderValue)) {
+      numericValue = sliderValue
+    } else if (Number.isFinite(explicitValue)) {
+      const v = explicitValue
+      numericValue = v >= 0 && v <= 1 ? v * 100 : v
+    } else if (Number.isFinite(unrealValue)) {
+      numericValue = unrealValue
     }
-    acc[name] = numericValue;
-    return acc;
-  }, {});
+    if (numericValue === undefined) {
+      return acc
+    }
+
+    acc[key] = Math.max(0, Math.min(100, numericValue))
+    return acc
+  }, {})
 }
 
 export function buildBackendMorphPayload(

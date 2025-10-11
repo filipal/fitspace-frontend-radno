@@ -7,6 +7,9 @@ import {
   validateBackendMorphData,
 } from '../services/avatarTransformationService';
 import { generateUnrealAvatarCommand, validateAvatarConfiguration, getMorphStatistics } from '../services/avatarCommandService';
+import { buildBackendMorphPayload } from '../services/avatarApi';
+import type { MorphAttribute } from '../data/morphAttributes';
+
 
 export interface AvatarLoaderState {
   isLoading: boolean;
@@ -38,7 +41,42 @@ export function useAvatarLoader() {
 
       // Step 1: Validate backend data
       console.log('Step 1: Validating backend morph data...');
-      const morphTargetMap = mapBackendMorphTargetsToRecord(backendData.morphTargets);
+
+      // --- Fallback: sintetiziraj morphTargets iz mjera ako ih backend ne šalje ---
+      let backendMorphTargets = backendData.morphTargets;
+
+      if (
+        (!backendMorphTargets || backendMorphTargets.length === 0) &&
+        (backendData.quickModeSettings?.measurements || backendData.bodyMeasurements)
+      ) {
+        // minimalni payload iz postojećih polja
+        const pseudoPayload = {
+          name: backendData.name,
+          gender: backendData.gender,
+          ageRange: backendData.ageRange,
+          basicMeasurements: backendData.basicMeasurements,
+          bodyMeasurements: backendData.bodyMeasurements,
+          quickMode: backendData.quickMode ?? true,
+          quickModeSettings: backendData.quickModeSettings ?? null,
+        };
+
+        const morphs = buildBackendMorphPayload(pseudoPayload as any);
+
+        if (Array.isArray(morphs)) {
+          backendMorphTargets = morphs
+            .map(m => {
+              const name = (m as any).backendKey ?? (m as any).id;
+              const value = Number((m as any).sliderValue);
+              if (!name || !Number.isFinite(value)) return null;
+              return { name, value };
+            })
+            .filter(Boolean) as { name: string; value: number }[];
+        }
+      }
+
+      // SADA mapiramo taj (originalni ili sintetizirani) skup targeta
+      const morphTargetMap = mapBackendMorphTargetsToRecord(backendMorphTargets ?? []);
+
       const validation = validateBackendMorphData(morphTargetMap);
       
       if (!validation.isValid) {
@@ -54,22 +92,12 @@ export function useAvatarLoader() {
       // Step 2: Transform backend data to morph attributes
       console.log('Step 2: Transforming backend data to morphs...');
       
-      // Get current morphs or initialize defaults if empty
-      let currentMorphs =
-        avatarConfig.currentAvatar?.morphValues ??
-        avatarConfig.getAvatarConfiguration()?.morphValues;
-      
-      // If no current morphs exist, initialize with defaults
-      if (!currentMorphs || currentMorphs.length === 0) {
-        console.log('No current morphs found, initializing with defaults...');
-        const { morphAttributes } = await import('../data/morphAttributes');
-        // DEEP COPY defaulta – svaki load dobije svoje objekte
-        currentMorphs = morphAttributes.map(m => ({ ...m, value: 50 }));
-      } else {
-        // Ako ih uzimaš iz konteksta, isto napravi DEEP COPY da ne diraš postojeće
-        currentMorphs = currentMorphs.map(m => ({ ...m }));
-      }
-      
+      // Uvijek kreni od svježih defaulta (deep copy) – nema reuse-a iz konteksta
+      const { morphAttributes } = await import('../data/morphAttributes');
+
+      // currentMorphs je *uvijek* definiran i točnog tipa
+      let currentMorphs: MorphAttribute[] = morphAttributes.map(m => ({ ...m, value: 50 }));
+
       console.log('Current morphs before transformation:', currentMorphs.length);
       
       const transformedMorphsRaw = transformBackendDataToMorphs(

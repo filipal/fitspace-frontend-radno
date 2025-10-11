@@ -27,71 +27,110 @@ export interface BodyAccordionProps {
 export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProps) {
   const { updateAvatarMeasurements } = useAvatarApi()
 
-  const pendingMorphsRef = useRef<Record<string, number>>({})
+  const pendingSaveRef = useRef<{
+    avatarId: string
+    morphs: Record<string, number>
+    name: string
+    gender: 'male' | 'female'
+    ageRange: string
+  } | null>(null)
+
   const saveTimerRef = useRef<number | null>(null)
+
+  const flushPending = useCallback(async () => {
+    const pending = pendingSaveRef.current
+    if (!pending) return
+
+    pendingSaveRef.current = null
+
+    const morphEntries = pending.morphs
+    if (!pending.avatarId || !Object.keys(morphEntries).length) {
+      return
+    }
+
+    try {
+      await updateAvatarMeasurements(pending.avatarId, {
+        name: pending.name,
+        gender: pending.gender,
+        ageRange: pending.ageRange,
+        morphTargets: morphEntries,
+      })
+    } catch (e) {
+      console.error('Saving morphs failed', e)
+    }
+  }, [updateAvatarMeasurements])
 
   const queueMorphSave = useCallback((morphId: number, percent: number) => {
     const backendKey = getBackendKeyForMorphId(morphId)
     if (!backendKey) return
 
+    if (!avatar?.avatarId) return
+
     const v = Math.max(0, Math.min(100, Math.round(percent)))
-    pendingMorphsRef.current[backendKey] = v
+
+    const readLegacyName = (obj: unknown): string | undefined => {
+      if (obj && typeof obj === 'object' && 'name' in obj) {
+        const n = (obj as Record<string, unknown>).name
+        return typeof n === 'string' ? n : undefined
+      }
+      return undefined
+    }
+
+
+    const safeName =
+      avatar?.avatarName ??
+      readLegacyName(avatar) ??
+      'Avatar'
+
+    const safeAgeRange = avatar?.ageRange ?? ''
+
+    const safeGender: 'male' | 'female' =
+      avatar?.gender === 'female' ? 'female' : 'male'
+
+    const current = pendingSaveRef.current
+    if (current && current.avatarId !== avatar.avatarId) {
+      void flushPending()
+    }
+
+    const next = pendingSaveRef.current
+    const merged =
+      !next || next.avatarId !== avatar.avatarId
+        ? {
+            avatarId: avatar.avatarId,
+            morphs: { [backendKey]: v },
+            name: safeName,
+            gender: safeGender,
+            ageRange: safeAgeRange,
+          }
+        : {
+            ...next,
+            name: safeName,
+            gender: safeGender,
+            ageRange: safeAgeRange,
+            morphs: { ...next.morphs, [backendKey]: v },
+          }
+
+    pendingSaveRef.current = merged
 
     if (typeof window !== 'undefined' && saveTimerRef.current) {
       window.clearTimeout(saveTimerRef.current)
     }
 
-    // helper za backward-compat starog polja "name"
-    const readLegacyName = (obj: unknown): string | undefined => {
-      if (obj && typeof obj === 'object' && 'name' in obj) {
-        const n = (obj as Record<string, unknown>).name;
-        return typeof n === 'string' ? n : undefined;
-      }
-      return undefined;
-    };
-
-    // pošalji batch nakon 600 ms mirovanja
     if (typeof window !== 'undefined') {
-      saveTimerRef.current = window.setTimeout(async () => {
-        const batch = pendingMorphsRef.current
-        pendingMorphsRef.current = {}
-
-        if (!avatar?.avatarId) {
-          console.warn('No avatarId; skipping save.')
-          return
-        }
-
-        try {
-          const safeName =
-            avatar?.avatarName ??
-            readLegacyName(avatar) ?? // kompatibilnost sa starim "name"
-            'Avatar';
-
-          const safeAgeRange = avatar?.ageRange ?? '';
-
-          const safeGender: 'male' | 'female' =
-            avatar?.gender === 'female' ? 'female' : 'male';
-
-          await updateAvatarMeasurements(avatar.avatarId, {
-            name: safeName,
-            gender: safeGender,
-            ageRange: safeAgeRange,
-            morphTargets: batch,
-          })
-        } catch (e) {
-          console.error('Saving morphs failed', e)
-        }
+      saveTimerRef.current = window.setTimeout(() => {
+        void flushPending()
       }, 600)
     }
-  }, [avatar, updateAvatarMeasurements])
+  }, [avatar, flushPending])
 
   useEffect(() => {
     return () => {
       if (typeof window !== 'undefined' && saveTimerRef.current) {
         window.clearTimeout(saveTimerRef.current)
       }
+      void flushPending()
     }
-  }, [])
+  }, [flushPending])
 
   // Categories grouped for body editing; values wiring will come later
   const categories = useMemo(
