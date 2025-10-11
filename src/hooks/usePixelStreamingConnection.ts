@@ -205,7 +205,7 @@ export function usePixelStreamingConnection() {
         attemptInProgress: connectionAttemptRef.current
       })
     }
-  }, [isReady, instanceData?.url, connectionState, addDebugMessage])
+  }, [isReady, instanceData?.url, connectionState, addDebugMessage, connectToInstance])
 
   // Reset connection attempt flag when connection succeeds or fails definitively
   useEffect(() => {
@@ -274,7 +274,7 @@ export function usePixelStreamingConnection() {
     } else {
       addDebugMessage('❌ Cannot retry - instance not ready or URL missing')
     }
-  }, [isReady, instanceData?.url, addDebugMessage])
+  }, [isReady, instanceData?.url, addDebugMessage, connectToInstance])
   
   // Check if we can connect (instance is ready and has URL)
   const canConnect = isReady && Boolean(instanceData?.url)

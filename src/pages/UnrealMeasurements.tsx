@@ -221,20 +221,26 @@ export default function UnrealMeasurements() {
 
   const navigate = useNavigate()
   const location = useLocation()
-
-  // Pixel Streaming context (+ localhost dev helpers)
-  const { sendFittingRoomCommand, connectionState, application, devMode, setDebugMode, setDebugSettings } = usePixelStreaming()
-
-  // Ensure localhost mode forces debug settings so Pixel Streaming connects to local UE
-  useEffect(() => {
-    if (devMode === 'localhost') {
-      console.log('🏠 UnrealMeasurements: Localhost mode detected, enabling debug Pixel Streaming settings')
-      setDebugMode(true)
-      setDebugSettings({ ss: 'ws://localhost:80' })
-    }
-  }, [devMode, setDebugMode, setDebugSettings])
+  const { sendFittingRoomCommand, connectionState, application, devMode } = usePixelStreaming()
 
   const { updateMorphValue, currentAvatar } = useAvatarConfiguration()
+
+  const accordionAvatar = useMemo(() => {
+    if (!currentAvatar) return null;
+    return {
+      avatarId: String(currentAvatar.avatarId),
+      avatarName: currentAvatar.avatarName ?? (currentAvatar as any)?.name,
+      gender:
+        currentAvatar.gender === 'female'
+          ? 'female'
+          : currentAvatar.gender === 'male'
+          ? 'male'
+          : undefined,
+      ageRange: currentAvatar.ageRange,
+      morphValues: currentAvatar.morphValues ?? [],
+    };
+  }, [currentAvatar]);
+
   const { loadAvatar, loaderState } = useAvatarLoader()
   const { fetchAvatarById, updateAvatarMeasurements } = useAvatarApi()
 
@@ -823,7 +829,11 @@ export default function UnrealMeasurements() {
 
       {selectedNav === 'Body' && (
         <div ref={accordionRef} className={styles.accordion}>
-          <BodyAccordion updateMorph={updateMorph} />
+          <BodyAccordion
+            key={currentAvatar?.avatarId ?? 'no-avatar'}
+            avatar={accordionAvatar}
+            updateMorph={updateMorph}
+          />          
         </div>
       )}
 

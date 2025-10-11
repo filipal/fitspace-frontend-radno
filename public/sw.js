@@ -4,22 +4,34 @@ const STATIC_CACHE = `fitspace-static-${VERSION}`;
 const RUNTIME_CACHE = `fitspace-runtime-${VERSION}`;
 
 self.addEventListener('install', (event) => {
-  self.skipWaiting();
+  // koristi event → nema "unused var" i čekamo da SW prijeđe u waiting
+  event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
-    // Očisti stare cacheve
-    const keys = await caches.keys();
-    await Promise.all(keys
-      .filter((key) => ![STATIC_CACHE, RUNTIME_CACHE].includes(key))
-      .map((key) => caches.delete(key))
-    );
-    // Uključi Navigation Preload (brže prve navigacije)
-    if ('navigationPreload' in self.registration) {
-      try { await self.registration.navigationPreload.enable(); } catch {}
+    try {
+      // Očisti stare cacheve
+      const keys = await caches.keys();
+      await Promise.all(
+        keys
+          .filter((key) => ![STATIC_CACHE, RUNTIME_CACHE].includes(key))
+          .map((key) => caches.delete(key))
+      );
+
+      // Uključi Navigation Preload (brže prve navigacije)
+      if ('navigationPreload' in self.registration) {
+        try {
+          await self.registration.navigationPreload.enable();
+        } catch (err) {
+          console.debug('SW: navigationPreload.enable failed (non-fatal)', err);
+        }
+      }
+
+      await self.clients.claim();
+    } catch (err) {
+      console.error('SW activate step failed', err);
     }
-    await self.clients.claim();
   })());
 });
 
@@ -28,7 +40,7 @@ self.addEventListener('activate', (event) => {
  * - Navigacije (HTML): network-first (svježi HTML sprječava razvučen layout nakon deploya)
  * - Skripte/stilovi (hashirani u Vite buildu): cache-first
  * - Slike/fontovi: stale-while-revalidate
- * - Ostalo i POST/vanjsko: proslijedi na mrežu bez kesiranja
+ * - Ostalo i POST/vanjsko: proslijedi na mrežu bez keširanja
  */
 self.addEventListener('fetch', (event) => {
   const req = event.request;
@@ -113,7 +125,11 @@ function networkFirstWithTimeout(request, { timeoutMs = 3000, cacheHtml = false 
       const res = await fetch(request, { signal: controller.signal });
       clearTimeout(timer);
       if (cacheHtml) {
-        try { cache.put(request, res.clone()); } catch {}
+        try {
+          await cache.put(request, res.clone());
+        } catch (err) {
+          console.debug('SW: cache.put (HTML) failed (non-fatal)', err);
+        }
       }
       return res;
     } catch (e) {
@@ -130,7 +146,10 @@ function staleWhileRevalidate(request, cacheName) {
     cache.match(request).then((cached) => {
       const fetchPromise = fetch(request)
         .then((res) => {
-          cache.put(request, res.clone());
+          // updejtaj keš u pozadini
+          cache.put(request, res.clone()).catch((err) => {
+            console.debug('SW: cache.put (SWR) failed (non-fatal)', err);
+          });
           return res;
         })
         .catch(() => null);

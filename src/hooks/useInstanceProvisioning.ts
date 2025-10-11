@@ -100,7 +100,11 @@ export function useInstanceProvisioning() {
         localStorage.removeItem('pendingAvatarData')
         localStorage.removeItem('pendingAvatarId')
         addDebugMessage('🧹 Cleared pendingAvatarData/pendingAvatarId')
-      } catch {}
+      } catch (e: unknown) {
+        // noop: localStorage može biti nedostupan (npr. private mode); ne blokirati flow
+        console.warn('Could not clear pending avatar keys from localStorage:', e)
+        addDebugMessage('⚠️ Could not clear pendingAvatarData/pendingAvatarId (continuing)')
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       console.error('❌ startProvisioningWorkflow error:', error)

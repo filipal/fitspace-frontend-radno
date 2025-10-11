@@ -29,8 +29,8 @@ import { AvatarConfigurationProvider } from './context/AvatarConfigurationContex
 import { AvatarProvider } from './context/AvatarContext'
 import { InstanceManagementProvider } from './context/InstanceManagementContext'
 import ScrollToTop from './components/ScrollToTop'
+import { PixelStreamingContainer } from './components/PixelStreamingContainer/PixelStreamingContainer'
 import './App.module.scss'
-
 
 export default function App() {
   const location = useLocation()
@@ -38,9 +38,7 @@ export default function App() {
   // DEV: istakni elemente koji probijaju širinu viewporta (nema importa za import.meta.env)
   useEffect(() => {
     if (!import.meta.env.DEV) return
-
     const root: Element = document.querySelector('.page') ?? document.body
-
     const highlightOverflow = () => {
       const vw = document.documentElement.clientWidth
       ;(Array.from(root.querySelectorAll('*')) as HTMLElement[]).forEach(el => {
@@ -49,11 +47,9 @@ export default function App() {
         if (w - vw > 1) el.style.outline = '2px dashed red'
       })
     }
-
     const onResize = () => requestAnimationFrame(highlightOverflow)
     window.addEventListener('resize', onResize, { passive: true })
     requestAnimationFrame(highlightOverflow)
-
     return () => {
       window.removeEventListener('resize', onResize)
       ;(Array.from(root.querySelectorAll('*')) as HTMLElement[]).forEach(el => (el.style.outline = ''))
@@ -75,100 +71,31 @@ export default function App() {
                   <Route path="/avatar-info" element={<AvatarInfoPage />} />
                   <Route path="/auth/callback" element={<AuthCallback />} />
                   <Route path="/exit-guest-user" element={<ExitGuestUser />} />
+
                   <Route
                     path="/logged-in"
-                    element={(
-                      <PrivateRoute>
-                        <LoggedInPage />
-                      </PrivateRoute>
-                    )}
+                    element={<PrivateRoute><LoggedInPage /></PrivateRoute>}
                   />
                   <Route path="/use-of-data" element={<UseOfData />} />
                   <Route path="/body-scan-info" element={<BodyScanInfo />} />
                   <Route path="/face-scan-info" element={<FaceScanInfo />} />
-                  <Route
-                    path="/quickmode"
-                    element={(
-                      <PrivateRoute>
-                        <QuickMode />
-                      </PrivateRoute>
-                    )}
-                  />
-                  <Route
-                    path="/body-scan"
-                    element={(
-                      <PrivateRoute>
-                        <BodyScan />
-                      </PrivateRoute>
-                    )}
-                  />
-                  <Route
-                    path="/face-scan"
-                    element={(
-                      <PrivateRoute>
-                        <FaceScan />
-                      </PrivateRoute>
-                    )}
-                  />
-                  <Route
-                    path="/unreal-measurements"
-                    element={(
-                      <PrivateRoute>
-                        <UnrealMeasurements />
-                      </PrivateRoute>
-                    )}
-                  />
-                  <Route
-                    path="/virtual-try-on"
-                    element={(
-                      <PrivateRoute>
-                        <VirtualTryOn />
-                      </PrivateRoute>
-                    )}
-                  />
-                  <Route
-                    path="/scan-qr-bodyscan"
-                    element={(
-                      <PrivateRoute>
-                        <ScanQRBodyscan />
-                      </PrivateRoute>
-                    )}
-                  />
-                  <Route
-                    path="/body-photos-check"
-                    element={(
-                      <PrivateRoute>
-                        <BodyPhotosCheck />
-                      </PrivateRoute>
-                    )}
-                  />
-                  <Route
-                    path="/face-photos-check"
-                    element={(
-                      <PrivateRoute>
-                        <FacePhotosCheck />
-                      </PrivateRoute>
-                    )}
-                  />
-                  <Route
-                    path="/loading"
-                    element={(
-                      <PrivateRoute>
-                        <LoadingScreen />
-                      </PrivateRoute>
-                    )}
-                  />
-                  <Route
-                    path="/pixel-streaming-demo"
-                    element={(
-                      <PrivateRoute>
-                        <PixelStreamingDemo />
-                      </PrivateRoute>
-                    )}
-                  />
+
+                  <Route path="/quickmode" element={<PrivateRoute><QuickMode /></PrivateRoute>} />
+                  <Route path="/body-scan" element={<PrivateRoute><BodyScan /></PrivateRoute>} />
+                  <Route path="/face-scan" element={<PrivateRoute><FaceScan /></PrivateRoute>} />
+                  <Route path="/unreal-measurements" element={<PrivateRoute><UnrealMeasurements /></PrivateRoute>} />
+                  <Route path="/virtual-try-on" element={<PrivateRoute><VirtualTryOn /></PrivateRoute>} />
+                  <Route path="/scan-qr-bodyscan" element={<PrivateRoute><ScanQRBodyscan /></PrivateRoute>} />
+                  <Route path="/body-photos-check" element={<PrivateRoute><BodyPhotosCheck /></PrivateRoute>} />
+                  <Route path="/face-photos-check" element={<PrivateRoute><FacePhotosCheck /></PrivateRoute>} />
+                  <Route path="/loading" element={<PrivateRoute><LoadingScreen /></PrivateRoute>} />
+                  <Route path="/pixel-streaming-demo" element={<PrivateRoute><PixelStreamingDemo /></PrivateRoute>} />
 
                   <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
+
+                {/* izvan <Routes>, unutar providera */}
+                <PixelStreamingContainer />
 
                 <DebugOverlay />
               </PixelStreamingProvider>

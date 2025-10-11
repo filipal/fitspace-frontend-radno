@@ -154,37 +154,60 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
       // Start with provided morphs or transform backend data
       const morphTargetMap = mapBackendMorphTargetsToRecord(backendData.morphTargets);
 
-      const morphValues = transformedMorphs ??
+      const baseMorphs =
+        transformedMorphs ??
         transformBackendDataToMorphs(
           morphTargetMap,
           backendData.gender,
           initializeDefaultMorphs()
         );
 
+      const morphValues = baseMorphs.map(m => ({ ...m }));
+
+      const basicMeasurements =
+        backendData.basicMeasurements
+          ? { ...backendData.basicMeasurements }
+          : undefined;
+
+      const bodyMeasurements =
+        backendData.bodyMeasurements
+          ? { ...backendData.bodyMeasurements }
+          : undefined;
+
+      const quickModeSettings =
+        backendData.quickModeSettings
+          ? {
+              ...backendData.quickModeSettings,
+              measurements: backendData.quickModeSettings.measurements
+                ? { ...backendData.quickModeSettings.measurements }
+                : undefined,
+            }
+          : null;
+
       // Apply backend morph values (this will be handled by transformation service)
       // For now, we'll just store the data as-is
       const nextAvatarId = backendData.id ?? avatarId;
       const avatarConfig: AvatarConfiguration = {
-        avatarId: nextAvatarId,
+        avatarId: nextAvatarId,     // ⬅️ koristi varijablu
         avatarName: backendData.name,
         gender: backendData.gender,
         ageRange: backendData.ageRange,
-        basicMeasurements: backendData.basicMeasurements,
-        bodyMeasurements: backendData.bodyMeasurements,
+        basicMeasurements,
+        bodyMeasurements,
         quickMode: backendData.quickMode,
         creationMode: backendData.creationMode ?? null,
         source: backendData.source ?? null,
         createdAt: backendData.createdAt ?? null,
         updatedAt: backendData.updatedAt ?? null,
         createdBySession: backendData.createdBySession ?? null,
-        quickModeSettings: backendData.quickModeSettings ?? null,
+        quickModeSettings,
         morphValues,
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       };
       
       const nextAvatarConfig: AvatarConfiguration = {
         ...avatarConfig,
-        morphValues: morphValues.map(morph => ({ ...morph })),
+         morphValues: avatarConfig.morphValues.map(m => ({ ...m })),
       };
 
       setCurrentAvatar(nextAvatarConfig);
@@ -204,25 +227,17 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
 
   // Update individual morph value
   const updateMorphValue = useCallback((morphId: number, value: number) => {
-    if (!currentAvatar) {
-      console.warn('No current avatar to update');
-      return;
-    }
-
     setCurrentAvatar(prev => {
       if (!prev) return prev;
-      
-      const updatedMorphs = prev.morphValues.map(morph => 
-        morph.morphId === morphId ? { ...morph, value } : morph
-      );
-      
       return {
         ...prev,
-        morphValues: updatedMorphs,
-        lastUpdated: new Date()
+        morphValues: prev.morphValues.map(m =>
+          m.morphId === morphId ? { ...m, value } : m
+        ),
+        lastUpdated: new Date(),
       };
     });
-  }, [currentAvatar]);
+  }, []);
 
   // Reset avatar to defaults
   const resetAvatar = useCallback(() => {

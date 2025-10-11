@@ -55,26 +55,31 @@ export function useAvatarLoader() {
       console.log('Step 2: Transforming backend data to morphs...');
       
       // Get current morphs or initialize defaults if empty
-      let currentMorphs = avatarConfig.currentAvatar?.morphValues || 
+      let currentMorphs =
+        avatarConfig.currentAvatar?.morphValues ??
         avatarConfig.getAvatarConfiguration()?.morphValues;
       
       // If no current morphs exist, initialize with defaults
       if (!currentMorphs || currentMorphs.length === 0) {
         console.log('No current morphs found, initializing with defaults...');
-        // Import the morphAttributes directly to get defaults
         const { morphAttributes } = await import('../data/morphAttributes');
-        currentMorphs = morphAttributes.map(morph => ({
-          ...morph,
-          value: 50 // Default neutral position
-        }));
+        // DEEP COPY defaulta – svaki load dobije svoje objekte
+        currentMorphs = morphAttributes.map(m => ({ ...m, value: 50 }));
+      } else {
+        // Ako ih uzimaš iz konteksta, isto napravi DEEP COPY da ne diraš postojeće
+        currentMorphs = currentMorphs.map(m => ({ ...m }));
       }
       
       console.log('Current morphs before transformation:', currentMorphs.length);
-      const transformedMorphs = transformBackendDataToMorphs(
+      
+      const transformedMorphsRaw = transformBackendDataToMorphs(
         morphTargetMap,
         backendData.gender,
-        currentMorphs,
+        currentMorphs
       );
+
+      const transformedMorphs = transformedMorphsRaw.map(m => ({ ...m }));
+
       console.log('Transformed morphs result:', transformedMorphs.length, 'morphs');
       
       setLoaderState({ isLoading: true, error: null, stage: 'command_generation', progress: 50 });

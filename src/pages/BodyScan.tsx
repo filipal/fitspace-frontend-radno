@@ -43,13 +43,11 @@ export default function BodyScan({ onClose }: { onClose?: () => void }) {
     }
   }, [isMobile, navigate]);
 
-  if (!isMobile) return null; // spriječi flicker
-
   // Resetira naslijeđeni scroll + isključi auto-restoration
   useEffect(() => {
-    const prev = (history as any).scrollRestoration;
-    if ('scrollRestoration' in history) {
-      history.scrollRestoration = 'manual';
+    const prev = window.history.scrollRestoration;
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
     }
 
     // hard reset scrolla (bez animacije)
@@ -59,16 +57,19 @@ export default function BodyScan({ onClose }: { onClose?: () => void }) {
 
     // (opcionalno, za svaki slučaj) Zaključaj scroll dok je BodyScan aktivan
     const prevHtmlOverflow = document.documentElement.style.overflow;
-    const prevBodyOverscroll = (document.body.style as any).overscrollBehaviorY || '';
+    const prevBodyOverscroll = document.body.style.getPropertyValue('overscroll-behavior-y');
     document.documentElement.style.overflow = 'hidden';
-    (document.body.style as any).overscrollBehaviorY = 'none';
-
+    document.body.style.setProperty('overscroll-behavior-y', 'none');
     return () => {
-      if ('scrollRestoration' in history) {
-        history.scrollRestoration = prev ?? 'auto';
+      if ('scrollRestoration' in window.history) {
+        window.history.scrollRestoration = prev ?? 'auto';
       }
       document.documentElement.style.overflow = prevHtmlOverflow;
-      (document.body.style as any).overscrollBehaviorY = prevBodyOverscroll;
+      if (prevBodyOverscroll) {
+        document.body.style.setProperty('overscroll-behavior-y', prevBodyOverscroll);
+      } else {
+        document.body.style.removeProperty('overscroll-behavior-y');
+      }
     };
   }, []);
 
@@ -82,9 +83,9 @@ export default function BodyScan({ onClose }: { onClose?: () => void }) {
       const playPromise = audioEl.play()
       playPromiseRef.current = playPromise
       if (playPromise !== undefined) {
-        playPromise.catch(err => {
+       playPromise.catch((err: unknown) => {
           // Audio playback was prevented or interrupted
-          if (err.name !== 'AbortError') {
+          if (!(err instanceof DOMException) || err.name !== 'AbortError') {
             console.error('Initial audio playback failed:', err)
           }
         })
@@ -119,8 +120,8 @@ export default function BodyScan({ onClose }: { onClose?: () => void }) {
               const playPromise = audio.play()
               playPromiseRef.current = playPromise
               if (playPromise !== undefined) {
-                playPromise.catch(err => {
-                  if (err.name !== 'AbortError') {
+                playPromise.catch((err: unknown) => {
+                  if (!(err instanceof DOMException) || err.name !== 'AbortError') {
                     console.error('Audio playback failed:', err)
                   }
                 })
@@ -133,8 +134,8 @@ export default function BodyScan({ onClose }: { onClose?: () => void }) {
           const playPromise = audio.play()
           playPromiseRef.current = playPromise
           if (playPromise !== undefined) {
-            playPromise.catch(err => {
-              if (err.name !== 'AbortError') {
+            playPromise.catch((err: unknown) => {
+              if (!(err instanceof DOMException) || err.name !== 'AbortError') {
                 console.error('Audio playback failed:', err)
               }
             })
@@ -279,8 +280,15 @@ export default function BodyScan({ onClose }: { onClose?: () => void }) {
       }
     }
   }
+  const headerStyle = {
+    '--exit-icon-w': '20px',
+    '--exit-icon-h': '20px',
+    '--right-icon-w': '30px',
+    '--right-icon-h': '24px',
+    '--right-icon-offset': '-2px',
+  } as React.CSSProperties;
 
-  return (
+  return !isMobile ? null : (
     <div className={styles.bodyScanPage}>
       {/* Placeholder prikaz samo u initial */}
       {scanPhase === 'initial' && (
@@ -315,15 +323,7 @@ export default function BodyScan({ onClose }: { onClose?: () => void }) {
         variant="light"
         title={title}
         onExit={onClose || (() => navigate(-1))}
-        style={{
-          // Exit 20×20
-          ['--exit-icon-w' as any]: '20px',
-          ['--exit-icon-h' as any]: '20px',
-          // Voice 30×24 + lagano spusti 2px da se poravna s bottom baselineom
-          ['--right-icon-w' as any]: '30px',
-          ['--right-icon-h' as any]: '24px',
-          ['--right-icon-offset' as any]: '-2px',
-        }}
+         style={headerStyle}
         rightContent={
           <button className={styles.voiceButton} onClick={() => setSoundEnabled(v => !v)} type="button">
             <img src={soundEnabled ? VoiceInfoOn : VoiceInfoOff} alt="Voice Info" />

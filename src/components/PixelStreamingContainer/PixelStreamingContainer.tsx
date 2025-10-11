@@ -1,106 +1,123 @@
-import { useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
-import { usePixelStreaming } from '../../context/PixelStreamingContext';
-import { PixelStreamingView } from '../PixelStreamingView/PixelStreamingView';
+// src/components/PixelStreamingContainer/PixelStreamingContainer.tsx
+import { useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
+import { usePixelStreaming } from '../../context/PixelStreamingContext'
+import { PixelStreamingView } from '../PixelStreamingView/PixelStreamingView'
 
 /**
- * Persistent PixelStreaming container that stays mounted across all pages.
- * Only visible on pages that need the stream (unreal-measurements, virtual-try-on).
- * This eliminates the need for reconnection when navigating between avatar pages.
+ * Persistent PS "manager":
+ * - drži konekciju (connect/keepalive)
+ * - prebacuje modove (measurement/fittingRoom) prema ruti
+ * - opcionalno može i CRTATI globalni <PixelStreamingView/> ako se traži (renderView=true)
+ *
+ * Zadano: renderView=false → ne crta ništa, samo upravlja konekcijom.
  */
-export const PixelStreamingContainer: React.FC = () => {
-  const location = useLocation();
-  const { sendCommand, connectionState, connect, devMode, setDebugMode, setDebugSettings } = usePixelStreaming();
+export const PixelStreamingContainer: React.FC<{ renderView?: boolean }> = ({
+  renderView = false,
+}) => {
+  const location = useLocation()
+  const {
+    sendCommand,
+    connectionState,
+    connect,
+    getEffectiveSettings,
+    devMode,
+    setDebugMode,
+    setDebugSettings,
+  } = usePixelStreaming()
 
-  // Track the previous mode to detect transitions
-  const prevModeRef = useRef<string | null>(null);
+  // stabilna slika postavki u ovom renderu
+  const effective = getEffectiveSettings();
+  const ss = effective.ss ?? '';
 
-  // Pages that should display the PixelStreaming view
-  const streamPages = ['/unreal-measurements', '/virtual-try-on'];
-  const isStreamPage = streamPages.includes(location.pathname);
+  // stabilna referenca na connect da ga ne moramo stavljati u deps
+  const connectRef = useRef(connect);
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
 
-  // Determine which mode we're in based on the current page
-  const currentMode = location.pathname === '/unreal-measurements' ? 'measurement' : 
-                     location.pathname === '/virtual-try-on' ? 'fittingRoom' : 
-                     null;
+  // rute koje koriste streaming
+  const streamPages = ['/unreal-measurements', '/virtual-try-on'] as const
+  const isStreamPage = streamPages.includes(location.pathname as (typeof streamPages)[number])
 
-  // Configure localhost mode when on stream pages
+  // trenutni "mode" u UE
+  const currentMode =
+    location.pathname === '/unreal-measurements'
+      ? 'measurement'
+      : location.pathname === '/virtual-try-on'
+        ? 'fittingRoom'
+        : null
+
+  // zapamti prethodni mode da šaljemo switchMode samo kad se stvarno promijeni
+  const prevModeRef = useRef<string | null>(null)
+
+  // DEV helper: localhost → forsiraj debug postavke
   useEffect(() => {
     if (isStreamPage && devMode === 'localhost') {
-      console.log('🏠 PersistentContainer: Localhost mode detected, configuring debug settings');
-      setDebugMode(true);
-      setDebugSettings({ ss: 'ws://localhost:80' });
+      console.log('🏠 PS Container: localhost dev mode → ws://localhost:80')
+      setDebugMode(true)
+      setDebugSettings({ ss: 'ws://localhost:80' })
     }
-  }, [isStreamPage, devMode, setDebugMode, setDebugSettings]);
+  }, [isStreamPage, devMode, setDebugMode, setDebugSettings])
 
-  // Auto-connect when becoming visible on a stream page
+  // Auto-connect čim uđemo na stranicu koja koristi stream (ako smo disconnected)
   useEffect(() => {
-    if (isStreamPage && connectionState === 'disconnected') {
-      console.log('🔌 PersistentContainer: Stream page detected, initiating connection...');
-      connect();
+    // Samo na PS stranicama
+    if (!isStreamPage) return;
+
+    // Bez URL-a nema povezivanja (sprječava spam logova)
+    if (!ss) return;
+
+    // Ako smo već connected/connecting, ne pokušavaj opet
+    if (connectionState === 'connected' || connectionState === 'connecting') return;
+
+    console.log('🔌 PS Container: initiating connect…', ss);
+    // Po želji možeš proslijediti ss kao override, ali nije nužno
+    // connectRef.current(ss);
+    connectRef.current();
+  }, [isStreamPage, ss, connectionState]);
+
+  // Prebacivanje modova bez reconnecta
+  useEffect(() => {
+    if (!currentMode || connectionState !== 'connected') return
+    const prevMode = prevModeRef.current
+
+    if (!prevMode || prevMode !== currentMode) {
+      console.log(`🔄 switchMode: ${prevMode ?? '(initial)'} → ${currentMode}`)
+      sendCommand('switchMode', { mode: currentMode })
+      prevModeRef.current = currentMode
     }
-  }, [isStreamPage, connectionState, connect]);
+  }, [currentMode, connectionState, sendCommand])
 
-  // Handle mode switching when navigating between pages
-  // No reconnection needed - we're just moving the same DOM element!
-  useEffect(() => {
-    if (currentMode && connectionState === 'connected') {
-      const prevMode = prevModeRef.current;
+  // (opcionalno) renderaj globalni view — samo ako je traženo i ako smo na jednoj od PS stranica
+  if (!(renderView && isStreamPage)) {
+    // Nema DOM-a → nema crnog kvadrata; ali efekti iznad i dalje rade dok je komponenta montirana
+    return null
+  }
 
-      // Send mode switch command to Unreal Engine
-      if (prevMode && prevMode !== currentMode) {
-        console.log(`🔄 Page transition: ${prevMode} → ${currentMode} (seamless, no reconnection)`);
-        sendCommand('switchMode', { mode: currentMode });
-      } else if (!prevMode) {
-        // First load
-        console.log(`🎮 Initial mode: ${currentMode}`);
-        sendCommand('switchMode', { mode: currentMode });
-      }
+  // Minimalni styling ako netko želi globalni prikaz iz kontejnera
+  const streamHeight =
+    currentMode === 'fittingRoom' ? '780px' : 'calc(100vh - 101px)'
 
-      // Update the previous mode
-      prevModeRef.current = currentMode;
-    }
-  }, [currentMode, connectionState, sendCommand]);
-
-  // Log visibility changes for debugging
-  useEffect(() => {
-    console.log(`📺 PixelStreaming container ${isStreamPage ? 'visible' : 'hidden'} on ${location.pathname}`);
-  }, [isStreamPage, location.pathname]);
-
-  // Render a single persistent PixelStreamingView that never unmounts or moves
-  // The DOM element stays in exactly the same place, preventing video rendering issues
-  // Pages have transparent areas where the stream shows through
-
-  // Calculate stream area height based on mode
-  // VirtualTryOn: 780px (at 430px width) - this scales proportionally
-  // UnrealMeasurements: Fill remaining space after header
-  const streamHeight = currentMode === 'fittingRoom' 
-    ? '780px'  // VirtualTryOn fixed height
-    : 'calc(100vh - 101px)'; // UnrealMeasurements fills remaining
-
-  // z-index management:
-  // VirtualTryOn needs -1 to appear behind UI overlays (buttons, accordions, etc.)
-  // UnrealMeasurements needs higher z-index (1) to be visible above page background
-  const zIndexValue = currentMode === 'fittingRoom' ? -1 : 1;
+  const zIndexValue = currentMode === 'fittingRoom' ? -1 : 1
 
   return (
     <div
       style={{
-        display: isStreamPage ? 'block' : 'none',
         position: 'fixed',
-        top: '8%', // Start below header
+        top: '8%',
         left: '50%',
         transform: 'translateX(-50%)',
         width: '100%',
         maxWidth: '430px',
         height: streamHeight,
         zIndex: zIndexValue,
-        pointerEvents: 'none', // Enable stream interaction
-        overflow: 'hidden', // Prevent stream from extending beyond bounds
+        // Ako želiš omogućiti klikanje po videu, promijeni na 'auto'.
+        pointerEvents: 'none',
+        overflow: 'hidden',
       }}
-    >    
-      <PixelStreamingView    
-      />
+    >
+      <PixelStreamingView />
     </div>
-  );
-};
+  )
+}

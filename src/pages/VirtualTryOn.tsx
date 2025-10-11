@@ -274,9 +274,9 @@ export default function VirtualTryOn() {
 
   <div className={`${styles.canvasWrapper} ${accordionOpen ? styles.withAccordion : ''} ${(topOpen && !(fullBodyMode && fullBodyDetail)) ? styles.topZoom : ''} ${(bottomOpen && !(fullBodyMode && fullBodyDetail)) ? styles.bottomZoom : ''} ${topExpandedFooter ? styles.footerTopExpanded : ''} ${bottomExpandedFooter ? styles.footerBotExpanded : ''} ${(fullBodyMode && fullBodyDetail) ? styles.fullBodyDetail : ''}`}>
         
-        {/* Conditional render: PixelStreaming when connected OR in localhost mode, fallback image otherwise */}
-        {(connectionState === 'connected' && application) || devMode === 'localhost' ? (
-          <PixelStreamingView 
+        {/* PixelStreaming kad je stvarno connected (ili u localhost DEV), inače fallback slika */}
+        {((connectionState === 'connected' && application) || devMode === 'localhost') ? (
+          <PixelStreamingView
             className={styles.avatarImage}
             autoConnect={devMode === 'localhost'}
           />

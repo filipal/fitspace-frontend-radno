@@ -2,21 +2,29 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import ArrowRight from '../../assets/arrow-right.svg'
 import { morphAttributes } from '../../data/morphAttributes';
 import type { MorphAttribute } from '../../data/morphAttributes';
-import { useAvatarConfiguration } from '../../context/AvatarConfigurationContext';
 import styles from './BodyAccordion.module.scss'
 
 import { useAvatarApi } from '../../services/avatarApi';
 import { getBackendKeyForMorphId } from '../../services/avatarTransformationService';
 
-const EMPTY_MORPH_VALUES: MorphAttribute[] = []
+
+export type Avatar = {
+  avatarId: string;
+  avatarName?: string;
+  gender?: string;     // ili 'male' | 'female' | 'other' ako ti je točan union
+  ageRange?: string;
+  morphValues?: { morphId: number; value: number }[];
+};
+
+const EMPTY_MORPH_VALUES: { morphId: number; value: number }[] = []
+
 
 export interface BodyAccordionProps {
+  avatar: Avatar | null; // ⬅️ BodyAccordion sada prima avatar kroz prop
   updateMorph?: (morphId: number, morphName: string, percentage: number) => void
 }
 
-export default function BodyAccordion({ updateMorph }: BodyAccordionProps) {
-  const { currentAvatar } = useAvatarConfiguration()
-
+export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProps) {
   const { updateAvatarMeasurements } = useAvatarApi()
 
   const pendingMorphsRef = useRef<Record<string, number>>({})
@@ -33,28 +41,40 @@ export default function BodyAccordion({ updateMorph }: BodyAccordionProps) {
       window.clearTimeout(saveTimerRef.current)
     }
 
+    // helper za backward-compat starog polja "name"
+    const readLegacyName = (obj: unknown): string | undefined => {
+      if (obj && typeof obj === 'object' && 'name' in obj) {
+        const n = (obj as Record<string, unknown>).name;
+        return typeof n === 'string' ? n : undefined;
+      }
+      return undefined;
+    };
+
     // pošalji batch nakon 600 ms mirovanja
     if (typeof window !== 'undefined') {
       saveTimerRef.current = window.setTimeout(async () => {
         const batch = pendingMorphsRef.current
         pendingMorphsRef.current = {}
 
-        if (!currentAvatar?.avatarId) {
+        if (!avatar?.avatarId) {
           console.warn('No avatarId; skipping save.')
           return
         }
 
         try {
           const safeName =
-            currentAvatar?.avatarName ??
-            (currentAvatar as any)?.name ?? // ako postoji staro polje name
+            avatar?.avatarName ??
+            readLegacyName(avatar) ?? // kompatibilnost sa starim "name"
             'Avatar';
 
-          const safeAgeRange = currentAvatar?.ageRange ?? '';
-            
-          await updateAvatarMeasurements(currentAvatar.avatarId, {
+          const safeAgeRange = avatar?.ageRange ?? '';
+
+          const safeGender: 'male' | 'female' =
+            avatar?.gender === 'female' ? 'female' : 'male';
+
+          await updateAvatarMeasurements(avatar.avatarId, {
             name: safeName,
-            gender: currentAvatar.gender,
+            gender: safeGender,
             ageRange: safeAgeRange,
             morphTargets: batch,
           })
@@ -63,13 +83,7 @@ export default function BodyAccordion({ updateMorph }: BodyAccordionProps) {
         }
       }, 600)
     }
-  }, [
-    currentAvatar?.avatarId,
-    currentAvatar?.avatarName,
-    currentAvatar?.gender,
-    currentAvatar?.ageRange,
-    updateAvatarMeasurements,
-  ])
+  }, [avatar, updateAvatarMeasurements])
 
   useEffect(() => {
     return () => {
@@ -250,9 +264,8 @@ export default function BodyAccordion({ updateMorph }: BodyAccordionProps) {
 
   // Slider row component
   function SliderRow({ attr }: { attr: MorphAttribute }) {
-    // Always show thumb and value, start centered at 50%
     const barRef = useRef<HTMLDivElement | null>(null);
-    const morphValues = currentAvatar?.morphValues ?? EMPTY_MORPH_VALUES
+    const morphValues = avatar?.morphValues ?? EMPTY_MORPH_VALUES;
 
     const getMorphValue = useCallback(() => {
       const morph = morphValues.find(item => item.morphId === attr.morphId)

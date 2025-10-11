@@ -111,6 +111,9 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
   // Native overlay visibility state
   const [hideNativeOverlay, setHideNativeOverlay] = useState<boolean>(true);
 
+  // Spriječi paralelne/učestale connect pozive
+  const connectInFlightRef = React.useRef(false);
+
   // Message handlers
   const [messageHandlers, setMessageHandlers] = useState<Set<(message: any) => void>>(new Set());
 
@@ -227,78 +230,94 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
     applyOverlayHiding(application, hideNativeOverlay);
   }, [application, hideNativeOverlay, applyOverlayHiding]);
 
-  const connect = useCallback(async (overrideUrl?: string) => {
-    try {
-      setConnectionState('connecting');
-      setConnectionError(null);
+const connect = useCallback(async (overrideUrl?: string) => {
+  // spriječi spam: ako već spajamo ili smo spojeni — ništa
+  if (connectInFlightRef.current || connectionState === 'connecting' || connectionState === 'connected') {
+    return;
+  }
+  connectInFlightRef.current = true;
 
-      // Helper function to add debug messages (try to use global debug if available)
-      const addDebugMsg = (message: string) => {
-        console.log(message);
-        // Try to access global debug function if available
-        if (typeof (window as any).addFitspaceDebugMessage === 'function') {
-          (window as any).addFitspaceDebugMessage(message);
-        }
-      };
+  let connectionTimeout: number | undefined; // vidljiv i u finally i u listenerima
+  let stillConnecting = true;                // guard za timeout
 
-      // Detect mobile environment
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const userAgent = navigator.userAgent;
-      const platform = navigator.platform;
-      
-      addDebugMsg('📱 PixelStreaming connect() called with mobile detection');
-      addDebugMsg(`📱 Mobile device: ${isMobile}`);
-      addDebugMsg(`🔗 Connection URL: ${overrideUrl || effectiveSettings.ss}`);
-      addDebugMsg(`🎥 AutoPlayVideo setting: ${effectiveSettings.AutoPlayVideo} (${isMobile ? 'disabled for mobile' : 'enabled for desktop'})`);
-      
-      console.log('📱 Device detection:', {
-        isMobile,
-        userAgent,
-        platform,
-        screenSize: `${window.screen.width}x${window.screen.height}`,
-        viewport: `${window.innerWidth}x${window.innerHeight}`,
-        devicePixelRatio: window.devicePixelRatio,
-        autoPlayVideo: effectiveSettings.AutoPlayVideo,
-        connection: (navigator as any).connection ? {
-          effectiveType: (navigator as any).connection.effectiveType,
-          downlink: (navigator as any).connection.downlink,
-          rtt: (navigator as any).connection.rtt
-        } : 'not available'
-      });
+  try {
+    setConnectionState('connecting');
+    setConnectionError(null);
 
-      // Apply pixel streaming styles
-      const pixelStreamingStyles = new PixelStreamingApplicationStyle();
-      pixelStreamingStyles.applyStyleSheet();
+    // Helper function to add debug messages (try to use global debug if available)
+    const addDebugMsg = (message: string) => {
+      console.log(message);
+      if (typeof (window as any).addFitspaceDebugMessage === 'function') {
+        (window as any).addFitspaceDebugMessage(message);
+      }
+    };
 
-      // Use override URL if provided, otherwise use effective settings
-      const connectionSettings = overrideUrl ? 
-        { ...effectiveSettings, ss: overrideUrl } : 
-        effectiveSettings;
+    // Detect mobile environment
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const userAgent = navigator.userAgent;
+    const platform = navigator.platform;
 
-      console.log('🔍 Connection settings being used:', connectionSettings);
-      console.log('🔍 Override URL provided:', overrideUrl);
-      console.log('🔍 Effective settings:', effectiveSettings);
-      console.log('🔍 Debug mode active:', debugMode);
-      console.log('🔍 Debug settings:', debugSettings);
-      console.log('🔍 Base settings:', settings);
-      console.log('🔍 Final signalling URL (ss):', connectionSettings.ss);
+    addDebugMsg('📱 PixelStreaming connect() called with mobile detection');
+    addDebugMsg(`📱 Mobile device: ${isMobile}`);
+    addDebugMsg(`🔗 Connection URL: ${overrideUrl || effectiveSettings.ss}`);
+    addDebugMsg(`🎥 AutoPlayVideo setting: ${effectiveSettings.AutoPlayVideo} (${isMobile ? 'disabled for mobile' : 'enabled for desktop'})`);
 
-      // Use the connection settings for config
-      const config = new Config({ 
-        useUrlParams: false, // Don't use URL params for main app connection
-        initialSettings: connectionSettings 
-      });
+    console.log('📱 Device detection:', {
+      isMobile,
+      userAgent,
+      platform,
+      screenSize: `${window.screen.width}x${window.screen.height}`,
+      viewport: `${window.innerWidth}x${window.innerHeight}`,
+      devicePixelRatio: window.devicePixelRatio,
+      autoPlayVideo: effectiveSettings.AutoPlayVideo,
+      connection: (navigator as any).connection ? {
+        effectiveType: (navigator as any).connection.effectiveType,
+        downlink: (navigator as any).connection.downlink,
+        rtt: (navigator as any).connection.rtt
+      } : 'not available'
+    });
 
-      // Create pixel streaming instance
-      const newStream = new PixelStreaming(config);
-      
-      // Create application
-      const newApplication = new Application({
-        stream: newStream,
-        onColorModeChanged: (isLightMode: boolean) => {
-          pixelStreamingStyles.setColorMode(isLightMode);
-        }
-      });
+    // IZRAČUNAJ SETTINGS PRVO
+    const connectionSettings = overrideUrl
+      ? { ...effectiveSettings, ss: overrideUrl }
+      : effectiveSettings;
+
+    console.log('🔍 Connection settings being used:', connectionSettings);
+    console.log('🔍 Override URL provided:', overrideUrl);
+    console.log('🔍 Effective settings:', effectiveSettings);
+    console.log('🔍 Debug mode active:', debugMode);
+    console.log('🔍 Debug settings:', debugSettings);
+    console.log('🔍 Base settings:', settings);
+    console.log('🔍 Final signalling URL (ss):', connectionSettings.ss);
+
+    // ✅ VALIDACIJA PRIJE BILO KAKVIH KONSTRUKCIJA
+    const ss = connectionSettings.ss ?? '';
+    const hasValidUrl = ss !== '';
+    const isLocalhostUrl = ss.includes('localhost') || ss.includes('127.0.0.1');
+    const shouldConnect = hasValidUrl && (!isLocalhostUrl || !!debugSettings);
+
+    if (!shouldConnect) {
+      console.log('❌ Skipping connection - invalid URL or localhost without debug mode. Current ss:', ss);
+      setConnectionState('disconnected');
+      return; // PREKINI connect — NE kreiraj PixelStreaming/Application
+    }
+
+    // TEK SADA primijeni stilove i kreiraj objekte
+    const pixelStreamingStyles = new PixelStreamingApplicationStyle();
+    pixelStreamingStyles.applyStyleSheet();
+
+    const config = new Config({
+      useUrlParams: false,
+      initialSettings: connectionSettings
+    });
+
+    const newStream = new PixelStreaming(config);
+    const newApplication = new Application({
+      stream: newStream,
+      onColorModeChanged: (isLightMode: boolean) => {
+        pixelStreamingStyles.setColorMode(isLightMode);
+      }
+    });
 
       // Listen for settings changes from the Epic Games UI to keep our context in sync
       // This ensures that when users toggle settings in the debug overlay, they persist across reconnections
@@ -357,26 +376,24 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
       };
 
       // Set up connection timeout for mobile devices
-      const connectionTimeout = setTimeout(() => {
-        if (connectionState === 'connecting') {
-          console.error('⏰ Connection timeout after 30 seconds');
-          setConnectionState('error');
-          setConnectionError('Connection timeout - WebSocket or WebRTC handshake failed');
-          
-          // Try to disconnect the hanging connection
-          try {
-            if (newStream) {
-              newStream.disconnect();
-            }
-          } catch (error) {
-            console.warn('Error disconnecting timed out connection:', error);
-          }
+      connectionTimeout = window.setTimeout(() => {
+        if (!stillConnecting) return;
+
+        console.error('⏰ Connection timeout after 30 seconds');
+        setConnectionState('error');
+        setConnectionError('Connection timeout - WebSocket or WebRTC handshake failed');
+        try {
+          newStream.disconnect();
+        } catch (error) {
+          console.warn('Error disconnecting timed out connection:', error);
         }
-      }, 30000); // 30 second timeout
+      }, 30000);
+
 
       // Set up event listeners for connection state
       newStream.addEventListener('webRtcConnected', () => {
-        clearTimeout(connectionTimeout); // Clear timeout on successful connection
+        stillConnecting = false;
+        if (connectionTimeout) clearTimeout(connectionTimeout); // Clear timeout on successful connection
         setConnectionState('connected');
         console.log('🎥 WebRTC Connected - checking resolution...');
         
@@ -456,12 +473,14 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
       });
 
       newStream.addEventListener('webRtcDisconnected', () => {
-        clearTimeout(connectionTimeout); // Clear timeout on disconnect
+        stillConnecting = false;
+        if (connectionTimeout) clearTimeout(connectionTimeout); // Clear timeout on disconnect
         setConnectionState('disconnected');
       });
 
       newStream.addEventListener('webRtcFailed', () => {
-        clearTimeout(connectionTimeout); // Clear timeout on failure
+        stillConnecting = false;
+        if (connectionTimeout) clearTimeout(connectionTimeout); // Clear timeout on failure
         setConnectionState('error');
         setConnectionError('WebRTC connection failed');
       });
@@ -574,7 +593,7 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
                   const message = JSON.parse(messageText);
                   console.log('Received message from Unreal Engine:', message);
                   notifyMessageHandlers(message);
-                } catch (parseError) {
+                } catch {
                   notifyMessageHandlers({ raw: messageText });
                 }
               };
@@ -761,181 +780,54 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
       // Debug log the connection settings before connection attempt
       console.log('🔍 About to attempt connection with connectionSettings:', connectionSettings);
       console.log('🔍 connectionSettings.ss:', connectionSettings.ss);
-      
-      // Connection validation logic
-      const hasValidUrl = connectionSettings.ss && connectionSettings.ss !== '';
-      const isLocalhostUrl = connectionSettings.ss && (
-        connectionSettings.ss.includes('localhost') || 
-        connectionSettings.ss.includes('127.0.0.1')
-      );
-      
-      // Allow connection if:
-      // 1. Valid non-localhost URL (production instance)
-      // 2. Localhost URL and we have debug settings (debug mode)
-      const shouldConnect = hasValidUrl && (
-        !isLocalhostUrl || // Non-localhost URL (production)
-        (isLocalhostUrl && debugSettings) // Localhost URL but in debug mode
-      );
-      
-      if (shouldConnect) {
-        console.log('✅ Valid URL found, connecting to signalling server:', connectionSettings.ss);
-        
-        // Additional debugging for mobile connections
-        console.log('🔍 Pre-connection debugging:', {
-          timestamp: new Date().toISOString(),
-          url: connectionSettings.ss,
-          isMobile,
-          windowSize: `${window.innerWidth}x${window.innerHeight}`,
-          screenSize: `${window.screen.width}x${window.screen.height}`,
-          userAgent: navigator.userAgent.substring(0, 100) + '...'
-        });
-        
-        // Test WebSocket connectivity before attempting connection
-        addDebugMsg('🧪 Testing WebSocket connectivity...');
-        console.log('🧪 Testing WebSocket connectivity...');
-        try {
-          if (connectionSettings.ss) {
-            addDebugMsg(`🔗 Creating test WebSocket to: ${connectionSettings.ss}`);
-            const testWs = new WebSocket(connectionSettings.ss);
-            testWs.onopen = () => {
-              addDebugMsg('✅ WebSocket test connection opened successfully');
-              console.log('✅ WebSocket test connection opened successfully');
-              testWs.close();
-            };
-            testWs.onerror = (error) => {
-              addDebugMsg('❌ WebSocket test connection failed');
-              console.error('❌ WebSocket test connection failed:', error);
-            };
-            testWs.onclose = (event) => {
-              addDebugMsg(`🔌 WebSocket test closed: ${event.code} ${event.reason}`);
-              console.log('🔌 WebSocket test connection closed:', event.code, event.reason);
-            };
-            
-            // Close test connection after 5 seconds
-            setTimeout(() => {
-              if (testWs.readyState === WebSocket.CONNECTING || testWs.readyState === WebSocket.OPEN) {
-                testWs.close();
-              }
-            }, 5000);
-          } else {
-            addDebugMsg('❌ Cannot test WebSocket: URL is undefined');
-            console.error('❌ Cannot test WebSocket: URL is undefined');
-          }
-        } catch (testError) {
-          addDebugMsg('❌ Failed to create test WebSocket');
-          console.error('❌ Failed to create test WebSocket:', testError);
-        }
-        
-        addDebugMsg('🚀 About to call newStream.connect()...');
-        console.log('🚀 Calling newStream.connect()...');
-        newStream.connect();
-        addDebugMsg('✅ newStream.connect() call completed, monitoring for events...');
-        console.log('✅ newStream.connect() call completed, waiting for events...');
-        
-        // Add immediate post-connection debugging
+
+      // (opcionalno) Test WebSocket connectivity prije connect-a
+      addDebugMsg('🧪 Testing WebSocket connectivity...');
+      try {
+        const testWs = new WebSocket(connectionSettings.ss!);
+        testWs.onopen = () => {
+          addDebugMsg('✅ WebSocket test connection opened successfully');
+          testWs.close();
+        };
+        testWs.onerror = (error) => {
+          addDebugMsg('❌ WebSocket test connection failed');
+          console.error('❌ WebSocket test connection failed:', error);
+        };
+        testWs.onclose = (event) => {
+          addDebugMsg(`🔌 WebSocket test closed: ${event.code} ${event.reason}`);
+        };
         setTimeout(() => {
-          addDebugMsg('🔍 5-second diagnostic: Checking connection state...');
-          console.log('🔍 5-second post-connection check:');
-          console.log('  - Connection state:', connectionState);
-          console.log('  - Stream object:', !!newStream);
-          console.log('  - Stream config:', (newStream as any).config?.getStreamingSettings?.());
-          
-          // Check internal WebSocket state
-          try {
-            const wsController = (newStream as any)._webSocketController;
-            if (wsController) {
-              addDebugMsg(`🔌 WebSocket controller found, state: ${wsController.webSocket?.readyState}`);
-              console.log('  - WebSocket controller exists:', !!wsController);
-              console.log('  - WebSocket ready state:', wsController.webSocket?.readyState);
-              console.log('  - WebSocket URL:', wsController.webSocket?.url);
-              
-              const readyStateMap: Record<number, string> = {
-                0: 'CONNECTING',
-                1: 'OPEN', 
-                2: 'CLOSING',
-                3: 'CLOSED'
-              };
-              
-              const readyStateText = readyStateMap[wsController.webSocket?.readyState as number] || 'UNKNOWN';
-              
-              addDebugMsg(`🔌 WebSocket state: ${readyStateText}`);
-              console.log('  - WebSocket state text:', readyStateText);
-            } else {
-              addDebugMsg('❌ No WebSocket controller found yet');
-              console.log('  - No WebSocket controller found');
-            }
-          } catch (wsError) {
-            addDebugMsg('❌ Error checking WebSocket state');
-            console.error('  - Error checking WebSocket state:', wsError);
-          }
-          
-          // Check WebRTC state
-          try {
-            const webRtcController = (newStream as any)._webRtcController;
-            if (webRtcController) {
-              addDebugMsg('📡 WebRTC controller found');
-              console.log('  - WebRTC controller exists:', !!webRtcController);
-              console.log('  - Peer connection state:', webRtcController.peerConnection?.connectionState);
-              console.log('  - ICE connection state:', webRtcController.peerConnection?.iceConnectionState);
-              console.log('  - Signaling state:', webRtcController.peerConnection?.signalingState);
-            } else {
-              addDebugMsg('⏳ No WebRTC controller found yet (normal)');
-              console.log('  - No WebRTC controller found yet');
-            }
-          } catch (rtcError) {
-            addDebugMsg('❌ Error checking WebRTC state');
-            console.error('  - Error checking WebRTC state:', rtcError);
+          if (testWs.readyState === WebSocket.CONNECTING || testWs.readyState === WebSocket.OPEN) {
+            testWs.close();
           }
         }, 5000);
-        
-        // Add longer timeout check
-        setTimeout(() => {
-          if (connectionState === 'connecting') {
-            addDebugMsg('⚠️ Still connecting after 15 seconds - possible hang detected');
-            console.warn('⚠️ Still connecting after 15 seconds, this suggests a hang');
-            console.log('🔍 15-second detailed diagnostic:');
-            
-            // Force detailed inspection
-            try {
-              const wsController = (newStream as any)._webSocketController;
-              if (wsController?.webSocket) {
-                const ws = wsController.webSocket;
-                console.log('  - Final WebSocket check:');
-                console.log('    - Ready state:', ws.readyState);
-                console.log('    - URL:', ws.url);
-                console.log('    - Protocol:', ws.protocol);
-                console.log('    - Extensions:', ws.extensions);
-                
-                // Test if we can send a ping
-                if (ws.readyState === WebSocket.OPEN) {
-                  console.log('  - WebSocket is OPEN, testing ping...');
-                  try {
-                    ws.ping?.();
-                  } catch (pingError) {
-                    console.error('  - Ping failed:', pingError);
-                  }
-                }
-              }
-            } catch (diagError) {
-              console.error('  - Diagnostic error:', diagError);
-            }
-          }
-        }, 15000);
-      } else {
-        console.log('❌ Skipping connection - invalid URL or localhost without debug mode. Current ss:', connectionSettings.ss);
-        console.log('❌ Debug - ss value:', JSON.stringify(connectionSettings.ss));
-        console.log('❌ Debug - isLocalhost:', isLocalhostUrl);
-        console.log('❌ Debug - hasDebugSettings:', !!debugSettings);
-        console.log('❌ Debug - overrideUrl:', overrideUrl);
-        setConnectionState('disconnected');
+      } catch (testError) {
+        addDebugMsg('❌ Failed to create test WebSocket');
+        console.error('❌ Failed to create test WebSocket:', testError);
       }
+
+      // Stvarni connect
+      addDebugMsg('🚀 About to call newStream.connect()...');
+      newStream.connect();
+      addDebugMsg('✅ newStream.connect() call completed, monitoring for events...');
       
-    } catch (error) {
-      console.error('Failed to connect to pixel streaming:', error);
-      setConnectionState('error');
-      setConnectionError(error instanceof Error ? error.message : 'Unknown connection error');
-    }
-  }, [debugSettings]); // Added debugSettings dependency
+      } catch (error) {
+        console.error('Failed to connect to pixel streaming:', error);
+        setConnectionState('error');
+        setConnectionError(error instanceof Error ? error.message : 'Unknown connection error');
+      } finally {
+        connectInFlightRef.current = false; // ⬅️ bitno
+        if (connectionTimeout) clearTimeout(connectionTimeout);
+      }
+    }, [
+      effectiveSettings,
+      settings,
+      debugMode,
+      debugSettings,
+      application,
+      connectionState,
+      notifyMessageHandlers
+    ]);
 
   const disconnect = useCallback(() => {
     if (stream) {
