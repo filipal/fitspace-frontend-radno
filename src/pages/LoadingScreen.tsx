@@ -3,25 +3,43 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useInstanceProvisioning } from '../hooks/useInstanceProvisioning'
 import { usePixelStreamingConnection } from '../hooks/usePixelStreamingConnection'
 import { usePixelStreaming } from '../context/PixelStreamingContext'
+import fitspaceLogo from '../assets/fitspace-logo-gradient-nobkg.svg'
 import styles from './LoadingScreen.module.scss'
 
 export default function LoadingScreen() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const destination = searchParams.get('destination') || 'unreal-measurements' // Default to unreal-measurements
-  const [progress, setProgress] = useState(0)
-  const [showDebugMessages, setShowDebugMessages] = useState(false)
+  // const [progress, setProgress] = useState(0)
+  // const [showDebugMessages, setShowDebugMessages] = useState(false)
   const [connectionTimeout, setConnectionTimeout] = useState(false)
   const hasStartedProvisioning = useRef(false)
   const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const { devMode } = usePixelStreaming()
   
+  // Spinner and loading messages
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
+  const loadingMessages = [
+    'Obtaining your instances...',
+    'Preparing your virtual space...',
+    'Connecting to servers...'
+  ]
+  
+  // Rotate loading messages every 2 seconds
+  useEffect(() => {
+    const messageInterval = setInterval(() => {
+      setCurrentMessageIndex((prevIndex) => (prevIndex + 1) % loadingMessages.length)
+    }, 2000)
+    
+    return () => clearInterval(messageInterval)
+  }, [loadingMessages.length])
+  
   const {
     startProvisioningWorkflow,
     isReady,
     isError,
-    getProgressData,
-    debugMessages,
+    /* getProgressData, */
+    // debugMessages,
     error
   } = useInstanceProvisioning()
   
@@ -45,7 +63,7 @@ export default function LoadingScreen() {
       // Check if dev mode is enabled
       if (devMode === 'dev') {
         console.log(`🔧 LoadingScreen: Dev mode enabled, skipping lambda calls and redirecting to /${destination}`)
-        setProgress(100)
+        // setProgress(100)
         
         // Simulate loading for visual feedback
         setTimeout(() => {
@@ -57,7 +75,7 @@ export default function LoadingScreen() {
       // Check if localhost mode is enabled
       if (devMode === 'localhost') {
         console.log(`🔧 LoadingScreen: Localhost mode enabled, skipping lambda calls and redirecting to /${destination}`)
-        setProgress(100)
+        // setProgress(100)
         
         // Simulate loading for visual feedback
         setTimeout(() => {
@@ -85,7 +103,7 @@ export default function LoadingScreen() {
     }
     
     // No cleanup function to prevent re-mounting issues
-  }, [devMode, navigate, destination]) // Added devMode, navigate and destination to dependencies
+  }, [devMode, navigate, destination, startProvisioningWorkflow]) // Added devMode, navigate and destination to dependencies
   
   // Update progress based on provisioning status
   useEffect(() => {
@@ -94,8 +112,8 @@ export default function LoadingScreen() {
       return
     }
     
-    const progressData = getProgressData()
-    setProgress(progressData.progress)
+    // const progressData = getProgressData()
+    // setProgress(progressData.progress)
     
     // Navigate when fully connected
     if (isConnectedToInstance && connectionState === 'connected') {
@@ -103,12 +121,12 @@ export default function LoadingScreen() {
         navigate(`/${destination}`)
       }, 1000) // Small delay to show completion
     }
-  }, [devMode, getProgressData, isConnectedToInstance, connectionState, navigate, destination])
+  }, [devMode, isConnectedToInstance, connectionState, navigate, destination])
   
   // Auto-show debug messages on error
   useEffect(() => {
     if (isError || error || connectionTimeout) {
-      setShowDebugMessages(true)
+      // setShowDebugMessages(true)
     }
   }, [isError, error, connectionTimeout])
 
@@ -142,33 +160,34 @@ export default function LoadingScreen() {
     navigate('/')
   }
   
-  const toggleDebugMessages = () => {
-    setShowDebugMessages(!showDebugMessages)
-  }
+  // const toggleDebugMessages = () => {
+  //   setShowDebugMessages(!showDebugMessages)
+  // }
   
-  const progressData = getProgressData()
+/*   const progressData = getProgressData()
   const currentStage = devMode === 'dev' ? `Dev Mode: Redirecting to ${destination}...` : 
                       devMode === 'localhost' ? `Localhost Mode: Redirecting to ${destination}...` : 
-                      progressData.stage
+                      progressData.stage */
 
   return (
     <div className={styles.loadingScreenPage}>
       <button className={styles.exitButton} onClick={handleExit} type="button">
         ✕
       </button>
+      
       <div className={styles.loadingContent}>
-        <div className={styles.progressContainer}>
-          <div className={styles.progressBar}>
-            <div 
-              className={styles.progressFill} 
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+        {/* Fitspace Logo */}
+        <div className={styles.logoContainer}>
+          <img src={fitspaceLogo} alt="Fitspace" className={styles.logo} />
+        </div>
+        
+        {/* Spinner and Loading Message */}
+        <div className={styles.spinnerContainer}>
+          <div className={styles.spinner}></div>
           <div className={styles.loadingText}>
-            {currentStage}
-          </div>
-          <div className={styles.progressPercent}>
-            {progress}%
+            {devMode === 'dev' ? `Dev Mode: Redirecting to ${destination}...` : 
+             devMode === 'localhost' ? `Localhost Mode: Redirecting to ${destination}...` : 
+             loadingMessages[currentMessageIndex]}
           </div>
         </div>
         
@@ -249,7 +268,8 @@ export default function LoadingScreen() {
           )}
         </div>
         
-        {/* Debug Controls */}
+        {/* Debug Controls - Commented Out */}
+        {/* 
         <div className={styles.debugControls}>
           <button 
             className={styles.debugToggle}
@@ -259,8 +279,10 @@ export default function LoadingScreen() {
             {showDebugMessages ? 'Hide Debug' : 'Show Debug'} ({debugMessages.length})
           </button>
         </div>
+        */}
         
-        {/* Debug Messages */}
+        {/* Debug Messages - Commented Out */}
+        {/* 
         {showDebugMessages && (
           <div className={styles.debugMessages}>
             <h4>Debug Messages:</h4>
@@ -276,6 +298,7 @@ export default function LoadingScreen() {
             </div>
           </div>
         )}
+        */}
       </div>
     </div>
   )
