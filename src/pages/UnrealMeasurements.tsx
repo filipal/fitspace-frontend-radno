@@ -10,6 +10,7 @@ import {
   getBackendKeyForMorphId,
 } from '../services/avatarTransformationService'
 import { applyMeasurementMorphOverrides } from '../services/morphEstimation'
+import { deriveMorphTargetsFromMeasurements } from '../services/morphDerivation'
 import { morphAttributes } from '../data/morphAttributes'
 import { useAvatarLoader } from '../hooks/useAvatarLoader'
 import {
@@ -228,13 +229,21 @@ export default function UnrealMeasurements() {
 
   const accordionAvatar = useMemo(() => {
     if (!currentAvatar) return null;
-    const morphValues = applyMeasurementMorphOverrides(
+    const measurementSources = {
+      basicMeasurements: currentAvatar.basicMeasurements ?? null,
+      bodyMeasurements: currentAvatar.bodyMeasurements ?? null,
+      quickModeSettings: currentAvatar.quickModeSettings ?? null,
+    } as const
+
+    const derivedMorphs = deriveMorphTargetsFromMeasurements(
       currentAvatar.morphValues ?? [],
-      {
-        basicMeasurements: currentAvatar.basicMeasurements ?? null,
-        bodyMeasurements: currentAvatar.bodyMeasurements ?? null,
-        quickModeSettings: currentAvatar.quickModeSettings ?? null,
-      },
+      measurementSources,
+      { gender: currentAvatar.gender },
+    )
+
+    const morphValues = applyMeasurementMorphOverrides(
+      derivedMorphs,
+      measurementSources,
     )
     return {
       avatarId: String(currentAvatar.avatarId),

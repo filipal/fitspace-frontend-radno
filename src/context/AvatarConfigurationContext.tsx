@@ -1,6 +1,7 @@
 import React, { createContext, useState, useCallback, useMemo } from 'react';
 import { morphAttributes, type MorphAttribute } from '../data/morphAttributes';
 import { mapBackendMorphTargetsToRecord, transformBackendDataToMorphs } from '../services/avatarTransformationService';
+import { deriveMorphTargetsFromMeasurements } from '../services/morphDerivation';
 import {
   calculateMeasurementFromMorphs,
   computeBaselineMeasurementsFromBasics,
@@ -168,7 +169,7 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
           initializeDefaultMorphs()
         );
 
-      const morphValues = baseMorphs.map(m => ({ ...m }));
+      const initialMorphValues = baseMorphs.map(m => ({ ...m }));
 
       const basicMeasurements =
         backendData.basicMeasurements
@@ -191,6 +192,16 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
                 : undefined,
             }
           : null;
+
+      const morphValues = deriveMorphTargetsFromMeasurements(
+        initialMorphValues,
+        {
+          basicMeasurements,
+          bodyMeasurements,
+          quickModeSettings,
+        },
+        { gender: backendData.gender },
+      );
 
       // Apply backend morph values (this will be handled by transformation service)
       // For now, we'll just store the data as-is

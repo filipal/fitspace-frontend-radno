@@ -23,7 +23,7 @@ interface MeasurementMorphMapping {
   maxValue?: number
 }
 
-const clamp01 = (value: number) => Math.max(0, Math.min(1, value))
+export const clamp01 = (value: number) => Math.max(0, Math.min(1, value))
 
 const measurementAliases: Record<string, string> = {
   bustcircumference: 'chest',
@@ -82,7 +82,7 @@ const toFiniteNumber = (value: unknown): number | null => {
   return null
 }
 
-const collectMeasurements = ({
+export const collectMeasurements = ({
   basicMeasurements,
   bodyMeasurements,
   quickModeSettings,
@@ -108,7 +108,7 @@ const collectMeasurements = ({
   return map
 }
 
-const computePercentFromRatio = (
+export const computePercentFromRatio = (
   value: number,
   height: number | null | undefined,
   baseRatio?: number,
