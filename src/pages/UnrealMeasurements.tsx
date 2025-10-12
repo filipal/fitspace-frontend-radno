@@ -9,6 +9,7 @@ import {
   convertMorphValueToBackendValue,
   getBackendKeyForMorphId,
 } from '../services/avatarTransformationService'
+import { applyMeasurementMorphOverrides } from '../services/morphEstimation'
 import { morphAttributes } from '../data/morphAttributes'
 import { useAvatarLoader } from '../hooks/useAvatarLoader'
 import {
@@ -227,6 +228,14 @@ export default function UnrealMeasurements() {
 
   const accordionAvatar = useMemo(() => {
     if (!currentAvatar) return null;
+    const morphValues = applyMeasurementMorphOverrides(
+      currentAvatar.morphValues ?? [],
+      {
+        basicMeasurements: currentAvatar.basicMeasurements ?? null,
+        bodyMeasurements: currentAvatar.bodyMeasurements ?? null,
+        quickModeSettings: currentAvatar.quickModeSettings ?? null,
+      },
+    )
     return {
       avatarId: String(currentAvatar.avatarId),
       avatarName: currentAvatar.avatarName ?? (currentAvatar as any)?.name,
@@ -237,7 +246,7 @@ export default function UnrealMeasurements() {
           ? 'male'
           : undefined,
       ageRange: currentAvatar.ageRange,
-      morphValues: currentAvatar.morphValues ?? [],
+      morphValues,
     };
   }, [currentAvatar]);
 
