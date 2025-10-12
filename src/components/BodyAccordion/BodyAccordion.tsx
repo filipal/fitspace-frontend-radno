@@ -6,18 +6,55 @@ import styles from './BodyAccordion.module.scss'
 
 import { useAvatarApi } from '../../services/avatarApi';
 import { getBackendKeyForMorphId } from '../../services/avatarTransformationService';
-
+import type { BasicMeasurements, BodyMeasurements } from '../../context/AvatarConfigurationContext';
 
 export type Avatar = {
   avatarId: string;
   avatarName?: string;
-  gender?: string;     // ili 'male' | 'female' | 'other' ako ti je točan union
+  gender?: string;     // ili 'male' | 'female'
   ageRange?: string;
   morphValues?: { morphId: number; value: number }[];
+  basicMeasurements?: Partial<BasicMeasurements> | null;
+  bodyMeasurements?: Partial<BodyMeasurements> | null;
 };
 
 const EMPTY_MORPH_VALUES: { morphId: number; value: number }[] = []
 
+const parseMeasurementValue = (value: unknown): number | undefined => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value === 'string') {
+    const parsed = Number(value.replace(',', '.'))
+    if (Number.isFinite(parsed)) return parsed
+  }
+  return undefined
+}
+
+const sanitizeBasicMeasurements = (
+  source: Partial<BasicMeasurements> | null | undefined,
+): Partial<BasicMeasurements> | undefined => {
+  if (!source) return undefined
+  const { creationMode: _ignore, ...rest } = source
+  const entries = Object.entries(rest).reduce<Partial<BasicMeasurements>>((acc, [key, value]) => {
+    const numeric = parseMeasurementValue(value)
+    if (numeric == null) return acc
+    acc[key as keyof BasicMeasurements] = numeric
+    return acc
+  }, {})
+  return Object.keys(entries).length ? entries : undefined
+}
+
+const sanitizeBodyMeasurements = (
+  source: Partial<BodyMeasurements> | null | undefined,
+): Partial<BodyMeasurements> | undefined => {
+  if (!source) return undefined
+  const entries = Object.entries(source).reduce<Partial<BodyMeasurements>>((acc, [key, value]) => {
+    const numeric = parseMeasurementValue(value)
+    if (numeric == null) return acc
+    acc[key as keyof BodyMeasurements] = numeric
+    return acc
+  }, {})
+  return Object.keys(entries).length ? entries : undefined
+}
 
 export interface BodyAccordionProps {
   avatar: Avatar | null; // ⬅️ BodyAccordion sada prima avatar kroz prop
@@ -42,7 +79,6 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
     if (!pending) return
 
     const { avatarId, morphs: pendingMorphs, name, gender, ageRange } = pending
-
     pendingSaveRef.current = null
 
     if (!avatarId) {
@@ -72,12 +108,17 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
       return
     }
 
+    const basicMeasurements = sanitizeBasicMeasurements(avatar?.basicMeasurements)
+    const bodyMeasurements = sanitizeBodyMeasurements(avatar?.bodyMeasurements)
+
     try {
       await updateAvatarMeasurements(avatarId, {
         name,
         gender,
         ageRange,
         morphTargets: combinedMorphTargets,
+        ...(basicMeasurements ? { basicMeasurements } : {}),
+        ...(bodyMeasurements ? { bodyMeasurements } : {}),
       })
     } catch (e) {
       console.error('Saving morphs failed', e)

@@ -247,6 +247,12 @@ export default function UnrealMeasurements() {
           : undefined,
       ageRange: currentAvatar.ageRange,
       morphValues,
+      basicMeasurements: currentAvatar.basicMeasurements
+        ? { ...currentAvatar.basicMeasurements }
+        : null,
+      bodyMeasurements: currentAvatar.bodyMeasurements
+        ? { ...currentAvatar.bodyMeasurements }
+        : null,
     };
   }, [currentAvatar]);
 
