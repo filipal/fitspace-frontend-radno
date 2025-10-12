@@ -41,24 +41,48 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
     const pending = pendingSaveRef.current
     if (!pending) return
 
+    const { avatarId, morphs: pendingMorphs, name, gender, ageRange } = pending
+
     pendingSaveRef.current = null
 
-    const morphEntries = pending.morphs
-    if (!pending.avatarId || !Object.keys(morphEntries).length) {
+    if (!avatarId) {
+      return
+    }
+
+    const combinedMorphTargets: Record<string, number> = {}
+
+    // Uključi sve poznate vrijednosti morphova za avatara kako backend ne bi resetirao ostale na 50%
+    if (avatar?.morphValues?.length) {
+      for (const morph of avatar.morphValues) {
+        const backendKey = getBackendKeyForMorphId(morph.morphId)
+        if (!backendKey) continue
+
+        const rawValue = typeof morph.value === 'number' ? morph.value : 50
+        const clampedValue = Math.max(0, Math.min(100, Math.round(rawValue)))
+        combinedMorphTargets[backendKey] = clampedValue
+      }
+    }
+
+    for (const [backendKey, value] of Object.entries(pendingMorphs)) {
+      const clampedValue = Math.max(0, Math.min(100, Math.round(value)))
+      combinedMorphTargets[backendKey] = clampedValue
+    }
+
+    if (!Object.keys(combinedMorphTargets).length) {
       return
     }
 
     try {
-      await updateAvatarMeasurements(pending.avatarId, {
-        name: pending.name,
-        gender: pending.gender,
-        ageRange: pending.ageRange,
-        morphTargets: morphEntries,
+      await updateAvatarMeasurements(avatarId, {
+        name,
+        gender,
+        ageRange,
+        morphTargets: combinedMorphTargets,
       })
     } catch (e) {
       console.error('Saving morphs failed', e)
     }
-  }, [updateAvatarMeasurements])
+  }, [avatar, updateAvatarMeasurements])
 
   const queueMorphSave = useCallback((morphId: number, percent: number) => {
     const backendKey = getBackendKeyForMorphId(morphId)
