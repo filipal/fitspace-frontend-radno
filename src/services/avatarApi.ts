@@ -557,7 +557,13 @@ function resolveAvatarUrl(
   return buildAvatarScopedUrl(baseUrl, userId, avatarId);
 }
 
-const ALLOWED_CREATION_MODES: AvatarCreationMode[] = ['manual', 'scan', 'preset', 'import'];
+const ALLOWED_CREATION_MODES: AvatarCreationMode[] = [
+  'manual',
+  'scan',
+  'preset',
+  'import',
+  'quickMode',
+];
 
 const normalizeString = (value: unknown): string | undefined => {
   if (typeof value === 'string') {
@@ -612,13 +618,13 @@ const normalizeUserIdentifier = (value: unknown): string | undefined =>
   normalizeUuidLikeIdentifier(value);
 
 const normalizeCreationMode = (value: unknown): AvatarCreationMode | null => {
-  const normalized = normalizeString(value)?.toLowerCase();
+  const normalized = normalizeString(value);
   if (!normalized) {
     return null;
   }
-  return ALLOWED_CREATION_MODES.includes(normalized as AvatarCreationMode)
-    ? (normalized as AvatarCreationMode)
-    : null;
+  const lower = normalized.toLowerCase();
+  const matched = ALLOWED_CREATION_MODES.find(mode => mode.toLowerCase() === lower);
+  return matched ?? null;
 };
 
 const normalizeGender = (value: unknown): 'male' | 'female' => {

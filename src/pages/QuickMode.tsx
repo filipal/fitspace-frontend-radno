@@ -36,6 +36,12 @@ import {
 
 import { mapBackendMorphTargetsToRecord } from '../services/avatarTransformationService'
 import { deriveMissingMeasurements } from '../utils/deriveMeasurements'
+import {
+  buildMeasurementMorphTargetMap,
+  computeBaselineMeasurementsFromBasics,
+  normalizeMeasurementRecord,
+} from '../utils/morphMeasurementSync'
+
 import type { CreateAvatarCommand } from '../types/provisioning'
 
 const USE_LOADING_ROUTE = import.meta.env.VITE_USE_LOADING_ROUTE === 'true'
@@ -250,12 +256,30 @@ export default function QuickMode() {
 
     // 4) Popuni ostatak (bez hardkodiranja)
     const completeBody = deriveMissingMeasurements(bodyMeasurements, { height, weight })
+    const normalizedMeasurements = normalizeMeasurementRecord(completeBody)
+    const baselineMeasurements = computeBaselineMeasurementsFromBasics({ height, weight })
+    const measurementMorphTargets = buildMeasurementMorphTargetMap(
+      normalizedMeasurements,
+      baselineMeasurements,
+    )
+    const quickModeMeasurementSnapshot: Record<string, number> = {}
+    for (const [key, value] of Object.entries(normalizedMeasurements)) {
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        quickModeMeasurementSnapshot[key] = value
+      }
+    }
+    if (typeof chest === 'number' && Number.isFinite(chest)) quickModeMeasurementSnapshot.chest = chest
+    if (typeof waist === 'number' && Number.isFinite(waist)) quickModeMeasurementSnapshot.waist = waist
+    if (typeof lowHip === 'number' && Number.isFinite(lowHip)) quickModeMeasurementSnapshot.lowHip = lowHip
 
     // 5) QuickMode morph “features” → naš BE
     const bodyShapeMorphValue = Math.round(((selectedBodyShape - 1) / Math.max(1, bodyShapes.length - 1)) * 100)
     const athleticMorphValue = Math.round((athleticLevel / 2) * 100)
+    const quickModeBodyShapeKey = ['shape_1', 'shape_2', 'shape_3', 'shape_4', 'shape_5'][selectedBodyShape - 1] ?? null
+    const quickModeAthleticLabel = athleticLevelLabels[athleticLevel] ?? null
     const morphTargets = {
       ...storedMorphTargets,
+      ...measurementMorphTargets,
       quickModeBodyShape: bodyShapeMorphValue,
       quickModeAthleticLevel: athleticMorphValue,
     }
@@ -277,6 +301,16 @@ export default function QuickMode() {
           basicMeasurements: currentAvatar?.basicMeasurements ?? {},
           bodyMeasurements: completeBody,
           morphTargets,
+          quickModeSettings: {
+            ...(currentAvatar?.quickModeSettings ?? {}),
+            bodyShape: quickModeBodyShapeKey,
+            athleticLevel: quickModeAthleticLabel,
+            measurements: {
+              ...(currentAvatar?.quickModeSettings?.measurements ?? {}),
+              ...quickModeMeasurementSnapshot,
+            },
+            updatedAt: new Date().toISOString(),
+          },
         }
 
         const morphs = buildBackendMorphPayload(payload)
@@ -350,6 +384,22 @@ export default function QuickMode() {
       }
     } else {
       // ─── B) LOADING ROUTE (kolegin tok → Unreal) ───────────────────────
+      const quickModeFeatureMorphTargets = {
+        lowerBellyMoveUpDown: 50 + (selectedBodyShape - 3) * 5,
+        upperBellyWidth: 45 + (selectedBodyShape - 3) * 3,
+        pelvicDepth: 55 - (selectedBodyShape - 3) * 2,
+        shoulderSize: 50 + (selectedBodyShape - 3) * 8,
+        armsMuscular: athleticLevel * 25,
+        bodyMuscular: athleticLevel * 30,
+        chestSize: 50 + (selectedBodyShape - 3) * 7,
+      }
+      const combinedMorphTargets = {
+        ...measurementMorphTargets,
+        ...quickModeFeatureMorphTargets,
+        quickModeBodyShape: bodyShapeMorphValue,
+        quickModeAthleticLevel: athleticMorphValue,
+      }
+
       const cmd: CreateAvatarCommand = {
         type: 'createAvatar',
         data: {
@@ -363,23 +413,17 @@ export default function QuickMode() {
           },
           bodyMeasurements: completeBody,
           // UE-morph map (kolegin očekivani ključevni set)
-          morphTargets: {
-            lowerBellyMoveUpDown: 50 + (selectedBodyShape - 3) * 5,
-            upperBellyWidth: 45 + (selectedBodyShape - 3) * 3,
-            pelvicDepth: 55 - (selectedBodyShape - 3) * 2,
-            shoulderSize: 50 + (selectedBodyShape - 3) * 8,
-            armsMuscular: athleticLevel * 25,
-            bodyMuscular: athleticLevel * 30,
-            chestSize: 50 + (selectedBodyShape - 3) * 7,
-          },
+          morphTargets: combinedMorphTargets,
           quickModeSettings: {
-            bodyShape: ['shape_1', 'shape_2', 'shape_3', 'shape_4', 'shape_5'][selectedBodyShape - 1] ?? null,
-            athleticLevel: athleticLevelLabels[athleticLevel] ?? null,
-            measurements: {
-              ...(typeof chest === 'number' ? { chest } : {}),
-              ...(typeof waist === 'number' ? { waist } : {}),
-              ...(typeof lowHip === 'number' ? { lowHip } : {}),
-            },
+            bodyShape: quickModeBodyShapeKey,
+            athleticLevel: quickModeAthleticLabel,
+            measurements: Object.keys(quickModeMeasurementSnapshot).length
+              ? quickModeMeasurementSnapshot
+              : {
+                  ...(typeof chest === 'number' ? { chest } : {}),
+                  ...(typeof waist === 'number' ? { waist } : {}),
+                  ...(typeof lowHip === 'number' ? { lowHip } : {}),
+                },
             updatedAt: new Date().toISOString(),
           },
         },
@@ -419,6 +463,7 @@ export default function QuickMode() {
     currentAvatar?.source,
     currentAvatar?.basicMeasurements,
     currentAvatar?.bodyMeasurements,
+    currentAvatar?.quickModeSettings,
 
     // storage fallbacki
     storedMetadata?.basicMeasurements,

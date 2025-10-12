@@ -1,8 +1,13 @@
 import React, { createContext, useState, useCallback, useMemo } from 'react';
 import { morphAttributes, type MorphAttribute } from '../data/morphAttributes';
 import { mapBackendMorphTargetsToRecord, transformBackendDataToMorphs } from '../services/avatarTransformationService';
+import {
+  calculateMeasurementFromMorphs,
+  computeBaselineMeasurementsFromBasics,
+  inferMeasurementKeyFromMorph,
+} from '../utils/morphMeasurementSync';
 
-export type AvatarCreationMode = 'manual' | 'scan' | 'preset' | 'import';
+export type AvatarCreationMode = 'manual' | 'scan' | 'preset' | 'import' | 'quickMode';
 
 export interface BasicMeasurements {
   height?: number;
@@ -82,6 +87,7 @@ export interface AvatarConfiguration {
   updatedAt?: string | null;
   createdBySession?: string | null;
   quickModeSettings?: QuickModeSettings | null;
+  baselineMeasurements?: Partial<BodyMeasurements>;
   morphValues: MorphAttribute[]; // Using your existing structure
   lastUpdated: Date;
 }
@@ -174,6 +180,8 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
           ? { ...backendData.bodyMeasurements }
           : undefined;
 
+      const baselineMeasurements = computeBaselineMeasurementsFromBasics(basicMeasurements);
+
       const quickModeSettings =
         backendData.quickModeSettings
           ? {
@@ -201,13 +209,17 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
         updatedAt: backendData.updatedAt ?? null,
         createdBySession: backendData.createdBySession ?? null,
         quickModeSettings,
+        baselineMeasurements,
         morphValues,
         lastUpdated: new Date(),
       };
       
       const nextAvatarConfig: AvatarConfiguration = {
         ...avatarConfig,
-         morphValues: avatarConfig.morphValues.map(m => ({ ...m })),
+        morphValues: avatarConfig.morphValues.map(m => ({ ...m })),
+        baselineMeasurements: avatarConfig.baselineMeasurements
+          ? { ...avatarConfig.baselineMeasurements }
+          : undefined,
       };
 
       setCurrentAvatar(nextAvatarConfig);
@@ -229,11 +241,57 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
   const updateMorphValue = useCallback((morphId: number, value: number) => {
     setCurrentAvatar(prev => {
       if (!prev) return prev;
+
+      const updatedMorphValues = prev.morphValues.map(m =>
+        m.morphId === morphId ? { ...m, value } : m
+      );
+
+      const targetMorph =
+        prev.morphValues.find(m => m.morphId === morphId) ??
+        morphAttributes.find(m => m.morphId === morphId);
+
+      const measurementKey = targetMorph ? inferMeasurementKeyFromMorph(targetMorph) : null;
+      const isQuickModeAvatar =
+        prev.quickMode ||
+        prev.creationMode === 'quickMode' ||
+        prev.basicMeasurements?.creationMode === 'quickMode';
+
+      let updatedBodyMeasurements = prev.bodyMeasurements;
+      let updatedQuickModeSettings = prev.quickModeSettings ?? null;
+
+      if (isQuickModeAvatar && measurementKey) {
+        const baselineValue = prev.baselineMeasurements?.[measurementKey];
+        const previousMeasurement = prev.bodyMeasurements?.[measurementKey];
+        const recalculatedMeasurement = calculateMeasurementFromMorphs(
+          updatedMorphValues,
+          measurementKey,
+          baselineValue,
+          previousMeasurement,
+        );
+
+        if (recalculatedMeasurement != null) {
+          updatedBodyMeasurements = {
+            ...(prev.bodyMeasurements ?? {}),
+            [measurementKey]: recalculatedMeasurement,
+          };
+
+          const previousSettings: QuickModeSettings = (prev.quickModeSettings ?? {}) as QuickModeSettings;
+          updatedQuickModeSettings = {
+            ...previousSettings,
+            measurements: {
+              ...(previousSettings.measurements ?? {}),
+              [measurementKey]: recalculatedMeasurement,
+            },
+            updatedAt: new Date().toISOString(),
+          };
+        }
+      }
+
       return {
         ...prev,
-        morphValues: prev.morphValues.map(m =>
-          m.morphId === morphId ? { ...m, value } : m
-        ),
+        morphValues: updatedMorphValues,
+        bodyMeasurements: updatedBodyMeasurements,
+        quickModeSettings: updatedQuickModeSettings,
         lastUpdated: new Date(),
       };
     });
