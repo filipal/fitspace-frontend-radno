@@ -462,7 +462,6 @@ $design-w: 430; // baseline širina dizajna
   top: cqw(16); /* vertically centered: (51-19)/2 = 16 */
   font-size: fsz(13);
   font-weight: 300;
-  text-transform: uppercase;
   line-height: 1.05;
   display: flex;
   flex-direction: column;
@@ -681,12 +680,12 @@ $design-w: 430; // baseline širina dizajna
 }
 .desktopVerticalArrow img { width: 100%; height: 100%; object-fit: contain; }
 .desktopSizeDisplay {
-  width: 33px;
+  width: 100px;
   height: 88.21px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
 }
 
 .desktopSizeSmall {
@@ -696,6 +695,8 @@ $design-w: 430; // baseline širina dizajna
 .desktopSizeMain {
   font-size: 30px;
   font-weight: 400;
+  text-align: center;
+  line-height: 1.1;
 }
 .desktopSizeDisplayBottom {
   width: 88px;
@@ -720,31 +721,35 @@ $design-w: 430; // baseline širina dizajna
 
 .desktopCategorySelector {
   width: 100%;
-  height: 138px;
+  height: 138.01px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
 }
 .desktopCategoryTexts {
-  width: 85px;
+  width: 100px;
   height: 82px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  line-height: 2.1;
 }
 .desktopCategoryTextTop,
 .desktopCategoryTextBottom {
-  font-size: 12px;
+  font-size: 13px;
+  font-family: 'Outfit', sans-serif;
   opacity: 0.25;
-  text-transform: uppercase;
   text-align: center;
 }
 .desktopCategoryTextMain {
-  font-size: 18px;
-  font-weight: 500;
-  text-transform: uppercase;
+  width: 100px;
+  font-size: 22px;
+  font-weight: 400;
+  font-family: 'Outfit', sans-serif;
+  text-align: center;
+  line-height: 1.1;
 }
 
 .desktopColorSelector {
@@ -800,11 +805,9 @@ $design-w: 430; // baseline širina dizajna
 .desktopOptionTitle {
   font-size: 18px;
   font-weight: 500;
-  text-transform: uppercase;
 }
 .desktopOptionSubtitle {
   font-size: 12px;
-  text-transform: uppercase;
 }
 
 @media (min-width: 1024px) {

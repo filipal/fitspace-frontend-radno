@@ -1,4 +1,11 @@
-import { useEffect, useState, type ComponentType, type SVGProps, type CSSProperties } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+  type SVGProps,
+  type CSSProperties,
+} from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header/Header'
 import { usePixelStreaming } from '../context/PixelStreamingContext'
@@ -75,8 +82,12 @@ export default function VirtualTryOn() {
   const [fullBodyDetail, setFullBodyDetail] = useState(false)
   const [topOptionIndex, setTopOptionIndex] = useState(0) // Option 1..5 => indices 0..4
   const topOptions = ['with armor', 'option 2', 'option 3', 'option 4', 'option 5']
-    const [bottomOptionIndex, setBottomOptionIndex] = useState(0)
+  const [bottomOptionIndex, setBottomOptionIndex] = useState(0)
   const bottomOptions = ['tapered fit', 'regular fit', 'loose fit', 'boot cut', 'straight fit']
+  const topCategoryMainRef = useRef<HTMLDivElement | null>(null)
+  const bottomCategoryMainRef = useRef<HTMLDivElement | null>(null)
+  const [topCategoryWrapped, setTopCategoryWrapped] = useState(false)
+  const [bottomCategoryWrapped, setBottomCategoryWrapped] = useState(false)
   useEffect(() => {
     if (typeof window === 'undefined') return
     const mediaQuery = window.matchMedia('(min-width: 1024px)')
@@ -107,6 +118,49 @@ export default function VirtualTryOn() {
       setSelectedControl(null)
     }
   }, [isDesktop])
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof ResizeObserver === 'undefined') {
+      return
+    }
+
+    if (!isDesktop) {
+      setTopCategoryWrapped(false)
+      setBottomCategoryWrapped(false)
+      return
+    }
+
+    const watchers: Array<{ compute: () => void; observer: ResizeObserver }> = []
+
+    const handleWrap = (
+      element: HTMLDivElement | null,
+      setter: (wrapped: boolean) => void,
+    ) => {
+      if (!element) return
+      const calculate = () => {
+        const styles = window.getComputedStyle(element)
+        const lineHeight = parseFloat(styles.lineHeight || '0')
+        if (!lineHeight) return
+        setter(element.scrollHeight > lineHeight + 1)
+      }
+      calculate()
+      const observer = new ResizeObserver(calculate)
+      observer.observe(element)
+      watchers.push({ compute: calculate, observer })
+    }
+
+    handleWrap(topCategoryMainRef.current, setTopCategoryWrapped)
+    handleWrap(bottomCategoryMainRef.current, setBottomCategoryWrapped)
+
+    const handleWindowResize = () => {
+      watchers.forEach(({ compute }) => compute())
+    }
+    window.addEventListener('resize', handleWindowResize)
+
+    return () => {
+      watchers.forEach(({ observer }) => observer.disconnect())
+      window.removeEventListener('resize', handleWindowResize)
+    }
+  }, [upperMain, lowerMain, isDesktop])
   const cycleTopPrev = () => {
     setTopOptionIndex((i) => {
       const newIndex = (i + 5 - 1) % 5
@@ -381,7 +435,16 @@ export default function VirtualTryOn() {
         </button>
         <div className={styles.desktopCategoryTexts}>
           <div className={styles.desktopCategoryTextTop}>{textTop}</div>
-          <div className={styles.desktopCategoryTextMain}>{textMain}</div>
+          <div
+            ref={focus === 'top' ? topCategoryMainRef : bottomCategoryMainRef}
+            className={`${styles.desktopCategoryTextMain} ${
+              (focus === 'top' ? topCategoryWrapped : bottomCategoryWrapped)
+                ? styles.desktopCategoryTextMainWrapped
+                : ''
+            }`}
+          >
+            {textMain}
+          </div>
           <div className={styles.desktopCategoryTextBottom}>{textBottom}</div>
         </div>
         <button
