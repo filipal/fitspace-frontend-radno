@@ -836,6 +836,13 @@ $design-w: 430; // baseline širina dizajna
   .canvasWrapperDesktop {
     width: 100%;
     height: 954px;
+    background: #ADADAC;
+  }
+    .avatarImageDesktop {
+    width: 621px;
+    max-width: 621px;
+    height: 100%;
+    object-fit: contain;
   }
   .footerColumn,
   .footerColumnDesktop {
@@ -844,6 +851,51 @@ $design-w: 430; // baseline širina dizajna
     justify-content: flex-end;
     align-items: stretch;
   }
+  .controlGroup,
+  .controlGroupDesktop {
+    width: 390px;
+    height: 60px;
+    bottom: 20px;
+  }
+  .desktopControlButton {
+    position: relative;
+    border: none;
+    padding: 0;
+    background: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    width: auto;
+    height: 100%;
+    transition: all 0.2s ease;
+    color: #FFFFFF;
+  }
+  .desktopControlButton svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .desktopControlButton svg .outerHalo {
+    transition: fill .2s ease;
+  }
+  .desktopControlButton svg .whiteRing {
+    shape-rendering: geometricPrecision;
+  }
+  .desktopControlButtonSelected svg .outerHalo {
+    fill: #000;
+    fill-opacity: 1;
+  }
+  .desktopControlIcon {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .desktopRotateLeft { width: 60px; margin-right: 40px; }
+  .desktopUpload { width: 50px; margin-right: 25px; }
+  .desktopFullscreen { width: 40px; margin-right: 25px; }
+  .desktopDownload { width: 50px; margin-right: 40px; }
+  .desktopRotateRight { width: 60px; }
   .footer,
   .desktopFooterRoot {
     border-top: none;

@@ -24,8 +24,9 @@ import RLeft from '../assets/r-left.svg?react'
 import RRight from '../assets/r-right.svg?react'
 import TopZoom from '../assets/tops-detailed-zoom.svg?react'
 import BottomZoom from '../assets/bottoms-detailed-zoom.svg?react'
-import Download from '../assets/download.svg?react'
-import Upload from '../assets/upload.svg?react'
+import DownloadIcon from '../assets/download.svg?react'
+import UploadIcon from '../assets/upload.svg?react'
+import FullScreenIcon from '../assets/full-screen.svg?react'
 import HomeButton from '../assets/home-button.svg?react'
 import TopAccordion from '../components/TopAccordion/TopAccordion'
 import BottomAccordion from '../components/BottomAccordion/BottomAccordion'
@@ -376,8 +377,8 @@ export default function VirtualTryOn() {
   // Remaining horizontal space: 410 - 220 - 10 = 180 -> split evenly left/right as 90 + 90.
   // margin-right sequence becomes: 90, 10, 90, 0
   // This centers the group while preserving the visual rhythm from previous design.
-  const leftControlIcon = fullBodyMode && fullBodyDetail ? Download : TopZoom
-  const rightControlIcon = fullBodyMode && fullBodyDetail ? Upload : BottomZoom
+  const leftControlIcon = fullBodyMode && fullBodyDetail ? DownloadIcon : TopZoom
+  const rightControlIcon = fullBodyMode && fullBodyDetail ? UploadIcon : BottomZoom
   const baseControls: ControlButton[] = [
     { key: 'rotate-left', width: 60, Icon: RLeft, marginRight: 90 },
     { key: 'top-zoom', width: 50, Icon: leftControlIcon, marginRight: 10 },
@@ -393,9 +394,259 @@ export default function VirtualTryOn() {
   ]
   const accordionOpen = topOpen || bottomOpen
   const controls = accordionOpen ? expandedControls : baseControls
+  const desktopControls: ControlButton[] = [
+    { key: 'rotate-left', width: 60, Icon: RLeft, marginRight: 40 },
+    { key: 'upload', width: 50, Icon: UploadIcon, marginRight: 25 },
+    { key: 'fullscreen', width: 40, Icon: FullScreenIcon, marginRight: 25 },
+    { key: 'download', width: 50, Icon: DownloadIcon, marginRight: 40 },
+    { key: 'rotate-right', width: 60, Icon: RRight, marginRight: 0 },
+  ]
 
   const toggleControl = (key: string) => {
     setSelectedControl((prev) => (prev === key ? null : key))
+  }
+  const handleDesktopControlClick = (controlKey: string) => {
+    setSelectedControl((prev) => (prev === controlKey ? null : controlKey))
+    if (connectionState === 'connected') {
+      switch (controlKey) {
+        case 'rotate-left':
+          sendFittingRoomCommand('rotateCamera', { direction: 'left', speed: 1 })
+          console.log('Sent rotate left command')
+          break
+        case 'upload':
+          sendFittingRoomCommand('zoomCamera', { direction: 'in', amount: 0.1 })
+          console.log('Sent zoom in command')
+          break
+        case 'fullscreen':
+          console.log('Fullscreen button clicked - no command defined yet')
+          break
+        case 'download':
+          sendFittingRoomCommand('moveCamera', { direction: 'up', amount: 0.1 })
+          console.log('Sent move camera command')
+          break
+        case 'rotate-right':
+          sendFittingRoomCommand('rotateCamera', { direction: 'right', speed: 1 })
+          console.log('Sent rotate right command')
+          break
+        default:
+          console.log(`Control ${controlKey} clicked - no streaming command defined`)
+      }
+    } else {
+      console.log(`Cannot send command - connection state: ${connectionState}`)
+    }
+  }
+  const desktopControlClassMap: Record<string, string> = {
+    'rotate-left': styles.desktopRotateLeft,
+    upload: styles.desktopUpload,
+    fullscreen: styles.desktopFullscreen,
+    download: styles.desktopDownload,
+    'rotate-right': styles.desktopRotateRight,
+  }
+  const renderControlButtons = () => {
+    if (isDesktop) {
+      return (
+        <div className={`${styles.controlGroup} ${styles.controlGroupDesktop}`}>
+          {desktopControls.map((control) => {
+            const controlClass = desktopControlClassMap[control.key] ?? ''
+            return (
+              <button
+                key={control.key}
+                type="button"
+                className={`${styles.desktopControlButton} ${controlClass} ${
+                  selectedControl === control.key ? styles.desktopControlButtonSelected : ''
+                }`}
+                onClick={() => handleDesktopControlClick(control.key)}
+              >
+                <control.Icon className={styles.desktopControlIcon} />
+              </button>
+            )
+          })}
+        </div>
+      )
+    }
+
+    return (
+      <div className={styles.controlGroup}>
+        {controls.map((control, idx) => {
+          const selectable = control.key === 'top-zoom' || control.key === 'bottom-zoom'
+          // Expanded spacing logic (only when accordion open and 5 buttons rendered)
+          let styleMargins: CSSProperties = {
+            width: toCqw(control.width),
+            height: toCqw(control.width),
+            marginRight: toCqw(control.marginRight),
+          }
+          if (control.marginRight === 0) {
+            styleMargins.marginRight = undefined
+          }
+          if (accordionOpen) {
+            // Apply exact gap spec: left offset 20, gaps 40,25,25,40, right offset 20
+            // We'll set marginLeft on first button and marginRight values manually ignoring pre-set marginRight
+            styleMargins = {
+              width: toCqw(control.width),
+              height: toCqw(control.width),
+            }
+            if (idx === 0) {
+              styleMargins.marginLeft = toCqw(20)
+              styleMargins.marginRight = toCqw(40)
+            }
+            if (idx === 1) styleMargins.marginRight = toCqw(25)
+            if (idx === 2) styleMargins.marginRight = toCqw(25)
+            if (idx === 3) styleMargins.marginRight = toCqw(40)
+            if (idx === 4) styleMargins.marginRight = toCqw(20)
+          }
+          return (
+            <button
+              key={control.key}
+              type="button"
+              className={`${styles.controlButton} ${
+                selectable && selectedControl === control.key ? styles.selected : ''
+              }`}
+              style={styleMargins}
+              onClick={() => {
+                // Send pixel streaming commands for rotate buttons
+                if (control.key === 'rotate-left' && connectionState === 'connected') {
+                  sendFittingRoomCommand('rotateCamera', { direction: 'left', speed: 1 })
+                  console.log('Sent rotate left command')
+                }
+                if (control.key === 'rotate-right' && connectionState === 'connected') {
+                  sendFittingRoomCommand('rotateCamera', { direction: 'right', speed: 1 })
+                  console.log('Sent rotate right command')
+                }
+
+                // Send pixel streaming commands for middle buttons
+                if (control.key === 'top-zoom' && connectionState === 'connected') {
+                  sendFittingRoomCommand('zoomCamera', { direction: 'in', amount: 0.1 })
+                  console.log('Sent zoom camera command')
+                }
+                if (control.key === 'bottom-zoom' && connectionState === 'connected') {
+                  sendFittingRoomCommand('moveCamera', { direction: 'up', amount: 0.1 })
+                  console.log('Sent move camera command')
+                }
+
+                // Enter full body detailed states via control buttons
+                if (fullBodyMode && !fullBodyDetail && control.key === 'rotate-left') {
+                  setFullBodyDetail(true)
+                  setTopOpen(true)
+                  setTopExpandedFooter(true)
+                  setBottomExpandedFooter(false)
+                  return
+                }
+                if (fullBodyMode && !fullBodyDetail && control.key === 'top-zoom') {
+                  setFullBodyDetail(true)
+                  setTopOpen(true)
+                  setBottomOpen(false)
+                  setTopExpandedFooter(true)
+                  setBottomExpandedFooter(false)
+                  setSelectedControl('top-zoom')
+                  return
+                }
+                if (fullBodyMode && !fullBodyDetail && control.key === 'bottom-zoom') {
+                  setFullBodyDetail(true)
+                  setBottomOpen(true)
+                  setTopOpen(false)
+                  setTopExpandedFooter(false)
+                  setBottomExpandedFooter(true)
+                  setSelectedControl('bottom-zoom')
+                  return
+                }
+                if (fullBodyMode && fullBodyDetail && control.key === 'top-zoom') {
+                  if (topOpen) {
+                    setFullBodyDetail(false)
+                    setTopOpen(false)
+                    setBottomOpen(false)
+                    setTopExpandedFooter(false)
+                    setBottomExpandedFooter(false)
+                    setSelectedControl(null)
+                  } else {
+                    setTopOpen(true)
+                    setBottomOpen(false)
+                    setTopExpandedFooter(true)
+                    setBottomExpandedFooter(false)
+                    setSelectedControl('top-zoom')
+                  }
+                  return
+                }
+                if (fullBodyMode && fullBodyDetail && control.key === 'bottom-zoom') {
+                  if (bottomOpen) {
+                    setFullBodyDetail(false)
+                    setTopOpen(false)
+                    setBottomOpen(false)
+                    setTopExpandedFooter(false)
+                    setBottomExpandedFooter(false)
+                    setSelectedControl(null)
+                  } else {
+                    setBottomOpen(true)
+                    setTopOpen(false)
+                    setTopExpandedFooter(false)
+                    setBottomExpandedFooter(true)
+                    setSelectedControl('bottom-zoom')
+                  }
+                  return
+                }
+                if (control.key === 'home') {
+                  setFullBodyMode(false)
+                  setFullBodyDetail(false)
+                  setTopOpen(false)
+                  setBottomOpen(false)
+                  setTopExpandedFooter(false)
+                  setBottomExpandedFooter(false)
+                  setSelectedControl(null)
+                  return
+                }
+                if (selectable) {
+                  // Normal virtual try-on mode: inner circles should open accordions like footer buttons
+                  if (!fullBodyMode) {
+                    if (control.key === 'top-zoom') {
+                      setTopOpen(true)
+                      setBottomOpen(false)
+                      setTopExpandedFooter(true)
+                      setBottomExpandedFooter(false)
+                      toggleControl(control.key)
+                      return
+                    }
+                    if (control.key === 'bottom-zoom') {
+                      setBottomOpen(true)
+                      setTopOpen(false)
+                      setBottomExpandedFooter(true)
+                      setTopExpandedFooter(false)
+                      toggleControl(control.key)
+                      return
+                    }
+                  }
+                  // Fallback (e.g. potential future full body inner circle usage)
+                  toggleControl(control.key)
+                  if (control.key === 'top-zoom') enterDetail('top')
+                  if (control.key === 'bottom-zoom') enterDetail('bottom')
+                } else {
+                  // rotation action placeholder; no selection highlight
+                }
+              }}
+            >
+              {/* For top/bottom zoom buttons we need a fixed white inner circle that does NOT change color; selection adds an outer transparent ring. */}
+              {['top-zoom', 'bottom-zoom'].includes(control.key) ? (
+                <>
+                  <div className={styles.selectionRing} />
+                  <div className={styles.innerCircle} />
+                  <control.Icon className={styles.controlIcon} />
+                </>
+              ) : control.key === 'home' ? (
+                <>
+                  <div className={styles.fillCircle} />
+                  <div className={styles.outerCircle} />
+                  <control.Icon className={styles.controlIcon} />
+                </>
+              ) : (
+                <>
+                  <div className={styles.fillCircle} />
+                  <div className={styles.outerCircle} />
+                  <control.Icon className={styles.controlIcon} />
+                </>
+              )}
+            </button>
+          )
+        })}
+      </div>
+    )
   }
   const renderDesktopSizeSelector = (focus: 'top' | 'bottom') => {
     const isTop = focus === 'top'
@@ -635,11 +886,15 @@ export default function VirtualTryOn() {
             {/* PixelStreaming kad je stvarno connected (ili u localhost DEV), inače fallback slika */}
             {(connectionState === 'connected' && application) || devMode === 'localhost' ? (
               <PixelStreamingView
-                className={styles.avatarImage}
+                className={`${styles.avatarImage} ${isDesktop ? styles.avatarImageDesktop : ''}`}
                 autoConnect={devMode === 'localhost'}
               />
             ) : (
-              <img src={avatarBg} alt="Avatar" className={styles.avatarImage} />
+              <img
+                src={avatarBg}
+                alt="Avatar"
+                className={`${styles.avatarImage} ${isDesktop ? styles.avatarImageDesktop : ''}`}
+              />
             )}
 
             <button
@@ -828,7 +1083,7 @@ export default function VirtualTryOn() {
               </>
             )}
             {/* Left side selectors (normal modes) */}
-            {!bottomOpen && !fullBodyMode && (
+            {!isDesktop && !bottomOpen && !fullBodyMode && (
               <>
                 <div
                   className={`${styles.categoryArrows} ${styles.categoryArrowsFirst} ${topExpandedFooter ? styles.categoryArrowsCompact : ''}`}
@@ -884,7 +1139,7 @@ export default function VirtualTryOn() {
                 )}
               </>
             )}
-            {bottomOpen && !fullBodyMode && (
+            {!isDesktop && bottomOpen && !fullBodyMode && (
               <>
                 <div className={`${styles.categoryArrows} ${styles.categoryArrowsFirst}`}>
                   <button
@@ -911,7 +1166,7 @@ export default function VirtualTryOn() {
             )}
 
             {/* Right side selectors */}
-            {!bottomOpen && !topExpandedFooter && !fullBodyMode && (
+            {!isDesktop && !bottomOpen && !topExpandedFooter && !fullBodyMode && (
               <>
                 <div className={`${styles.imageArrows} ${styles.imageArrowsFirst}`}>
                   <button
@@ -935,7 +1190,7 @@ export default function VirtualTryOn() {
               </>
             )}
             {/* Size selector in top expanded OR bottom accordion mode */}
-            {!bottomOpen && topExpandedFooter && !fullBodyMode && (
+            {!isDesktop && !bottomOpen && topExpandedFooter && !fullBodyMode && (
               <div className={`${styles.sizeArrows} ${styles.sizeArrowsFirst}`}>
                 <button
                   type="button"
@@ -958,7 +1213,7 @@ export default function VirtualTryOn() {
                 </button>
               </div>
             )}
-            {bottomOpen && !fullBodyMode && (
+            {!isDesktop && bottomOpen && !fullBodyMode && (
               <div className={`${styles.sizeArrows} ${styles.sizeArrowsFirst}`}>
                 <button
                   type="button"
@@ -1014,185 +1269,7 @@ export default function VirtualTryOn() {
                 </div>
               </>
             )}
-
-            <div className={styles.controlGroup}>
-              {controls.map((control, idx) => {
-                const selectable = control.key === 'top-zoom' || control.key === 'bottom-zoom'
-                // Expanded spacing logic (only when accordion open and 5 buttons rendered)
-                let styleMargins: CSSProperties = {
-                  width: toCqw(control.width),
-                  height: toCqw(control.width),
-                  marginRight: toCqw(control.marginRight),
-                }
-                if (control.marginRight === 0) {
-                  styleMargins.marginRight = undefined
-                }
-                if (accordionOpen) {
-                  // Apply exact gap spec: left offset 20, gaps 40,25,25,40, right offset 20
-                  // We'll set marginLeft on first button and marginRight values manually ignoring pre-set marginRight
-                  styleMargins = {
-                    width: toCqw(control.width),
-                    height: toCqw(control.width),
-                  }
-                  if (idx === 0) {
-                    styleMargins.marginLeft = toCqw(20)
-                    styleMargins.marginRight = toCqw(40)
-                  }
-                  if (idx === 1) styleMargins.marginRight = toCqw(25)
-                  if (idx === 2) styleMargins.marginRight = toCqw(25)
-                  if (idx === 3) styleMargins.marginRight = toCqw(40)
-                  if (idx === 4) styleMargins.marginRight = toCqw(20)
-                }
-                return (
-                  <button
-                    key={control.key}
-                    type="button"
-                    className={`${styles.controlButton} ${selectable && selectedControl === control.key ? styles.selected : ''}`}
-                    style={styleMargins}
-                    onClick={() => {
-                      // Send pixel streaming commands for rotate buttons
-                      if (control.key === 'rotate-left' && connectionState === 'connected') {
-                        sendFittingRoomCommand('rotateCamera', { direction: 'left', speed: 1 })
-                        console.log('Sent rotate left command')
-                      }
-                      if (control.key === 'rotate-right' && connectionState === 'connected') {
-                        sendFittingRoomCommand('rotateCamera', { direction: 'right', speed: 1 })
-                        console.log('Sent rotate right command')
-                      }
-
-                      // Send pixel streaming commands for middle buttons
-                      if (control.key === 'top-zoom' && connectionState === 'connected') {
-                        sendFittingRoomCommand('zoomCamera', { direction: 'in', amount: 0.1 })
-                        console.log('Sent zoom camera command')
-                      }
-                      if (control.key === 'bottom-zoom' && connectionState === 'connected') {
-                        sendFittingRoomCommand('moveCamera', { direction: 'up', amount: 0.1 })
-                        console.log('Sent move camera command')
-                      }
-
-                      // Enter full body detailed via left outer circle (rotate-left) when in simple full body
-                      if (fullBodyMode && !fullBodyDetail && control.key === 'rotate-left') {
-                        setFullBodyDetail(true)
-                        setTopOpen(true)
-                        setTopExpandedFooter(true)
-                        setBottomExpandedFooter(false)
-                        return
-                      }
-                      if (fullBodyMode && !fullBodyDetail && control.key === 'top-zoom') {
-                        setFullBodyDetail(true)
-                        setTopOpen(true)
-                        setBottomOpen(false)
-                        setTopExpandedFooter(true)
-                        setBottomExpandedFooter(false)
-                        setSelectedControl('top-zoom')
-                        return
-                      }
-                      if (fullBodyMode && !fullBodyDetail && control.key === 'bottom-zoom') {
-                        setFullBodyDetail(true)
-                        setBottomOpen(true)
-                        setTopOpen(false)
-                        setTopExpandedFooter(false)
-                        setBottomExpandedFooter(true)
-                        setSelectedControl('bottom-zoom')
-                        return
-                      }
-                      if (fullBodyMode && fullBodyDetail && control.key === 'top-zoom') {
-                        if (topOpen) {
-                          setFullBodyDetail(false)
-                          setTopOpen(false)
-                          setBottomOpen(false)
-                          setTopExpandedFooter(false)
-                          setBottomExpandedFooter(false)
-                          setSelectedControl(null)
-                        } else {
-                          setTopOpen(true)
-                          setBottomOpen(false)
-                          setTopExpandedFooter(true)
-                          setBottomExpandedFooter(false)
-                          setSelectedControl('top-zoom')
-                        }
-                        return
-                      }
-                      if (fullBodyMode && fullBodyDetail && control.key === 'bottom-zoom') {
-                        if (bottomOpen) {
-                          setFullBodyDetail(false)
-                          setTopOpen(false)
-                          setBottomOpen(false)
-                          setTopExpandedFooter(false)
-                          setBottomExpandedFooter(false)
-                          setSelectedControl(null)
-                        } else {
-                          setBottomOpen(true)
-                          setTopOpen(false)
-                          setTopExpandedFooter(false)
-                          setBottomExpandedFooter(true)
-                          setSelectedControl('bottom-zoom')
-                        }
-                        return
-                      }
-                      if (control.key === 'home') {
-                        setFullBodyMode(false)
-                        setFullBodyDetail(false)
-                        setTopOpen(false)
-                        setBottomOpen(false)
-                        setTopExpandedFooter(false)
-                        setBottomExpandedFooter(false)
-                        setSelectedControl(null)
-                        return
-                      }
-                      if (selectable) {
-                        // Normal virtual try-on mode: inner circles should open accordions like footer buttons
-                        if (!fullBodyMode) {
-                          if (control.key === 'top-zoom') {
-                            setTopOpen(true)
-                            setBottomOpen(false)
-                            setTopExpandedFooter(true)
-                            setBottomExpandedFooter(false)
-                            toggleControl(control.key)
-                            return
-                          }
-                          if (control.key === 'bottom-zoom') {
-                            setBottomOpen(true)
-                            setTopOpen(false)
-                            setBottomExpandedFooter(true)
-                            setTopExpandedFooter(false)
-                            toggleControl(control.key)
-                            return
-                          }
-                        }
-                        // Fallback (e.g. potential future full body inner circle usage)
-                        toggleControl(control.key)
-                        if (control.key === 'top-zoom') enterDetail('top')
-                        if (control.key === 'bottom-zoom') enterDetail('bottom')
-                      } else {
-                        // rotation action placeholder; no selection highlight
-                      }
-                    }}
-                  >
-                    {/* For top/bottom zoom buttons we need a fixed white inner circle that does NOT change color; selection adds an outer transparent ring. */}
-                    {['top-zoom', 'bottom-zoom'].includes(control.key) ? (
-                      <>
-                        <div className={styles.selectionRing} />
-                        <div className={styles.innerCircle} />
-                        <control.Icon className={styles.controlIcon} />
-                      </>
-                    ) : control.key === 'home' ? (
-                      <>
-                        <div className={styles.fillCircle} />
-                        <div className={styles.outerCircle} />
-                        <control.Icon className={styles.controlIcon} />
-                      </>
-                    ) : (
-                      <>
-                        <div className={styles.fillCircle} />
-                        <div className={styles.outerCircle} />
-                        <control.Icon className={styles.controlIcon} />
-                      </>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
+            {renderControlButtons()}
           </div>
 
           {/* Accordion area (reduces canvas height instead of pushing footer off) */}
