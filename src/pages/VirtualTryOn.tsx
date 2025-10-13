@@ -160,7 +160,7 @@ export default function VirtualTryOn() {
       watchers.forEach(({ observer }) => observer.disconnect())
       window.removeEventListener('resize', handleWindowResize)
     }
-  }, [upperMain, lowerMain, isDesktop])
+  }, [isDesktop])
   const cycleTopPrev = () => {
     setTopOptionIndex((i) => {
       const newIndex = (i + 5 - 1) % 5

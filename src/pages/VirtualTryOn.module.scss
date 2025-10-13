@@ -23,15 +23,11 @@ $design-w: 430; // baseline širina dizajna
   margin: 0 auto;
 }
 
-.pageDesktop {}
-
 .mainLayout {
   width: 100%;
   display: flex;
   flex-direction: column;
 }
-
-.mainLayoutDesktop {}
 
 .canvasColumn {
   width: 100%;
@@ -39,8 +35,6 @@ $design-w: 430; // baseline širina dizajna
   flex-direction: column;
   align-items: center;
 }
-
-.canvasColumnDesktop {}
 
 .footerColumn {
   width: 100%;
@@ -70,7 +64,6 @@ $design-w: 430; // baseline širina dizajna
   /* Visina platna skalirana po širini stranice: 932 - 101 - 51 = 780 */
   height: cqw(780);
 }
-.canvasWrapperDesktop {}
 .canvasWrapper.withAccordion { height: cqw(600); }
 .canvasWrapper.footerTopExpanded, .canvasWrapper.footerBotExpanded { height: cqw(730); }
 .canvasWrapper.footerTopExpanded.withAccordion, .canvasWrapper.footerBotExpanded.withAccordion { height: cqw(550); }
@@ -590,7 +583,6 @@ $design-w: 430; // baseline širina dizajna
   display: flex;
   flex-direction: column;
   gap: 20px;
-  border-top: none;
 }
 .desktopFooterSection {
   width: 520px;
@@ -598,7 +590,6 @@ $design-w: 430; // baseline širina dizajna
   display: flex;
   flex-direction: column;
   background: #ececec;
-/*   border: 1px solid #000; */
   box-sizing: border-box;
   border-top: none;
 }
@@ -660,7 +651,7 @@ $design-w: 430; // baseline širina dizajna
 .desktopFooterRightCol:first-child { border-left: none; }
 
 .desktopSizeSelector {
-  width: 32.8px;
+  width: 100%;
   height: 138.22x;
   display: flex;
   flex-direction: column;
@@ -750,6 +741,11 @@ $design-w: 430; // baseline širina dizajna
   font-family: 'Outfit', sans-serif;
   text-align: center;
   line-height: 1.1;
+}
+
+.desktopCategoryTextMainWrapped {
+  font-size: 18px;
+  line-height: 1.05;
 }
 
 .desktopColorSelector {
