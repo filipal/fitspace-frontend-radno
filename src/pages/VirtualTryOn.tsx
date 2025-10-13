@@ -53,6 +53,9 @@ interface ControlButton {
   marginRight: number
 }
 
+const DESIGN_WIDTH = 430
+const toCqw = (px: number) => (px === 0 ? '0' : `calc(${px} / ${DESIGN_WIDTH} * 100cqw)`)
+
 export default function VirtualTryOn() {
   const navigate = useNavigate()
   const { sendFittingRoomCommand, connectionState, application, devMode } = usePixelStreaming()
@@ -544,22 +547,32 @@ export default function VirtualTryOn() {
         )}
 
         <div className={styles.controlGroup}>
-          {controls.map(control => {
-            const size = control.width
+          {controls.map((control, idx) => {
             const selectable = control.key === 'top-zoom' || control.key === 'bottom-zoom'
             // Expanded spacing logic (only when accordion open and 5 buttons rendered)
-            let styleMargins: CSSProperties = { width: size, height: size, marginRight: control.marginRight }
+            let styleMargins: CSSProperties = {
+              width: toCqw(control.width),
+              height: toCqw(control.width),
+              marginRight: toCqw(control.marginRight)
+            }
+            if (control.marginRight === 0) {
+              styleMargins.marginRight = undefined
+            }
             if (accordionOpen) {
               // Apply exact gap spec: left offset 20, gaps 40,25,25,40, right offset 20
               // We'll set marginLeft on first button and marginRight values manually ignoring pre-set marginRight
-              const idx = controls.findIndex(c => c.key === control.key)
-              styleMargins = { width: size, height: size }
-              if (idx === 0) styleMargins.marginLeft = 20
-              if (idx === 0) styleMargins.marginRight = 40
-              if (idx === 1) styleMargins.marginRight = 25
-              if (idx === 2) styleMargins.marginRight = 25
-              if (idx === 3) styleMargins.marginRight = 40
-              if (idx === 4) styleMargins.marginRight = 20
+              styleMargins = {
+                width: toCqw(control.width),
+                height: toCqw(control.width)
+              }
+              if (idx === 0) {
+                styleMargins.marginLeft = toCqw(20)
+                styleMargins.marginRight = toCqw(40)
+              }
+              if (idx === 1) styleMargins.marginRight = toCqw(25)
+              if (idx === 2) styleMargins.marginRight = toCqw(25)
+              if (idx === 3) styleMargins.marginRight = toCqw(40)
+              if (idx === 4) styleMargins.marginRight = toCqw(20)
             }
             return (
               <button
