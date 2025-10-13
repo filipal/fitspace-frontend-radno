@@ -447,10 +447,10 @@ $design-w: 430; // baseline širina dizajna
 .infoBox { right: cqw(9); text-align: right; }
 .footerButton {
   position: absolute;
-  width: cqw(60);
-  height: cqw(23);
+  width: clamp(36px, cqw(60), 60px);
+  height: clamp(20px, cqw(23), 23px);
   top: cqw(16);
-  font-size: fsz(20);
+  font-size: clamp(12px, cqw(20), 20px);
   font-weight: 400;
   background: none;
   border: none;
@@ -459,6 +459,8 @@ $design-w: 430; // baseline širina dizajna
   display: flex;
   align-items: center;
   justify-content: center;
+  white-space: nowrap;
+  padding: 0 clamp(4px, cqw(6), 6px);
 }
 .topButton { right: cqw(15); }
 .botButton { left: cqw(15); }
