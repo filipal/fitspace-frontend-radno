@@ -44,9 +44,10 @@ export default function FaceScan({ onClose }: { onClose?: () => void }) {
 
   // Resetira naslijeđeni scroll + isključi auto-restoration
   useEffect(() => {
-    const prev = history.scrollRestoration ?? 'auto';
-    if ('scrollRestoration' in history) {
-      history.scrollRestoration = 'manual';
+    const browserHistory = window.history;
+    const prev = browserHistory.scrollRestoration ?? 'auto';
+    if ('scrollRestoration' in browserHistory) {
+      browserHistory.scrollRestoration = 'manual';
     }
 
     // hard reset na vrh (bez animacije)

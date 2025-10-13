@@ -18,7 +18,7 @@ declare global {
   }
 }
 
-interface PixelStreamingConfigLike {
+type PixelStreamingConfigLike = Config & {
   settingsPanel?: {
     isVisible?: boolean;
     show?: () => void;
@@ -31,7 +31,7 @@ interface PixelStreamingConfigLike {
   updateAllSettings?: () => void;
   applySettings?: () => void;
   [key: string]: unknown;
-}
+};
 
 interface WebSocketControllerLike {
   webSocket?: WebSocket | null;
@@ -52,15 +52,15 @@ interface WebRtcControllerLike {
   sendrecvDataChannelController?: DataChannelControllerLike | null;
 }
 
-interface PixelStreamingInternals extends PixelStreaming {
-  config?: PixelStreamingConfigLike;
+type PixelStreamingInternals = PixelStreaming & {
+  config: PixelStreamingConfigLike;
   _webSocketController?: WebSocketControllerLike | null;
   _webRtcController?: WebRtcControllerLike | null;
   _application?: Application | null;
-}
+};
 
 const getStreamInternals = (instance: PixelStreaming | null): PixelStreamingInternals | null => {
-  return instance ? (instance as PixelStreamingInternals) : null;
+  return instance ? (instance as unknown as PixelStreamingInternals) : null;
 };
 
 const getStreamConfig = (instance: PixelStreaming | null): PixelStreamingConfigLike | undefined => {
@@ -1077,21 +1077,25 @@ const connect = useCallback(async (overrideUrl?: string) => {
         }
         
         // Also try the config-level approach
-        if (currentConfig._settingsObj) {
+        const settingsObject = currentConfig._settingsObj;
+        if (settingsObject) {
           console.log('🔧 Also trying config-level double-toggle...');
           
           // Double-toggle at config level
-          currentConfig._settingsObj.MatchViewportRes = false;
+          settingsObject.MatchViewportRes = false;
           if (currentConfig.setStreamingSettings) {
             currentConfig.setStreamingSettings({ MatchViewportRes: false });
           }
           
           setTimeout(() => {
-            currentConfig._settingsObj.MatchViewportRes = true;
-            if (currentConfig.setStreamingSettings) {
-              currentConfig.setStreamingSettings({ MatchViewportRes: true });
+            const refreshedSettings = currentConfig._settingsObj;
+            if (refreshedSettings) {
+              refreshedSettings.MatchViewportRes = true;
+              if (currentConfig.setStreamingSettings) {
+                currentConfig.setStreamingSettings({ MatchViewportRes: true });
+              }
+              console.log('✅ Config-level double-toggle completed');
             }
-            console.log('✅ Config-level double-toggle completed');
           }, 300);
         }
       }
