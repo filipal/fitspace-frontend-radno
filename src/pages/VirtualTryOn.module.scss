@@ -23,6 +23,31 @@ $design-w: 430; // baseline širina dizajna
   margin: 0 auto;
 }
 
+.pageDesktop {}
+
+.mainLayout {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.mainLayoutDesktop {}
+
+.canvasColumn {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.canvasColumnDesktop {}
+
+.footerColumn {
+  width: 100%;
+}
+
+.footerColumnDesktop {}
+
 .avatarButton {
   background: none;
   border: none;
@@ -45,6 +70,8 @@ $design-w: 430; // baseline širina dizajna
   /* Visina platna skalirana po širini stranice: 932 - 101 - 51 = 780 */
   height: cqw(780);
 }
+
+.canvasWrapperDesktop {}
 .canvasWrapper.withAccordion { height: cqw(600); }
 .canvasWrapper.footerTopExpanded, .canvasWrapper.footerBotExpanded { height: cqw(730); }
 .canvasWrapper.footerTopExpanded.withAccordion, .canvasWrapper.footerBotExpanded.withAccordion { height: cqw(550); }
@@ -558,4 +585,266 @@ $design-w: 430; // baseline širina dizajna
   align-items: center;
   justify-content: center;
   cursor: pointer;
+}
+
+.desktopFooterRoot {}
+.desktopFooter {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.desktopFooterSection {
+  width: 520px;
+  height: 467px;
+  display: flex;
+  flex-direction: column;
+  background: #ececec;
+  border: 1px solid #000;
+  box-sizing: border-box;
+}
+.desktopFooterHeading {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 500;
+  border-bottom: 1px solid #000;
+}
+.desktopFooterBody {
+  display: flex;
+  flex: 1;
+}
+.desktopFooterLeft {
+  width: 300px;
+  height: 427px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #000;
+}
+.desktopFooterLeftTop {
+  width: 100%;
+  height: 314px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.desktopFooterLeftBottom {
+  width: 100%;
+  height: 113px;
+  border-top: 1px solid #000;
+  background: #fff;
+}
+.desktopFooterRight {
+  width: 220px;
+  height: 427px;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+.desktopFooterRightTop,
+.desktopFooterRightBottom {
+  width: 100%;
+  display: flex;
+}
+.desktopFooterRightTop { height: 214px; border-bottom: 1px solid #000; }
+.desktopFooterRightBottom { height: 213px; }
+.desktopFooterRightCol {
+  width: 110px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid #000;
+}
+.desktopFooterRightCol:first-child { border-left: none; }
+
+.desktopSizeSelector {
+  width: 100%;
+  height: 138px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+.desktopVerticalArrow {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.desktopVerticalArrow img { width: 100%; height: 100%; object-fit: contain; }
+.desktopSizeDisplay {
+  width: 72px;
+  height: 66px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+.desktopSizeSmall {
+  font-size: 12px;
+  opacity: 0.25;
+}
+.desktopSizeMain {
+  font-size: 24px;
+  font-weight: 500;
+}
+.desktopSizeDisplayBottom {
+  width: 88px;
+  height: 90px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+.desktopSizeSmallBottom {
+  font-size: 12px;
+  opacity: 0.25;
+  text-align: center;
+  line-height: 1.2;
+}
+.desktopSizeMainBottom {
+  font-size: 20px;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.desktopCategorySelector {
+  width: 100%;
+  height: 138px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+.desktopCategoryTexts {
+  width: 85px;
+  height: 82px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+.desktopCategoryTextTop,
+.desktopCategoryTextBottom {
+  font-size: 12px;
+  opacity: 0.25;
+  text-transform: uppercase;
+  text-align: center;
+}
+.desktopCategoryTextMain {
+  font-size: 18px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.desktopColorSelector {
+  width: 100%;
+  height: 138px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+.desktopColorButton {
+  width: 55px;
+  height: 55px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.desktopOptionSelector {
+  width: 100%;
+  height: 139px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  box-sizing: border-box;
+}
+.desktopHorizontalArrow {
+  width: 22px;
+  height: 30px;
+  border: none;
+  background: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.desktopHorizontalArrow img { width: 100%; height: 100%; object-fit: contain; }
+.desktopOptionText {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.desktopOptionTitle {
+  font-size: 18px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+.desktopOptionSubtitle {
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+@media (min-width: 1024px) {
+  .page,
+  .pageDesktop {
+    max-width: none;
+    width: 100%;
+    min-width: 1440px;
+    align-items: flex-start;
+  }
+  .mainLayout,
+  .mainLayoutDesktop {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: calc(100dvh - 70px);
+  }
+  .canvasColumn,
+  .canvasColumnDesktop {
+    flex: 0 0 920px;
+    align-items: stretch;
+  }
+  .canvasWrapper,
+  .canvasWrapperDesktop {
+    width: 920px;
+    height: 954px;
+  }
+  .footerColumn,
+  .footerColumnDesktop {
+    flex: 0 0 520px;
+    display: flex;
+    justify-content: flex-end;
+  }
+  .footer,
+  .desktopFooterRoot {
+    border-top: none;
+    height: auto;
+    padding: 0;
+    background: transparent;
+  }
+  .desktopFooter {
+    width: 520px;
+    height: 954px;
+    margin-left: auto;
+  }
 }

@@ -75,6 +75,8 @@ export default function VirtualTryOn() {
   const [fullBodyDetail, setFullBodyDetail] = useState(false)
   const [topOptionIndex, setTopOptionIndex] = useState(0) // Option 1..5 => indices 0..4
   const topOptions = ['with armor', 'option 2', 'option 3', 'option 4', 'option 5']
+    const [bottomOptionIndex, setBottomOptionIndex] = useState(0)
+  const bottomOptions = ['tapered fit', 'regular fit', 'loose fit', 'boot cut', 'straight fit']
   useEffect(() => {
     if (typeof window === 'undefined') return
     const mediaQuery = window.matchMedia('(min-width: 1024px)')
@@ -96,6 +98,15 @@ export default function VirtualTryOn() {
       }
     }
   }, [])
+  useEffect(() => {
+    if (isDesktop) {
+      setTopOpen(false)
+      setBottomOpen(false)
+      setTopExpandedFooter(false)
+      setBottomExpandedFooter(false)
+      setSelectedControl(null)
+    }
+  }, [isDesktop])
   const cycleTopPrev = () => {
     setTopOptionIndex((i) => {
       const newIndex = (i + 5 - 1) % 5
@@ -116,6 +127,28 @@ export default function VirtualTryOn() {
         const itemId = (newIndex % 2).toString()
         sendFittingRoomCommand('selectClothing', { itemId, category: 'top' })
         console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
+      }
+      return newIndex
+    })
+  }
+  const cycleBottomPrev = () => {
+    setBottomOptionIndex((i) => {
+      const newIndex = (i + bottomOptions.length - 1) % bottomOptions.length
+      if (connectionState === 'connected') {
+        const itemId = (newIndex % 2).toString()
+        sendFittingRoomCommand('selectClothing', { itemId, category: 'bottom' })
+        console.log(`Sent selectClothing command: itemId=${itemId}, category=bottom`)
+      }
+      return newIndex
+    })
+  }
+  const cycleBottomNext = () => {
+    setBottomOptionIndex((i) => {
+      const newIndex = (i + 1) % bottomOptions.length
+      if (connectionState === 'connected') {
+        const itemId = (newIndex % 2).toString()
+        sendFittingRoomCommand('selectClothing', { itemId, category: 'bottom' })
+        console.log(`Sent selectClothing command: itemId=${itemId}, category=bottom`)
       }
       return newIndex
     })
@@ -286,6 +319,177 @@ export default function VirtualTryOn() {
   const toggleControl = (key: string) => {
     setSelectedControl((prev) => (prev === key ? null : key))
   }
+  const renderDesktopSizeSelector = (focus: 'top' | 'bottom') => {
+    const isTop = focus === 'top'
+    const handleCycle = (dir: 1 | -1) =>
+      isTop ? cycleSize(dir) : cycleBottomSize(dir)
+    return (
+      <div className={styles.desktopSizeSelector}>
+        <button
+          type="button"
+          className={styles.desktopVerticalArrow}
+          onClick={() => handleCycle(-1)}
+        >
+          <img src={ArrowUp} alt="Previous size" />
+        </button>
+        {isTop ? (
+          <div className={styles.desktopSizeDisplay}>
+            <div className={styles.desktopSizeSmall}>{sizeAbove}</div>
+            <div className={styles.desktopSizeMain}>{sizeMain}</div>
+            <div className={styles.desktopSizeSmall}>{sizeBelow}</div>
+          </div>
+        ) : (
+          <div className={styles.desktopSizeDisplayBottom}>
+            <div className={styles.desktopSizeSmallBottom}>
+              W{bottomSizeAbove.w}
+              <br />L{bottomSizeAbove.l}
+            </div>
+            <div className={styles.desktopSizeMainBottom}>
+              W{bottomSizeMain.w}
+              <br />L{bottomSizeMain.l}
+            </div>
+            <div className={styles.desktopSizeSmallBottom}>
+              W{bottomSizeBelow.w}
+              <br />L{bottomSizeBelow.l}
+            </div>
+          </div>
+        )}
+        <button
+          type="button"
+          className={styles.desktopVerticalArrow}
+          onClick={() => handleCycle(1)}
+        >
+          <img src={ArrowDown} alt="Next size" />
+        </button>
+      </div>
+    )
+  }
+
+  const renderDesktopCategorySelector = (focus: 'top' | 'bottom') => {
+    const cycle = focus === 'top' ? cycleUpper : cycleLower
+    const textTop = focus === 'top' ? upperTop : lowerTop
+    const textMain = focus === 'top' ? upperMain : lowerMain
+    const textBottom = focus === 'top' ? upperBottom : lowerBottom
+    return (
+      <div className={styles.desktopCategorySelector}>
+        <button
+          type="button"
+          className={styles.desktopVerticalArrow}
+          onClick={() => cycle(-1)}
+        >
+          <img src={ArrowUp} alt="Previous category" />
+        </button>
+        <div className={styles.desktopCategoryTexts}>
+          <div className={styles.desktopCategoryTextTop}>{textTop}</div>
+          <div className={styles.desktopCategoryTextMain}>{textMain}</div>
+          <div className={styles.desktopCategoryTextBottom}>{textBottom}</div>
+        </div>
+        <button
+          type="button"
+          className={styles.desktopVerticalArrow}
+          onClick={() => cycle(1)}
+        >
+          <img src={ArrowDown} alt="Next category" />
+        </button>
+      </div>
+    )
+  }
+
+  const renderDesktopOptionSelector = (focus: 'top' | 'bottom') => {
+    const isTop = focus === 'top'
+    const mainLabel = isTop
+      ? `Option ${topOptionIndex + 1}`
+      : `Option ${bottomOptionIndex + 1}`
+    const subLabel = isTop ? topOptions[topOptionIndex] : bottomOptions[bottomOptionIndex]
+    const prev = isTop ? cycleTopPrev : cycleBottomPrev
+    const next = isTop ? cycleTopNext : cycleBottomNext
+    return (
+      <div className={styles.desktopOptionSelector}>
+        <button
+          type="button"
+          className={styles.desktopHorizontalArrow}
+          onClick={prev}
+        >
+          <img src={ArrowLeft} alt="Previous option" />
+        </button>
+        <div className={styles.desktopOptionText}>
+          <div className={styles.desktopOptionTitle}>{mainLabel}</div>
+          <div className={styles.desktopOptionSubtitle}>{subLabel}</div>
+        </div>
+        <button
+          type="button"
+          className={styles.desktopHorizontalArrow}
+          onClick={next}
+        >
+          <img src={ArrowRight} alt="Next option" />
+        </button>
+      </div>
+    )
+  }
+
+  const renderDesktopColorSelector = () => (
+    <div className={styles.desktopColorSelector}>
+      <button
+        type="button"
+        className={styles.desktopVerticalArrow}
+        onClick={() =>
+          setBaseColorIndex((i) => (i + basePalette.length - 1) % basePalette.length)
+        }
+      >
+        <img src={ArrowUp} alt="Previous palette" />
+      </button>
+      <button
+        type="button"
+        className={styles.desktopColorButton}
+        onClick={() =>
+          setActiveShadeIndex((idx) => (idx + 1) % shades.length)
+        }
+      >
+        <ColorBtn size={45} color={shades[activeShadeIndex]} active />
+      </button>
+      <button
+        type="button"
+        className={styles.desktopVerticalArrow}
+        onClick={() => setBaseColorIndex((i) => (i + 1) % basePalette.length)}
+      >
+        <img src={ArrowDown} alt="Next palette" />
+      </button>
+    </div>
+  )
+
+  const renderDesktopFooterSection = (focus: 'top' | 'bottom') => (
+    <div className={styles.desktopFooterSection} key={focus}>
+      <div className={styles.desktopFooterHeading}>{focus === 'top' ? 'TOP' : 'BOTTOM'}</div>
+      <div className={styles.desktopFooterBody}>
+        <div className={styles.desktopFooterLeft}>
+          <div className={styles.desktopFooterLeftTop}>
+            {focus === 'top' ? (
+              <TopAccordion variant="desktop" />
+            ) : (
+              <BottomAccordion variant="desktop" />
+            )}
+          </div>
+          <div className={styles.desktopFooterLeftBottom} />
+        </div>
+        <div className={styles.desktopFooterRight}>
+          <div className={styles.desktopFooterRightTop}>
+            <div className={styles.desktopFooterRightCol}>
+              {renderDesktopSizeSelector(focus)}
+            </div>
+            <div className={styles.desktopFooterRightCol}>
+              {renderDesktopCategorySelector(focus)}
+            </div>
+          </div>
+          <div className={styles.desktopFooterRightBottom}>
+            <div className={styles.desktopFooterRightCol}>{renderDesktopColorSelector()}</div>
+            <div className={styles.desktopFooterRightCol}>
+              {renderDesktopOptionSelector(focus)}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 
   const title = fullBodyMode
     ? fullBodyDetail
@@ -312,7 +516,7 @@ export default function VirtualTryOn() {
   // (detail view toggles not used in new footer version; kept view state placeholder for future)
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${isDesktop ? styles.pageDesktop : ''}`}>
       <Header
         variant="dark"
         title={title}
@@ -328,10 +532,18 @@ export default function VirtualTryOn() {
         }
       />
 
-      <div className={styles.mainLayout}>
-        <div className={styles.canvasColumn}>
+      <div className={`${styles.mainLayout} ${isDesktop ? styles.mainLayoutDesktop : ''}`}>
+        <div className={`${styles.canvasColumn} ${isDesktop ? styles.canvasColumnDesktop : ''}`}>
           <div
-            className={`${styles.canvasWrapper} ${accordionOpen ? styles.withAccordion : ''} ${topOpen && !(fullBodyMode && fullBodyDetail) ? styles.topZoom : ''} ${bottomOpen && !(fullBodyMode && fullBodyDetail) ? styles.bottomZoom : ''} ${topExpandedFooter ? styles.footerTopExpanded : ''} ${bottomExpandedFooter ? styles.footerBotExpanded : ''} ${fullBodyMode && fullBodyDetail ? styles.fullBodyDetail : ''}`}
+            className={`${styles.canvasWrapper} ${
+              accordionOpen && !isDesktop ? styles.withAccordion : ''
+            } ${topOpen && !(fullBodyMode && fullBodyDetail) ? styles.topZoom : ''} ${
+              bottomOpen && !(fullBodyMode && fullBodyDetail) ? styles.bottomZoom : ''
+            } ${topExpandedFooter ? styles.footerTopExpanded : ''} ${
+              bottomExpandedFooter ? styles.footerBotExpanded : ''
+            } ${fullBodyMode && fullBodyDetail ? styles.fullBodyDetail : ''} ${
+              isDesktop ? styles.canvasWrapperDesktop : ''
+            }`}
           >
             {/* PixelStreaming kad je stvarno connected (ili u localhost DEV), inače fallback slika */}
             {(connectionState === 'connected' && application) || devMode === 'localhost' ? (
@@ -398,7 +610,7 @@ export default function VirtualTryOn() {
             </button>
 
             {/* Full body overlay (simplified) */}
-            {fullBodyMode && !fullBodyDetail && (
+            {!isDesktop && fullBodyMode && !fullBodyDetail && (
               <>
                 {/* Left full body arrows */}
                 <div className={`${styles.categoryArrows} ${styles.categoryArrowsFullBody}`}>
@@ -448,7 +660,7 @@ export default function VirtualTryOn() {
                 </div>
               </>
             )}
-            {fullBodyMode && fullBodyDetail && (
+            {!isDesktop && fullBodyMode && fullBodyDetail && (
               <>
                 <div className={`${styles.categoryArrows} ${styles.categoryArrowsFirst}`}>
                   <button
@@ -692,7 +904,7 @@ export default function VirtualTryOn() {
               </div>
             )}
             {/* Second pants row only when no accordion open */}
-            {!topOpen && !bottomOpen && !fullBodyMode && (
+            {!isDesktop && !topOpen && !bottomOpen && !fullBodyMode && (
               <>
                 <div className={`${styles.imageArrows} ${styles.imageArrowsSecond}`}>
                   <button
@@ -905,7 +1117,7 @@ export default function VirtualTryOn() {
           )}
         </div>
 
-        <div className={styles.footerColumn}>
+        <div className={`${styles.footerColumn} ${isDesktop ? styles.footerColumnDesktop : ''}`}>
           <div
             className={`${styles.footer} ${
               topExpandedFooter
@@ -915,164 +1127,14 @@ export default function VirtualTryOn() {
                   : fullBodyMode
                     ? styles.footerFullBody
                     : ''
-            } ${isDesktop ? styles.desktopFooter : ''}`}
+            } ${isDesktop ? styles.desktopFooterRoot : ''}`}
           >
             {isDesktop ? (
-              <>
-                <div className={styles.footerLeft}>
-                  <button
-                    type="button"
-                    className={`${styles.footerButton} ${styles.topButton}`}
-                    disabled
-                  >
-                    TOP
-                  </button>
-                  <div className={styles.desktopPanelContent}>
-                    <div className={styles.desktopMainColumn}>
-                      <TopAccordion variant="desktop" />
-                      <div className={styles.desktopFutureRow}>
-                        {[0, 1, 2, 3].map((idx) => (
-                          <div key={`top-future-${idx}`} className={styles.desktopFutureCell} />
-                        ))}
-                      </div>
-                    </div>
-                    <div className={`${styles.desktopSideBox} ${styles.desktopSizeBox}`}>
-                      <div
-                        className={`${styles.sizeArrows} ${styles.sizeArrowsFirst} ${styles.desktopSizeArrows}`}
-                      >
-                        <button
-                          type="button"
-                          className={styles.categoryArrowBtn}
-                          onClick={() => cycleSize(-1)}
-                        >
-                          <img src={ArrowUp} alt="Previous size" />
-                        </button>
-                        <div className={styles.sizeDisplay}>
-                          <div className={styles.sizeSmall}>{sizeAbove}</div>
-                          <div className={styles.sizeMain}>{sizeMain}</div>
-                          <div className={styles.sizeSmall}>{sizeBelow}</div>
-                        </div>
-                        <button
-                          type="button"
-                          className={styles.categoryArrowBtn}
-                          onClick={() => cycleSize(1)}
-                        >
-                          <img src={ArrowDown} alt="Next size" />
-                        </button>
-                      </div>
-                    </div>
-                    <div
-                      className={`${styles.desktopSideBox} ${styles.desktopCategoryBox} ${styles.desktopCategoryArrows}`}
-                    >
-                      <div
-                        className={`${styles.categoryArrows} ${styles.categoryArrowsFirst} ${styles.categoryArrowsCompact}`}
-                      >
-                        <button
-                          type="button"
-                          className={styles.categoryArrowBtn}
-                          onClick={() => cycleUpper(-1)}
-                        >
-                          <img src={ArrowUp} alt="Previous category" />
-                        </button>
-                        <div
-                          className={`${styles.categoryTextGroup} ${styles.categoryTextGroupFirst} ${styles.categoryTextGroupCompact} ${styles.desktopCategoryTextGroup}`}
-                        >
-                          <div className={styles.categoryTextTop}>{upperTop}</div>
-                          <div className={styles.categoryTextMain}>{upperMain}</div>
-                          <div className={styles.categoryTextBottom}>{upperBottom}</div>
-                        </div>
-                        <button
-                          type="button"
-                          className={styles.categoryArrowBtn}
-                          onClick={() => cycleUpper(1)}
-                        >
-                          <img src={ArrowDown} alt="Next category" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className={styles.footerRight}>
-                  <button
-                    type="button"
-                    className={`${styles.footerButton} ${styles.botButton}`}
-                    disabled
-                  >
-                    BOTTOM
-                  </button>
-                  <div className={styles.desktopPanelContent}>
-                    <div className={styles.desktopMainColumn}>
-                      <BottomAccordion variant="desktop" />
-                      <div className={styles.desktopFutureRow}>
-                        {[0, 1, 2, 3].map((idx) => (
-                          <div key={`bottom-future-${idx}`} className={styles.desktopFutureCell} />
-                        ))}
-                      </div>
-                    </div>
-                    <div className={`${styles.desktopSideBox} ${styles.desktopSizeBox}`}>
-                      <div
-                        className={`${styles.sizeArrows} ${styles.sizeArrowsFirst} ${styles.desktopSizeArrows}`}
-                      >
-                        <button
-                          type="button"
-                          className={styles.categoryArrowBtn}
-                          onClick={() => cycleBottomSize(-1)}
-                        >
-                          <img src={ArrowUp} alt="Previous size" />
-                        </button>
-                        <div className={styles.sizeDisplayBottom}>
-                          <div className={styles.sizeSmallBottom}>
-                            W{bottomSizeAbove.w}
-                            <br />L{bottomSizeAbove.l}
-                          </div>
-                          <div className={styles.sizeMainBottom}>
-                            W{bottomSizeMain.w}
-                            <br />L{bottomSizeMain.l}
-                          </div>
-                          <div className={styles.sizeSmallBottom}>
-                            W{bottomSizeBelow.w}
-                            <br />L{bottomSizeBelow.l}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          className={styles.categoryArrowBtn}
-                          onClick={() => cycleBottomSize(1)}
-                        >
-                          <img src={ArrowDown} alt="Next size" />
-                        </button>
-                      </div>
-                    </div>
-                    <div
-                      className={`${styles.desktopSideBox} ${styles.desktopCategoryBox} ${styles.desktopCategoryArrows}`}
-                    >
-                      <div className={`${styles.categoryArrows} ${styles.categoryArrowsFirst}`}>
-                        <button
-                          type="button"
-                          className={styles.categoryArrowBtn}
-                          onClick={() => cycleLower(-1)}
-                        >
-                          <img src={ArrowUp} alt="Previous category" />
-                        </button>
-                        <div
-                          className={`${styles.categoryTextGroup} ${styles.categoryTextGroupFirst} ${styles.desktopCategoryTextGroup}`}
-                        >
-                          <div className={styles.categoryTextTop}>{lowerTop}</div>
-                          <div className={styles.categoryTextMain}>{lowerMain}</div>
-                          <div className={styles.categoryTextBottom}>{lowerBottom}</div>
-                        </div>
-                        <button
-                          type="button"
-                          className={styles.categoryArrowBtn}
-                          onClick={() => cycleLower(1)}
-                        >
-                          <img src={ArrowDown} alt="Next category" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </>
+              <div className={styles.desktopFooter}>
+                {(['top', 'bottom'] as const).map((focus) =>
+                  renderDesktopFooterSection(focus),
+                )}
+              </div>
             ) : (
               <>
                 {fullBodyMode && !topExpandedFooter && !bottomExpandedFooter && (
