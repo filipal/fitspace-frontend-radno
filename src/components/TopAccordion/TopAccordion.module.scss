@@ -22,18 +22,18 @@ $design-w: 430;
 .desktop {
   width: 300px;
   height: 314px;
-  background: #fff;
-  border: 1px solid #000;
+  background: #ececec;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   padding: 0;
   box-sizing: border-box;
+  border-top: none;
 }
 
 .desktop .carouselRow {
-  width: 186.25px;
+  width: 167.57px;
   height: 238.17px;
   flex-direction: column;
   justify-content: space-between;
@@ -42,8 +42,8 @@ $design-w: 430;
 }
 
 .desktop .arrowBtn {
-  width: 24.09px;
-  height: 32.8px;
+  width: 32.8px;
+  height: 24.09px;
 }
 
 .desktop .carouselInner,
