@@ -396,15 +396,15 @@ export default function VirtualTryOn() {
           <div className={styles.desktopSizeDisplayBottom}>
             <div className={styles.desktopSizeSmallBottom}>
               W{bottomSizeAbove.w}
-              <br />L{bottomSizeAbove.l}
+              L{bottomSizeAbove.l}
             </div>
             <div className={styles.desktopSizeMainBottom}>
               W{bottomSizeMain.w}
-              <br />L{bottomSizeMain.l}
+              L{bottomSizeMain.l}
             </div>
             <div className={styles.desktopSizeSmallBottom}>
               W{bottomSizeBelow.w}
-              <br />L{bottomSizeBelow.l}
+              L{bottomSizeBelow.l}
             </div>
           </div>
         )}

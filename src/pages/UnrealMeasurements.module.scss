@@ -579,7 +579,7 @@ $design-w: 430; /* jedan izvor istine */
     justify-content: center;
     width: calc(100vw - 90px - var(--acc-w, 0px));
     max-width: none;
-    height: calc(100vh - var(--header-real-h, 71px));
+    height: calc(100vh - var(--header-real-h, 70px));
     padding-right: 0;
     --panel-scale: clamp(0, calc(var(--avatar-h, 953px) / 953px), 1);
     --desktop-gap-scale: clamp(0, calc((100vw - 90px - var(--acc-w, 0px)) / 1015px), 1);
@@ -767,8 +767,8 @@ $design-w: 430; /* jedan izvor istine */
     --nav-icon-max: calc(var(--nav-size) - var(--nav-track) - var(--nav-label-h) - 4px);
     --nav-icon-fallback-h: clamp(16px, min(var(--nav-icon-target), var(--nav-icon-max)), calc(var(--nav-size) * .68));
     --nav-icon-fallback-w: clamp(24px, calc(var(--nav-icon-fallback-h) * 1.35), calc(var(--nav-size) * .85));
-    top: var(--header-real-h, 71px);
-    height: calc(100% - var(--header-real-h, 71px));
+    top: var(--header-real-h, 70px);
+    height: calc(100% - var(--header-real-h, 70px));
     width: var(--nav-size);
     border-top: none;
     border-left: 1px solid #000;
