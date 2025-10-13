@@ -16,6 +16,13 @@ $design-w: 430; /* jedan izvor istine */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
+
+@media (min-width: 1024px) {
+  :root {
+    --header-h: 70;
+  }
+}
+
 .page {
   /* omogućuje cqw mjere u odnosu na širinu ove stranice */
   container-type: inline-size;
@@ -42,7 +49,7 @@ $design-w: 430; /* jedan izvor istine */
   flex-direction: column;
   align-items: center;
   width: 100%;
-  height: var(--avatar-h);
+  height: var(--avatar-h);  
 }
 
 /* Kada je accordion otvoren, smanji središnje područje za visinu accordeona */

@@ -5,6 +5,8 @@ import {
   type ComponentType,
   type SVGProps,
   type CSSProperties,
+  type Dispatch,
+  type SetStateAction,
 } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header/Header'
@@ -133,14 +135,47 @@ export default function VirtualTryOn() {
 
     const handleWrap = (
       element: HTMLDivElement | null,
-      setter: (wrapped: boolean) => void,
+      setter: Dispatch<SetStateAction<boolean>>,
     ) => {
       if (!element) return
       const calculate = () => {
-        const styles = window.getComputedStyle(element)
-        const lineHeight = parseFloat(styles.lineHeight || '0')
-        if (!lineHeight) return
-        setter(element.scrollHeight > lineHeight + 1)
+        if (element.dataset.measuring === '1') {
+          return
+        }
+        element.dataset.measuring = '1'
+
+        const hadWrapClass = element.classList.contains(
+          styles.desktopCategoryTextMainWrapped,
+        )
+        if (hadWrapClass) {
+          element.classList.remove(styles.desktopCategoryTextMainWrapped)
+        }
+
+        const range = document.createRange()
+        range.selectNodeContents(element)
+        const rects = range.getClientRects()
+
+        if (!rects.length) {
+          if (hadWrapClass) {
+            element.classList.add(styles.desktopCategoryTextMainWrapped)
+          }
+          delete element.dataset.measuring
+          setter(false)
+          return
+        }
+
+        const firstRect = rects[0]
+        const lastRect = rects[rects.length - 1]
+        const totalHeight = lastRect.bottom - firstRect.top
+        const baseLineHeight = firstRect.height
+        const tolerance = Math.max(1, baseLineHeight * 0.1)
+
+        const isWrapped = rects.length > 1 || totalHeight - baseLineHeight > tolerance
+        if (hadWrapClass) {
+          element.classList.add(styles.desktopCategoryTextMainWrapped)
+        }
+        delete element.dataset.measuring
+        setter((prev) => (prev === isWrapped ? prev : isWrapped))
       }
       calculate()
       const observer = new ResizeObserver(calculate)
