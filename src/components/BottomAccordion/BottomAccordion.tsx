@@ -3,6 +3,8 @@ import { usePixelStreaming } from '../../context/PixelStreamingContext'
 import styles from './BottomAccordion.module.scss'
 import ArrowLeft from '../../assets/arrow-left.svg'
 import ArrowRight from '../../assets/arrow-right.svg'
+import ArrowUp from '../../assets/arrow-up.svg'
+import ArrowDown from '../../assets/arrow-down.svg'
 import BossDyn01 from '../../assets/boss-dyn01.png'
 import Pants1 from '../../assets/pants-1.png'
 import Pants2 from '../../assets/pants-2.png'
@@ -12,7 +14,11 @@ import Pants5 from '../../assets/pants-5.png'
 
 const carouselItems: string[] = [BossDyn01, Pants1, Pants2, Pants3, Pants4, Pants5]
 
-export default function BottomAccordion() {
+interface BottomAccordionProps {
+  variant?: 'mobile' | 'desktop'
+}
+
+export default function BottomAccordion({ variant = 'mobile' }: BottomAccordionProps) {
   const { sendFittingRoomCommand, connectionState } = usePixelStreaming()
   const [index, setIndex] = useState(0)
   const prev = () => {
@@ -45,6 +51,24 @@ export default function BottomAccordion() {
   const Left = carouselItems[leftIdx]
   const Center = carouselItems[index]
   const Right = carouselItems[rightIdx]
+ if (variant === 'desktop') {
+    return (
+      <div className={`${styles.container} ${styles.desktop}`}>
+        <div className={styles.carouselRow}>
+          <button type="button" className={styles.arrowBtn} onClick={prev}>
+            <img src={ArrowUp} alt="Previous" />
+          </button>
+          <div className={styles.centerItem}>
+            <img src={Center} alt="Current" />
+          </div>
+          <button type="button" className={styles.arrowBtn} onClick={next}>
+            <img src={ArrowDown} alt="Next" />
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.brandBar}>Pando Moto</div>

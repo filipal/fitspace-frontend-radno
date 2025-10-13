@@ -559,3 +559,190 @@ $design-w: 430; // baseline širina dizajna
   justify-content: center;
   cursor: pointer;
 }
+
+.desktopFooter {}
+
+@media (min-width: 1024px) {
+  .page {
+    max-width: none;
+    width: 100%;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 40px;
+    padding: 0 48px 32px;
+  }
+
+  .canvasWrapper {
+    flex: 1 1 0;
+    max-width: calc(100% - 520px - 40px);
+    height: auto;
+    aspect-ratio: 3 / 4;
+  }
+
+  .canvasWrapper.withAccordion,
+  .canvasWrapper.footerTopExpanded,
+  .canvasWrapper.footerBotExpanded,
+  .canvasWrapper.footerTopExpanded.withAccordion,
+  .canvasWrapper.footerBotExpanded.withAccordion {
+    height: auto;
+  }
+
+  .footer {
+    width: 520px;
+    height: 954px;
+    margin-left: auto;
+    border-top: none;
+    background: transparent;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .desktopFooter {
+    align-items: stretch;
+  }
+
+  .desktopFooter .footerLeft,
+  .desktopFooter .footerRight {
+    width: 100%;
+    height: 467px;
+    border: 1px solid #000;
+    background: #fff;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .desktopFooter .footerButton {
+    position: relative;
+    width: 100%;
+    height: 40px;
+    top: 0;
+    left: 0;
+    right: 0;
+    font-size: 20px;
+    border-bottom: 1px solid #000;
+  }
+
+  .desktopFooter .footerButton:disabled {
+    cursor: default;
+    opacity: 1;
+    color: #000;
+  }
+
+  .desktopFooter .topButton,
+  .desktopFooter .botButton {
+    right: auto;
+    left: auto;
+    justify-content: center;
+  }
+
+  .desktopFooter .titleBox,
+  .desktopFooter .infoBox {
+    display: none;
+  }
+
+  .desktopPanelContent {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 300px 110px 110px;
+    column-gap: 20px;
+    padding: 20px 0 0;
+    box-sizing: border-box;
+  }
+
+  .desktopMainColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .desktopFutureRow {
+    width: 100%;
+    height: 113px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .desktopFutureCell {
+    border: 1px dashed #c8c8c8;
+    border-radius: 6px;
+    background: #f8f8f8;
+  }
+
+  .desktopSideBox {
+    width: 110px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .desktopSizeBox,
+  .desktopCategoryBox {
+    height: 214px;
+  }
+
+  .desktopSizeArrows,
+  .desktopCategoryArrows,
+  .desktopCategoryArrows .categoryArrows,
+  .desktopCategoryTextGroup {
+    position: static;
+  }
+
+  .desktopSizeArrows {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .desktopSizeArrows .categoryArrowBtn,
+  .desktopCategoryArrows .categoryArrowBtn {
+    width: 24.09px;
+    height: 32.8px;
+  }
+
+  .desktopSizeArrows .sizeDisplay,
+  .desktopSizeArrows .sizeDisplayBottom {
+    width: 100%;
+  }
+
+  .desktopCategoryArrows {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .desktopCategoryArrows .categoryArrows {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .desktopCategoryTextGroup {
+    width: 100%;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .desktopCategoryTextGroup .categoryTextTop,
+  .desktopCategoryTextGroup .categoryTextMain,
+  .desktopCategoryTextGroup .categoryTextBottom {
+    width: 100%;
+  }
+}

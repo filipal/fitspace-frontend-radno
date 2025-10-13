@@ -1,4 +1,4 @@
-import { useState, type ComponentType, type SVGProps, type CSSProperties } from 'react'
+import { useEffect, useState, type ComponentType, type SVGProps, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header/Header'
 import { usePixelStreaming } from '../context/PixelStreamingContext'
@@ -62,6 +62,9 @@ export default function VirtualTryOn() {
   
   // Connection is now managed by the persistent PixelStreamingContainer
   // No need for reconnection logic here - the container handles seamless transitions
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 1024 : false
+  )
   const [view, setView] = useState<ViewState>({ focus: 'top', detail: false })
   const [selectedControl, setSelectedControl] = useState<string | null>(null)
   const [topOpen, setTopOpen] = useState(false)
@@ -72,6 +75,27 @@ export default function VirtualTryOn() {
   const [fullBodyDetail, setFullBodyDetail] = useState(false)
   const [topOptionIndex, setTopOptionIndex] = useState(0) // Option 1..5 => indices 0..4
   const topOptions = ['with armor', 'option 2', 'option 3', 'option 4', 'option 5']
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mediaQuery = window.matchMedia('(min-width: 1024px)')
+    const handleChange = (event: MediaQueryListEvent | MediaQueryList) => {
+      setIsDesktop(event.matches)
+    }
+    handleChange(mediaQuery)
+    const listener = (event: MediaQueryListEvent) => handleChange(event)
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', listener)
+    } else {
+      mediaQuery.addListener(listener)
+    }
+    return () => {
+      if (typeof mediaQuery.removeEventListener === 'function') {
+        mediaQuery.removeEventListener('change', listener)
+      } else {
+        mediaQuery.removeListener(listener)
+      }
+    }
+  }, [])
   const cycleTopPrev = () => {
     setTopOptionIndex(i => {
       const newIndex = (i + 5 - 1) % 5
@@ -727,145 +751,274 @@ export default function VirtualTryOn() {
       </div>
 
       {/* Accordion area (reduces canvas height instead of pushing footer off) */}
-      {(topOpen || bottomOpen) && (
+      {!isDesktop && (topOpen || bottomOpen) && (
         <div className={styles.accordionArea}>
           {topOpen && <TopAccordion />}
           {bottomOpen && <BottomAccordion />}
         </div>
       )}
 
-      <div className={`${styles.footer} ${topExpandedFooter ? styles.expandedTop : bottomExpandedFooter ? styles.expandedBot : fullBodyMode ? styles.footerFullBody : ''}`}>
-        {fullBodyMode && !topExpandedFooter && !bottomExpandedFooter && (
+      <div
+        className={`${styles.footer} ${
+          topExpandedFooter
+            ? styles.expandedTop
+            : bottomExpandedFooter
+              ? styles.expandedBot
+              : fullBodyMode
+                ? styles.footerFullBody
+                : ''
+        } ${isDesktop ? styles.desktopFooter : ''}`}
+      >
+        {isDesktop ? (
           <>
-            <div className={styles.footerFullBodyTitle}>FALCON LEATHER AVIATOR JACKET</div>
-            <div className={styles.footerFullBodyLabel}>FULL BODY</div>
-          </>
-        )}
-        {topExpandedFooter && (
-          <>
-            <div className={styles.topExpandedLeft}>
-              <div className={styles.topExpandedLeftInner}>
-                <button type="button" className={styles.topExpandedArrowsBtn} onClick={cycleTopPrev}>
-                  <img src={ArrowLeft} alt="Prev" width={22} height={30} />
-                </button>
-                <div className={styles.topExpandedTextBlock}>
-                  <div className={styles.topExpandedMain}>{`Option ${topOptionIndex + 1}`}</div>
-                  <div className={styles.topExpandedSub}>{topOptions[topOptionIndex]}</div>
+            <div className={styles.footerLeft}>
+              <button type="button" className={`${styles.footerButton} ${styles.topButton}`} disabled>
+                TOP
+              </button>
+              <div className={styles.desktopPanelContent}>
+                <div className={styles.desktopMainColumn}>
+                  <TopAccordion variant="desktop" />
+                  <div className={styles.desktopFutureRow}>
+                    {[0, 1, 2, 3].map(idx => (
+                      <div key={`top-future-${idx}`} className={styles.desktopFutureCell} />
+                    ))}
+                  </div>
                 </div>
-                <button type="button" className={styles.topExpandedArrowsBtn} onClick={cycleTopNext}>
-                  <img src={ArrowRight} alt="Next" width={22} height={30} />
-                </button>
-              </div>
-            </div>
-            <div className={styles.topExpandedRight}>
-              <div className={styles.topExpandedColorsInner}>
-                <button
-                  type="button"
-                  className={styles.colorArrowBtn}
-                  onClick={() => setBaseColorIndex(i => (i + basePalette.length - 1) % basePalette.length)}
-                >
-                  <img src={ArrowLeft} alt="Prev Palette" width={22} height={30} />
-                </button>
-                <div className={styles.colorCircles}>
-                  {shades.map((shade, idx) => (
-                    <button
-                      key={shade+idx}
-                      type="button"
-                      className={styles.colorCircleBtnWrapper}
-                      onClick={() => setActiveShadeIndex(idx)}
-                    >
-                      <ColorBtn size={idx === activeShadeIndex ? 45 : 32} color={shade} active={idx === activeShadeIndex} />
+                <div className={`${styles.desktopSideBox} ${styles.desktopSizeBox}`}>
+                  <div className={`${styles.sizeArrows} ${styles.sizeArrowsFirst} ${styles.desktopSizeArrows}`}>
+                    <button type="button" className={styles.categoryArrowBtn} onClick={() => cycleSize(-1)}>
+                      <img src={ArrowUp} alt="Previous size" />
                     </button>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  className={styles.colorArrowBtn}
-                  onClick={() => setBaseColorIndex(i => (i + 1) % basePalette.length)}
-                >
-                  <img src={ArrowRight} alt="Next Palette" width={22} height={30} />
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-        {bottomExpandedFooter && (
-          <>
-            <div className={styles.topExpandedLeft}>
-              <div className={styles.topExpandedLeftInner}>
-                <button type="button" className={styles.topExpandedArrowsBtn} onClick={cycleTopPrev}>
-                  <img src={ArrowLeft} alt="Prev" width={22} height={30} />
-                </button>
-                <div className={styles.topExpandedTextBlock}>
-                  <div className={styles.topExpandedMain}>{`Option ${topOptionIndex + 1}`}</div>
-                  <div className={styles.topExpandedSub}>{topOptions[topOptionIndex]}</div>
-                </div>
-                <button type="button" className={styles.topExpandedArrowsBtn} onClick={cycleTopNext}>
-                  <img src={ArrowRight} alt="Next" width={22} height={30} />
-                </button>
-              </div>
-            </div>
-            <div className={styles.topExpandedRight}>
-              <div className={styles.topExpandedColorsInner}>
-                <button
-                  type="button"
-                  className={styles.colorArrowBtn}
-                  onClick={() => setBaseColorIndex(i => (i + basePalette.length - 1) % basePalette.length)}
-                >
-                  <img src={ArrowLeft} alt="Prev Palette" width={22} height={30} />
-                </button>
-                <div className={styles.colorCircles}>
-                  {shades.map((shade, idx) => (
-                    <button
-                      key={shade+idx}
-                      type="button"
-                      className={styles.colorCircleBtnWrapper}
-                      onClick={() => setActiveShadeIndex(idx)}
-                    >
-                      <ColorBtn size={idx === activeShadeIndex ? 45 : 32} color={shade} active={idx === activeShadeIndex} />
+                    <div className={styles.sizeDisplay}>
+                      <div className={styles.sizeSmall}>{sizeAbove}</div>
+                      <div className={styles.sizeMain}>{sizeMain}</div>
+                      <div className={styles.sizeSmall}>{sizeBelow}</div>
+                    </div>
+                    <button type="button" className={styles.categoryArrowBtn} onClick={() => cycleSize(1)}>
+                      <img src={ArrowDown} alt="Next size" />
                     </button>
-                  ))}
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  className={styles.colorArrowBtn}
-                  onClick={() => setBaseColorIndex(i => (i + 1) % basePalette.length)}
+                <div
+                  className={`${styles.desktopSideBox} ${styles.desktopCategoryBox} ${styles.desktopCategoryArrows}`}
                 >
-                  <img src={ArrowRight} alt="Next Palette" width={22} height={30} />
-                </button>
+                  <div
+                    className={`${styles.categoryArrows} ${styles.categoryArrowsFirst} ${styles.categoryArrowsCompact}`}
+                  >
+                    <button type="button" className={styles.categoryArrowBtn} onClick={() => cycleUpper(-1)}>
+                      <img src={ArrowUp} alt="Previous category" />
+                    </button>
+                    <div
+                      className={`${styles.categoryTextGroup} ${styles.categoryTextGroupFirst} ${styles.categoryTextGroupCompact} ${styles.desktopCategoryTextGroup}`}
+                    >
+                      <div className={styles.categoryTextTop}>{upperTop}</div>
+                      <div className={styles.categoryTextMain}>{upperMain}</div>
+                      <div className={styles.categoryTextBottom}>{upperBottom}</div>
+                    </div>
+                    <button type="button" className={styles.categoryArrowBtn} onClick={() => cycleUpper(1)}>
+                      <img src={ArrowDown} alt="Next category" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className={styles.footerRight}>
+              <button type="button" className={`${styles.footerButton} ${styles.botButton}`} disabled>
+                BOTTOM
+              </button>
+              <div className={styles.desktopPanelContent}>
+                <div className={styles.desktopMainColumn}>
+                  <BottomAccordion variant="desktop" />
+                  <div className={styles.desktopFutureRow}>
+                    {[0, 1, 2, 3].map(idx => (
+                      <div key={`bottom-future-${idx}`} className={styles.desktopFutureCell} />
+                    ))}
+                  </div>
+                </div>
+                <div className={`${styles.desktopSideBox} ${styles.desktopSizeBox}`}>
+                  <div className={`${styles.sizeArrows} ${styles.sizeArrowsFirst} ${styles.desktopSizeArrows}`}>
+                    <button type="button" className={styles.categoryArrowBtn} onClick={() => cycleBottomSize(-1)}>
+                      <img src={ArrowUp} alt="Previous size" />
+                    </button>
+                    <div className={styles.sizeDisplayBottom}>
+                      <div className={styles.sizeSmallBottom}>
+                        W{bottomSizeAbove.w}
+                        <br />
+                        L{bottomSizeAbove.l}
+                      </div>
+                      <div className={styles.sizeMainBottom}>
+                        W{bottomSizeMain.w}
+                        <br />
+                        L{bottomSizeMain.l}
+                      </div>
+                      <div className={styles.sizeSmallBottom}>
+                        W{bottomSizeBelow.w}
+                        <br />
+                        L{bottomSizeBelow.l}
+                      </div>
+                    </div>
+                    <button type="button" className={styles.categoryArrowBtn} onClick={() => cycleBottomSize(1)}>
+                      <img src={ArrowDown} alt="Next size" />
+                    </button>
+                  </div>
+                </div>
+                <div
+                  className={`${styles.desktopSideBox} ${styles.desktopCategoryBox} ${styles.desktopCategoryArrows}`}
+                >
+                  <div className={`${styles.categoryArrows} ${styles.categoryArrowsFirst}`}>
+                    <button type="button" className={styles.categoryArrowBtn} onClick={() => cycleLower(-1)}>
+                      <img src={ArrowUp} alt="Previous category" />
+                    </button>
+                    <div
+                      className={`${styles.categoryTextGroup} ${styles.categoryTextGroupFirst} ${styles.desktopCategoryTextGroup}`}
+                    >
+                      <div className={styles.categoryTextTop}>{lowerTop}</div>
+                      <div className={styles.categoryTextMain}>{lowerMain}</div>
+                      <div className={styles.categoryTextBottom}>{lowerBottom}</div>
+                    </div>
+                    <button type="button" className={styles.categoryArrowBtn} onClick={() => cycleLower(1)}>
+                      <img src={ArrowDown} alt="Next category" />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </>
-        )}
-        {!topExpandedFooter && !bottomExpandedFooter && !fullBodyMode && (
-          <div className={styles.footerLeft}>
-            <div className={styles.titleBox}>{bottomOpen ? 'FALCON LEATHER AVIATOR PANTS' : 'FALCON LEATHER AVIATOR JACKET'}</div>
-            <button
-              type="button"
-            className={`${styles.footerButton} ${styles.topButton}`}
-            onClick={() => {
-              setTopOpen(o => !o)
-              if (bottomOpen) setBottomOpen(false)
-              setTopExpandedFooter(t => !t)
-              if (bottomExpandedFooter) setBottomExpandedFooter(false)
-            }}
-          >TOP</button>
-          </div>
-        )}
-        {!topExpandedFooter && !bottomExpandedFooter && !fullBodyMode && (
-          <div className={styles.footerRight}>
-            <button
-              type="button"
-              className={`${styles.footerButton} ${styles.botButton}`}
-              onClick={() => {
-                setBottomOpen(o => !o)
-                if (topOpen) setTopOpen(false)
-                setBottomExpandedFooter(b => !b)
-                if (topExpandedFooter) setTopExpandedFooter(false)
-              }}
-            >BOT</button>
-            <div className={styles.infoBox}>BOSS DYN 01</div>
-          </div>
+        ) : (
+          <>
+            {fullBodyMode && !topExpandedFooter && !bottomExpandedFooter && (
+              <>
+                <div className={styles.footerFullBodyTitle}>FALCON LEATHER AVIATOR JACKET</div>
+                <div className={styles.footerFullBodyLabel}>FULL BODY</div>
+              </>
+            )}
+            {topExpandedFooter && (
+              <>
+                <div className={styles.topExpandedLeft}>
+                  <div className={styles.topExpandedLeftInner}>
+                    <button type="button" className={styles.topExpandedArrowsBtn} onClick={cycleTopPrev}>
+                      <img src={ArrowLeft} alt="Prev" width={22} height={30} />
+                    </button>
+                    <div className={styles.topExpandedTextBlock}>
+                      <div className={styles.topExpandedMain}>{`Option ${topOptionIndex + 1}`}</div>
+                      <div className={styles.topExpandedSub}>{topOptions[topOptionIndex]}</div>
+                    </div>
+                    <button type="button" className={styles.topExpandedArrowsBtn} onClick={cycleTopNext}>
+                      <img src={ArrowRight} alt="Next" width={22} height={30} />
+                    </button>
+                  </div>
+                </div>
+                <div className={styles.topExpandedRight}>
+                  <div className={styles.topExpandedColorsInner}>
+                    <button
+                      type="button"
+                      className={styles.colorArrowBtn}
+                      onClick={() => setBaseColorIndex(i => (i + basePalette.length - 1) % basePalette.length)}
+                    >
+                      <img src={ArrowLeft} alt="Prev Palette" width={22} height={30} />
+                    </button>
+                    <div className={styles.colorCircles}>
+                      {shades.map((shade, idx) => (
+                        <button
+                          key={shade+idx}
+                          type="button"
+                          className={styles.colorCircleBtnWrapper}
+                          onClick={() => setActiveShadeIndex(idx)}
+                        >
+                          <ColorBtn size={idx === activeShadeIndex ? 45 : 32} color={shade} active={idx === activeShadeIndex} />
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.colorArrowBtn}
+                      onClick={() => setBaseColorIndex(i => (i + 1) % basePalette.length)}
+                    >
+                      <img src={ArrowRight} alt="Next Palette" width={22} height={30} />
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+            {bottomExpandedFooter && (
+              <>
+                <div className={styles.topExpandedLeft}>
+                  <div className={styles.topExpandedLeftInner}>
+                    <button type="button" className={styles.topExpandedArrowsBtn} onClick={cycleTopPrev}>
+                      <img src={ArrowLeft} alt="Prev" width={22} height={30} />
+                    </button>
+                    <div className={styles.topExpandedTextBlock}>
+                      <div className={styles.topExpandedMain}>{`Option ${topOptionIndex + 1}`}</div>
+                      <div className={styles.topExpandedSub}>{topOptions[topOptionIndex]}</div>
+                    </div>
+                    <button type="button" className={styles.topExpandedArrowsBtn} onClick={cycleTopNext}>
+                      <img src={ArrowRight} alt="Next" width={22} height={30} />
+                    </button>
+                  </div>
+                </div>
+                <div className={styles.topExpandedRight}>
+                  <div className={styles.topExpandedColorsInner}>
+                    <button
+                      type="button"
+                      className={styles.colorArrowBtn}
+                      onClick={() => setBaseColorIndex(i => (i + basePalette.length - 1) % basePalette.length)}
+                    >
+                      <img src={ArrowLeft} alt="Prev Palette" width={22} height={30} />
+                    </button>
+                    <div className={styles.colorCircles}>
+                      {shades.map((shade, idx) => (
+                        <button
+                          key={shade+idx}
+                          type="button"
+                          className={styles.colorCircleBtnWrapper}
+                          onClick={() => setActiveShadeIndex(idx)}
+                        >
+                          <ColorBtn size={idx === activeShadeIndex ? 45 : 32} color={shade} active={idx === activeShadeIndex} />
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.colorArrowBtn}
+                      onClick={() => setBaseColorIndex(i => (i + 1) % basePalette.length)}
+                    >
+                      <img src={ArrowRight} alt="Next Palette" width={22} height={30} />
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+            {!topExpandedFooter && !bottomExpandedFooter && !fullBodyMode && (
+              <div className={styles.footerLeft}>
+                <div className={styles.titleBox}>{bottomOpen ? 'FALCON LEATHER AVIATOR PANTS' : 'FALCON LEATHER AVIATOR JACKET'}</div>
+                <button
+                  type="button"
+                  className={`${styles.footerButton} ${styles.topButton}`}
+                  onClick={() => {
+                    setTopOpen(o => !o)
+                    if (bottomOpen) setBottomOpen(false)
+                    setTopExpandedFooter(t => !t)
+                    if (bottomExpandedFooter) setBottomExpandedFooter(false)
+                  }}
+                >TOP</button>
+              </div>
+            )}
+            {!topExpandedFooter && !bottomExpandedFooter && !fullBodyMode && (
+              <div className={styles.footerRight}>
+                <button
+                  type="button"
+                  className={`${styles.footerButton} ${styles.botButton}`}
+                  onClick={() => {
+                    setBottomOpen(o => !o)
+                    if (topOpen) setTopOpen(false)
+                    setBottomExpandedFooter(b => !b)
+                    if (topExpandedFooter) setTopExpandedFooter(false)
+                  }}
+                >BOT</button>
+                <div className={styles.infoBox}>BOSS DYN 01</div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
