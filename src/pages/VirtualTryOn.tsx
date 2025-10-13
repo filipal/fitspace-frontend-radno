@@ -31,10 +31,12 @@ import HomeButton from '../assets/home-button.svg?react'
 import TopAccordion from '../components/TopAccordion/TopAccordion'
 import BottomAccordion from '../components/BottomAccordion/BottomAccordion'
 import CartButton from '../assets/cart-button.svg'
+import AddToCartIcon from '../assets/add-to-cart.svg'
 import FullBodyButton from '../assets/full-body-button.svg'
 import TopBotButton from '../assets/top-bot-button.svg'
 import AnimationButton from '../assets/animation-button.svg'
 import HeatMapButton from '../assets/heat-map-button.svg'
+import TensionMapButton from '../assets/tension-map-button.svg'
 import ArrowUp from '../assets/arrow-up.svg'
 import ArrowDown from '../assets/arrow-down.svg'
 import HoodieImg from '../assets/hoodie.png'
@@ -807,7 +809,27 @@ export default function VirtualTryOn() {
               <BottomAccordion variant="desktop" />
             )}
           </div>
-          <div className={styles.desktopFooterLeftBottom} />
+          <div className={styles.desktopFooterLeftBottom}>
+            {focus === 'top' ? (
+              <div className={styles.desktopFooterTopDetails}>
+                <div className={styles.desktopFooterPriceGroup} aria-label="Price and cart">
+                  <div className={styles.desktopFooterPrice} aria-label="Price">
+                    $ 459
+                  </div>
+                  <img
+                    className={styles.desktopFooterAddToCart}
+                    src={AddToCartIcon}
+                    alt="Add to cart"
+                  />
+                </div>
+                <div className={styles.desktopFooterModelGroup} aria-label="Model details">
+                  <span className={styles.desktopFooterModel}>FALCON LEATHER</span>
+                  <span className={styles.desktopFooterProduct}>AVIATOR JACKET</span>
+                  <span className={styles.desktopFooterBrand}>Pando Moto</span>
+                </div>
+              </div>
+            ) : null}
+          </div>
         </div>
         <div className={styles.desktopFooterRight}>
           <div className={styles.desktopFooterRightTop}>
@@ -948,7 +970,7 @@ export default function VirtualTryOn() {
               <img src={AnimationButton} alt="Animation" />
             </button>
             <button type="button" className={styles.heatMapFloating}>
-              <img src={HeatMapButton} alt="Heat Map" />
+              <img src={isDesktop ? TensionMapButton : HeatMapButton} alt="Tension Map" />
             </button>
 
             {/* Full body overlay (simplified) */}
