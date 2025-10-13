@@ -36,12 +36,14 @@ export default function LoggedInPage() {
 
   // 1) Na mount: očisti “zadnje učitan” i lokalni state
   useEffect(() => {
-  try {
-    sessionStorage.removeItem(LAST_LOADED_AVATAR_STORAGE_KEY)
-  } catch {}
-  setLoadedAvatarId(null)
-  setSelectedAvatarId(null)
-}, [])
+    try {
+      sessionStorage.removeItem(LAST_LOADED_AVATAR_STORAGE_KEY)
+    } catch (error) {
+      console.warn('Failed to clear last loaded avatar key', error)
+    }
+    setLoadedAvatarId(null)
+    setSelectedAvatarId(null)
+  }, [])
 
   // 2) Ako nema avatara u memoriji konteksta, dovuci listu
   useEffect(() => {

@@ -1,24 +1,21 @@
-interface OidcProfile {
-  sub?: string
-  iat?: number
-  auth_time?: number
-  email?: string
-  email_verified?: boolean
-  phone_number?: string
-  phone_number_verified?: boolean
-  token_use?: string
-  aud?: string
-  iss?: string
-  [key: string]: unknown
+import type { User } from 'oidc-client-ts'
+
+type NumericClaim = number | string | undefined
+type StringClaim = string | undefined | null
+
+function toTimestamp(claim: NumericClaim): number | undefined {
+  if (typeof claim === 'number') {
+    return claim
+  }
+  if (typeof claim === 'string') {
+    const parsed = Number(claim)
+    return Number.isFinite(parsed) ? parsed : undefined
+  }
+  return undefined
 }
 
-interface OidcUser {
-  profile?: OidcProfile | null
-  id_token?: string
-  access_token?: string
-  refresh_token?: string
-  token_type?: string
-  expires_at?: number
+function toStringClaim(claim: StringClaim | unknown): string | undefined {
+  return typeof claim === 'string' ? claim : undefined
 }
 
 export interface AuthInfo {
@@ -45,7 +42,7 @@ export interface AuthInfo {
   
   // Token metadata
   tokenUse?: string
-  audience?: string
+  audience?: string | string[]
   issuer?: string
   
   // Status
@@ -77,7 +74,7 @@ export function decodeJWT(token: string) {
  * Extract authentication information from react-oidc-context User object
  * This is equivalent to AWS Amplify's Auth.currentAuthenticatedUser() and Auth.currentSession()
  */
-export function getAuthInfo(user: OidcUser | null | undefined, isAuthenticated: boolean): AuthInfo {
+export function getAuthInfo(user: User | null | undefined, isAuthenticated: boolean): AuthInfo {
   if (!isAuthenticated || !user) {
     return { isAuthenticated: false }
   }
@@ -102,9 +99,18 @@ export function getAuthInfo(user: OidcUser | null | undefined, isAuthenticated: 
       sessionId: sessionId,  // JWT ID from ACCESS TOKEN (not ID token)
       
       // Session timing information
-      issuedAt: profile?.iat ? new Date(profile.iat * 1000).toISOString() : undefined,
-      expiresAt: user.expires_at ? new Date(user.expires_at * 1000).toISOString() : undefined,
-      authTime: profile?.auth_time ? new Date(profile.auth_time * 1000).toISOString() : undefined,
+      issuedAt: (() => {
+        const claim = toTimestamp(profile?.iat)
+        return claim ? new Date(claim * 1000).toISOString() : undefined
+      })(),
+      expiresAt: (() => {
+        const claim = toTimestamp(user.expires_at)
+        return claim ? new Date(claim * 1000).toISOString() : undefined
+      })(),
+      authTime: (() => {
+        const claim = toTimestamp(profile?.auth_time)
+        return claim ? new Date(claim * 1000).toISOString() : undefined
+      })(),
       
       // Profile information
       email: profile?.email,
@@ -119,9 +125,9 @@ export function getAuthInfo(user: OidcUser | null | undefined, isAuthenticated: 
       tokenType: user.token_type,
       
       // Token metadata
-      tokenUse: profile?.token_use,  // 'id' for ID token, 'access' for access token
+      tokenUse: toStringClaim(profile?.token_use),  // 'id' for ID token, 'access' for access token
       audience: profile?.aud,  // Client ID that the token was issued for
-      issuer: profile?.iss,  // Cognito issuer URL
+      issuer: toStringClaim(profile?.iss),  // Cognito issuer URL
     }
   } catch (error) {
     console.error('Error extracting auth info:', error)

@@ -40,10 +40,11 @@ export default function FaceScan({ onClose }: { onClose?: () => void }) {
     }
   }, [isMobile, navigate]);
 
-  if (!isMobile) return null; // spriječi flicker
-
   // Resetira naslijeđeni scroll + isključi auto-restoration
   useEffect(() => {
+    if (!isMobile) {
+      return
+    }
     const browserHistory = window.history;
     const prev = browserHistory.scrollRestoration ?? 'auto';
     if ('scrollRestoration' in browserHistory) {
@@ -68,12 +69,15 @@ export default function FaceScan({ onClose }: { onClose?: () => void }) {
       document.documentElement.style.overflow = prevHtmlOverflow;
       document.body.style.overscrollBehaviorY = prevBodyOverscroll;
     };
-  }, []);
+  }, [isMobile]);
 
   // Pokreni audio prilikom mounta komponente samo jednom. Ovaj efekt ne
   // ovisi o promjenama `soundEnabled`, nego koristi početnu vrijednost
   // spremljenu u referenci kako bi izbjegao zastarjele vrijednosti.
   useEffect(() => {
+    if (!isMobile) {
+      return
+    }
     const audioEl = audioRef.current
     if (audioEl && initialSoundEnabled.current) {
       audioEl.currentTime = 0
@@ -103,10 +107,13 @@ export default function FaceScan({ onClose }: { onClose?: () => void }) {
         }
       }
     }
-  }, [])
+  }, [isMobile])
 
   // Pauziraj/pokreni audio kad se promijeni soundEnabled
   useEffect(() => {
+    if (!isMobile) {
+      return
+    }
     const audio = audioRef.current
     if (audio) {
       if (soundEnabled) {
@@ -156,10 +163,13 @@ export default function FaceScan({ onClose }: { onClose?: () => void }) {
         }
       }
     }
-  }, [soundEnabled])
+  }, [isMobile, soundEnabled])
 
   // Countdown logika (neovisna o zvuku)
   useEffect(() => {
+    if (!isMobile) {
+      return
+    }
     let timer: number
     if (scanPhase === 'countdown' && countdown > 0) {
       timer = window.setTimeout(() => setCountdown(countdown - 1), 1000)
@@ -167,7 +177,7 @@ export default function FaceScan({ onClose }: { onClose?: () => void }) {
       timer = window.setTimeout(() => setScanPhase('completed'), 1000)
     }
     return () => clearTimeout(timer)
-  }, [scanPhase, countdown])
+  }, [countdown, isMobile, scanPhase])
 
   const startScan = async () => {
     setCameraError(null)
@@ -228,11 +238,16 @@ export default function FaceScan({ onClose }: { onClose?: () => void }) {
   }
 
   useEffect(() => {
+    if (!isMobile) {
+      return
+    }
     return () => {
       const tracks = streamRef.current?.getTracks()
       tracks?.forEach(track => track.stop())
     }
-  }, [])
+  }, [isMobile])
+
+  if (!isMobile) return null; // spriječi flicker
 
   const placeholderImage = orientation === 'front' ? frontImg : sideImg
   const title = orientation === 'front' ? 'Front Face Scan' : 'Side Face Scan'
