@@ -798,7 +798,7 @@ $design-w: 430; /* jedan izvor istine */
 
 @include s.respond(lg) { /* (po potrebi) */ }
 
-@media (min-width: 600px) {
+@media (min-width: 600px) and (max-width: 1023px) {
   .page [data-app-header] {
     height: var(--header-real-h, calc(var(--header-h, 101) * 1px)) !important;
     min-height: var(--header-real-h, calc(var(--header-h, 101) * 1px)) !important;
