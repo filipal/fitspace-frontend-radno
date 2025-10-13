@@ -7,6 +7,7 @@ import styles from './BodyAccordion.module.scss'
 import { useAvatarApi } from '../../services/avatarApi';
 import { getBackendKeyForMorphId } from '../../services/avatarTransformationService';
 import type { BasicMeasurements, BodyMeasurements } from '../../context/AvatarConfigurationContext';
+import { getAvatarDisplayName } from '../../utils/avatarName';
 
 export type Avatar = {
   avatarId: string;
@@ -133,19 +134,7 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
 
     const v = Math.max(0, Math.min(100, Math.round(percent)))
 
-    const readLegacyName = (obj: unknown): string | undefined => {
-      if (obj && typeof obj === 'object' && 'name' in obj) {
-        const n = (obj as Record<string, unknown>).name
-        return typeof n === 'string' ? n : undefined
-      }
-      return undefined
-    }
-
-
-    const safeName =
-      avatar?.avatarName ??
-      readLegacyName(avatar) ??
-      'Avatar'
+    const safeName = getAvatarDisplayName(avatar)
 
     const safeAgeRange = avatar?.ageRange ?? ''
 

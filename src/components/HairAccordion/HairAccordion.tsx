@@ -11,6 +11,7 @@ import { useAvatarApi } from '../../services/avatarApi'
 import { useAvatarConfiguration } from '../../context/AvatarConfigurationContext'
 import { usePixelStreaming } from '../../context/PixelStreamingContext'
 import { useQueuedUnreal } from '../../services/queuedUnreal'
+import { getAvatarDisplayName } from '../../utils/avatarName'
 
 // Paleta boja kose
 const HAIR_COLORS = [
@@ -90,7 +91,7 @@ export default function HairAccordion() {
     const avatarId = currentAvatar?.avatarId
     if (!avatarId) return
 
-    const safeName = currentAvatar?.avatarName ?? (currentAvatar as any)?.name ?? 'Avatar'
+    const safeName = getAvatarDisplayName(currentAvatar)
     const safeAgeRange = currentAvatar?.ageRange ?? ''
 
     try {

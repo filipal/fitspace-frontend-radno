@@ -46,6 +46,7 @@ import ExtrasAccordion from '../components/ExtrasAccordion/ExtrasAccordion'
 import styles from './UnrealMeasurements.module.scss'
 
 import { estimateMissingMeasurements } from '../services/anthroEstimator'
+import { getAvatarDisplayName } from '../utils/avatarName'
 
 interface ControlButton {
   key: string
@@ -247,7 +248,7 @@ export default function UnrealMeasurements() {
     )
     return {
       avatarId: String(currentAvatar.avatarId),
-      avatarName: currentAvatar.avatarName ?? (currentAvatar as any)?.name,
+      avatarName: getAvatarDisplayName(currentAvatar),
       gender:
         currentAvatar.gender === 'female'
           ? 'female'
@@ -300,8 +301,8 @@ export default function UnrealMeasurements() {
     return sessionStorage.getItem(LAST_LOADED_AVATAR_STORAGE_KEY)
   }, [avatarIdFromState])
 
-  const computedFallbacks = useMemo(() => {
-    if (!currentAvatar) return {} as Record<string, number>
+  const computedFallbacks = useMemo<Record<string, number>>(() => {
+    if (!currentAvatar) return {}
 
     const sex = currentAvatar.gender === 'female' ? 'female' : 'male'
     const athletic =
@@ -322,27 +323,38 @@ export default function UnrealMeasurements() {
     }
 
     const chest = toNum(
-      (bodyMeasurements as any).chest ?? (quickModeMeasurements as any).chest ?? (quickModeMeasurements as any).bustCircumference
+      bodyMeasurements.chest ??
+      quickModeMeasurements.chest ??
+      quickModeMeasurements['bustCircumference']
     )
     const waist = toNum(
-      (bodyMeasurements as any).waist ?? (quickModeMeasurements as any).waist ?? (quickModeMeasurements as any).waistCircumference
+      bodyMeasurements.waist ??
+      quickModeMeasurements.waist ??
+      quickModeMeasurements['waistCircumference']
     )
     const lowHip = toNum(
-      (bodyMeasurements as any).lowHip ?? (quickModeMeasurements as any).lowHip ?? (quickModeMeasurements as any).lowHipCircumference
+      bodyMeasurements.lowHip ??
+      quickModeMeasurements.lowHip ??
+      quickModeMeasurements['lowHipCircumference']
     )
 
     const known = {
-      height: toNum((basicMeasurements as any).height),
-      weight: toNum((basicMeasurements as any).weight),
+      height: toNum(basicMeasurements.height),
+      weight: toNum(basicMeasurements.weight),
       chest,
       waist,
       lowHip,
-      underchest: toNum((bodyMeasurements as any).underchest ?? (quickModeMeasurements as any).underchest),
+      underchest: toNum(bodyMeasurements.underchest ?? quickModeMeasurements.underchest),
     }
 
     const estimated = estimateMissingMeasurements(sex, known, athletic)
-    // Vratimo kao običan record da ga lako “indeksiramo” po descriptor.key
-    return estimated as Record<string, number>
+    const normalized = Object.entries(estimated ?? {}).reduce<Record<string, number>>((acc, [key, value]) => {
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        acc[key] = value
+      }
+      return acc
+    }, {})
+    return normalized
   }, [currentAvatar])
 
   const persistMorphTargets = useCallback(async (): Promise<boolean> => {
@@ -591,17 +603,18 @@ export default function UnrealMeasurements() {
     }
 
     const findMeasurementValue = (
-      source: Record<string, unknown> | undefined,
+      source: unknown,
       descriptorKey: string,
     ): number | null => {
-      if (!source) return null
-      const directValue = resolveNumericValue((source as any)[descriptorKey])
+      if (!source || typeof source !== 'object') return null
+      const record = source as Record<string, unknown>
+      const directValue = resolveNumericValue(record[descriptorKey])
       if (directValue != null) return directValue
 
       const normalizedTargetKey = normalizeMeasurementKey(descriptorKey)
       if (!normalizedTargetKey) return null
 
-      for (const [candidateKey, candidateValue] of Object.entries(source)) {
+      for (const [candidateKey, candidateValue] of Object.entries(record)) {
         if (normalizeMeasurementKey(candidateKey) === normalizedTargetKey) {
           const numericValue = resolveNumericValue(candidateValue)
           if (numericValue != null) return numericValue
@@ -612,18 +625,19 @@ export default function UnrealMeasurements() {
 
     return MEASUREMENT_DESCRIPTORS.map(descriptor => {
       // 1) Primarni iz basic/body
+      const descriptorKey = String(descriptor.key)
       const primaryValue = descriptor.source === 'basic'
-        ? findMeasurementValue(basicMeasurements as Record<string, unknown>, descriptor.key)
-        : findMeasurementValue(bodyMeasurements as Record<string, unknown>, descriptor.key)
+        ? findMeasurementValue(basicMeasurements, descriptorKey)
+        : findMeasurementValue(bodyMeasurements, descriptorKey)
 
       // 2) Fallback iz quickMode settings
       const fallbackValue = findMeasurementValue(
-        quickModeMeasurements as Record<string, unknown> | undefined,
-        descriptor.key,
+        quickModeMeasurements,
+        descriptorKey,
       )
 
       // 3) Heuristički fallback iz estimator-a
-      const computed = (computedFallbacks as Record<string, number | undefined>)[descriptor.key]
+      const computed = computedFallbacks[descriptorKey]
       const numericValue = primaryValue ?? fallbackValue ?? (computed ?? null)
       const value = numericValue != null ? formatNumber(numericValue) : '—'
 

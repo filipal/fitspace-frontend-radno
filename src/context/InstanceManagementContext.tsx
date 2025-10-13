@@ -76,9 +76,9 @@ export function InstanceManagementProvider({ children }: InstanceManagementProvi
   }, [])
 
   useEffect(() => {
-    ;(window as any).addFitspaceDebugMessage = addDebugMessage
+    window.addFitspaceDebugMessage = addDebugMessage
     return () => {
-      delete (window as any).addFitspaceDebugMessage
+      delete window.addFitspaceDebugMessage
     }
   }, [addDebugMessage])
 

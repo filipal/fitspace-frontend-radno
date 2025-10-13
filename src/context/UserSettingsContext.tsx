@@ -11,9 +11,24 @@ interface UserSettingsProviderProps {
 /**
  * Detect if the current device is mobile based on screen size and user agent
  */
+const getLegacyOperaUserAgent = (): string => {
+  if (typeof window === 'undefined') {
+    return ''
+  }
+
+  const candidate = (window as Window & { opera?: unknown }).opera
+  if (typeof candidate === 'string') {
+    return candidate
+  }
+  if (candidate && typeof candidate === 'object' && 'toString' in candidate && typeof candidate.toString === 'function') {
+    return candidate.toString()
+  }
+  return ''
+}
+
 function detectMobileDevice(): boolean {
   // Check user agent for mobile indicators
-  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera // eslint-disable-line @typescript-eslint/no-explicit-any
+  const userAgent = navigator.userAgent || navigator.vendor || getLegacyOperaUserAgent()
   const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i
   const isMobileUserAgent = mobileRegex.test(userAgent.toLowerCase())
   

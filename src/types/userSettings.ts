@@ -6,8 +6,7 @@ export interface Resolution {
 export interface Measurements {
   // Placeholder for future backend data
   // Will be populated when backend is ready
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export interface UserSettings {

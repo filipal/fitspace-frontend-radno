@@ -10,6 +10,7 @@ import { useAvatarApi } from '../../services/avatarApi'
 import { useAvatarConfiguration } from '../../context/AvatarConfigurationContext'
 import { usePixelStreaming } from '../../context/PixelStreamingContext'
 import { useQueuedUnreal } from '../../services/queuedUnreal'
+import { getAvatarDisplayName } from '../../utils/avatarName'
 
 interface SkinAccordionProps {
   defaultRightExpanded?: boolean
@@ -142,8 +143,7 @@ const sendQueued = useQueuedUnreal(sendFittingRoomCommand, simpleState /*, 50 */
     if (!avatarId) return
 
     // Siguran payload (fallbackovi za TS)
-    const safeName =
-      currentAvatar?.avatarName ?? (currentAvatar as any)?.name ?? 'Avatar'
+    const safeName = getAvatarDisplayName(currentAvatar)
     const safeAgeRange = currentAvatar?.ageRange ?? ''
 
     try {

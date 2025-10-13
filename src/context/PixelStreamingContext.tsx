@@ -3,12 +3,69 @@ import {
   Config,
   PixelStreaming
 } from '@epicgames-ps/lib-pixelstreamingfrontend-ue5.6';
-import { 
-  Application, 
-  PixelStreamingApplicationStyle 
+import {
+  Application,
+  PixelStreamingApplicationStyle
 } from '@epicgames-ps/lib-pixelstreamingfrontend-ui-ue5.6';
 import type { AllSettings } from '@epicgames-ps/lib-pixelstreamingfrontend-ue5.6/dist/types/Config/Config';
 import { getPixelStreamingConfig } from '../config/pixelStreamingConfig';
+import { getNetworkInformation } from '../utils/networkInfo';
+
+declare global {
+  interface Window {
+    addFitspaceDebugMessage?: (message: unknown) => void;
+    forceResolutionMatch?: () => void;
+  }
+}
+
+interface PixelStreamingConfigLike {
+  settingsPanel?: {
+    isVisible?: boolean;
+    show?: () => void;
+    hide?: () => void;
+    _rootElement?: Element | null;
+  };
+  _settingsObj?: (Partial<AllSettings> & Record<string, unknown>) | null;
+  setStreamingSettings?: (settings: Partial<AllSettings>) => void;
+  setEncoderSettings?: (settings: Partial<AllSettings>) => void;
+  updateAllSettings?: () => void;
+  applySettings?: () => void;
+  [key: string]: unknown;
+}
+
+interface WebSocketControllerLike {
+  webSocket?: WebSocket | null;
+  _webSocket?: WebSocket | null;
+  onopen?: (event: Event) => void;
+  onclose?: (event: CloseEvent) => void;
+  onerror?: (event: Event) => void;
+  onmessage?: (event: MessageEvent) => void;
+  _fitspaceMonitoringSetup?: boolean;
+}
+
+interface DataChannelControllerLike {
+  dataChannel?: RTCDataChannel | null;
+}
+
+interface WebRtcControllerLike {
+  _peerConnection?: RTCPeerConnection | null;
+  sendrecvDataChannelController?: DataChannelControllerLike | null;
+}
+
+interface PixelStreamingInternals extends PixelStreaming {
+  config?: PixelStreamingConfigLike;
+  _webSocketController?: WebSocketControllerLike | null;
+  _webRtcController?: WebRtcControllerLike | null;
+  _application?: Application | null;
+}
+
+const getStreamInternals = (instance: PixelStreaming | null): PixelStreamingInternals | null => {
+  return instance ? (instance as PixelStreamingInternals) : null;
+};
+
+const getStreamConfig = (instance: PixelStreaming | null): PixelStreamingConfigLike | undefined => {
+  return getStreamInternals(instance)?.config ?? undefined;
+};
 
 // Get platform-specific default settings
 const defaultSettings: Partial<AllSettings> = {
@@ -34,6 +91,8 @@ export interface FittingRoomCommand {
 }
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error';
+
+type MessageHandler = (message: unknown) => void;
 
 interface PixelStreamingContextType {
   // Settings management
@@ -77,8 +136,8 @@ interface PixelStreamingContextType {
   forceResolutionMatch: () => void;
 
   // Message handling
-  onMessageReceived: (handler: (message: any) => void) => void;
-  removeMessageHandler: (handler: (message: any) => void) => void;
+  onMessageReceived: (handler: (message: unknown) => void) => void;
+  removeMessageHandler: (handler: (message: unknown) => void) => void;
 }
 
 const PixelStreamingContext = createContext<PixelStreamingContextType | undefined>(undefined);
@@ -115,13 +174,13 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
   const connectInFlightRef = React.useRef(false);
 
   // Message handlers
-  const [messageHandlers, setMessageHandlers] = useState<Set<(message: any) => void>>(new Set());
+  const [messageHandlers, setMessageHandlers] = useState<Set<MessageHandler>>(new Set());
 
-  const onMessageReceived = useCallback((handler: (message: any) => void) => {
+  const onMessageReceived = useCallback((handler: MessageHandler) => {
     setMessageHandlers(prev => new Set([...prev, handler]));
   }, []);
 
-  const removeMessageHandler = useCallback((handler: (message: any) => void) => {
+  const removeMessageHandler = useCallback((handler: MessageHandler) => {
     setMessageHandlers(prev => {
       const newSet = new Set(prev);
       newSet.delete(handler);
@@ -129,7 +188,7 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
     });
   }, []);
 
-  const notifyMessageHandlers = useCallback((message: any) => {
+  const notifyMessageHandlers = useCallback((message: unknown) => {
     messageHandlers.forEach(handler => {
       try {
         handler(message);
@@ -247,8 +306,8 @@ const connect = useCallback(async (overrideUrl?: string) => {
     // Helper function to add debug messages (try to use global debug if available)
     const addDebugMsg = (message: string) => {
       console.log(message);
-      if (typeof (window as any).addFitspaceDebugMessage === 'function') {
-        (window as any).addFitspaceDebugMessage(message);
+      if (typeof window.addFitspaceDebugMessage === 'function') {
+        window.addFitspaceDebugMessage(message);
       }
     };
 
@@ -270,11 +329,7 @@ const connect = useCallback(async (overrideUrl?: string) => {
       viewport: `${window.innerWidth}x${window.innerHeight}`,
       devicePixelRatio: window.devicePixelRatio,
       autoPlayVideo: effectiveSettings.AutoPlayVideo,
-      connection: (navigator as any).connection ? {
-        effectiveType: (navigator as any).connection.effectiveType,
-        downlink: (navigator as any).connection.downlink,
-        rtt: (navigator as any).connection.rtt
-      } : 'not available'
+      connection: getNetworkInformation(navigator) ?? 'not available'
     });
 
     // IZRAČUNAJ SETTINGS PRVO
@@ -323,41 +378,39 @@ const connect = useCallback(async (overrideUrl?: string) => {
       // This ensures that when users toggle settings in the debug overlay, they persist across reconnections
       const syncSettingsFromLibrary = () => {
         try {
-          // Access the config from the stream instance to get current settings
-          const currentConfig = (newStream as any).config;
-          if (currentConfig && currentConfig._settingsObj) {
-            const librarySettings = currentConfig._settingsObj;
-            
-            // ALWAYS ENFORCE MatchViewportRes to be true - never allow it to be false
-            if (librarySettings.MatchViewportRes !== true) {
-              console.log('🔧 Enforcing MatchViewportRes to always be true');
-              librarySettings.MatchViewportRes = true;
-              
-              // Also update UI if possible
-              if (currentConfig.setStreamingSettings) {
-                currentConfig.setStreamingSettings({ MatchViewportRes: true });
-              }
+          const currentConfig = getStreamConfig(newStream);
+          const librarySettings = currentConfig?._settingsObj;
+          if (!librarySettings || typeof librarySettings !== 'object') {
+            return;
+          }
+
+          const settingsObject = librarySettings as Partial<AllSettings> & Record<string, unknown>;
+
+          // ALWAYS ENFORCE MatchViewportRes to be true - never allow it to be false
+          if (settingsObject.MatchViewportRes !== true) {
+            console.log('🔧 Enforcing MatchViewportRes to always be true');
+            settingsObject.MatchViewportRes = true;
+
+            if (currentConfig?.setStreamingSettings) {
+              currentConfig.setStreamingSettings({ MatchViewportRes: true });
             }
-            
-            // Extract the settings we care about and update our context
-            const updatedSettings: Partial<AllSettings> = {};
-            
-            // Force MatchViewportRes to always be true in our context
-            updatedSettings.MatchViewportRes = true;
-            
-            if ('WebRTCFPS' in librarySettings) {
-              updatedSettings.WebRTCFPS = librarySettings.WebRTCFPS;
-            }
-            if ('AutoPlayVideo' in librarySettings) {
-              updatedSettings.AutoPlayVideo = librarySettings.AutoPlayVideo;
-            }
-            if ('StartVideoMuted' in librarySettings) {
-              updatedSettings.StartVideoMuted = librarySettings.StartVideoMuted;
-            }
-            
-            // Always update to ensure MatchViewportRes is enforced
-            console.log('🔄 Syncing settings from Epic Games UI (with enforced MatchViewportRes):', updatedSettings);
-            setSettings(prevSettings => ({ ...prevSettings, ...updatedSettings }));
+
+          const updatedSettings: Partial<AllSettings> = {
+            MatchViewportRes: true,
+          };
+
+          if ('WebRTCFPS' in settingsObject) {
+            updatedSettings.WebRTCFPS = settingsObject.WebRTCFPS as AllSettings['WebRTCFPS'];
+          }
+          if ('AutoPlayVideo' in settingsObject) {
+            updatedSettings.AutoPlayVideo = settingsObject.AutoPlayVideo as AllSettings['AutoPlayVideo'];
+          }
+          if ('StartVideoMuted' in settingsObject) {
+            updatedSettings.StartVideoMuted = settingsObject.StartVideoMuted as AllSettings['StartVideoMuted'];
+          }
+
+          console.log('🔄 Syncing settings from Epic Games UI (with enforced MatchViewportRes):', updatedSettings);
+          setSettings(prevSettings => ({ ...prevSettings, ...updatedSettings }));
           }
         } catch (error) {
           console.warn('Could not sync settings from Epic Games library:', error);
@@ -400,61 +453,62 @@ const connect = useCallback(async (overrideUrl?: string) => {
         // Force resolution check after connection
         setTimeout(() => {
           try {
-            const currentConfig = (newStream as any).config;
-            if (currentConfig?._settingsObj) {
-              console.log('🔧 Post-connection MatchViewportRes check:', currentConfig._settingsObj.MatchViewportRes);
-              
-              // Force it again if needed
-              if (!currentConfig._settingsObj.MatchViewportRes) {
-                console.log('⚠️ MatchViewportRes was false after connection, forcing to true');
-                currentConfig._settingsObj.MatchViewportRes = true;
-                if (currentConfig.setStreamingSettings) {
-                  currentConfig.setStreamingSettings({ MatchViewportRes: true });
-                }
-              }
-              
-              // Try the toggle simulation regardless of current state
-              console.log('🎯 Attempting to simulate manual toggle after connection...');
-              
-              // Inline version of forceResolutionMatch for post-connection
-              const simulateToggle = () => {
-                try {
-                  // Try to find and simulate the UI toggle
-                  const settingsPanel = (currentConfig as any).settingsPanel;
-                  if (settingsPanel && settingsPanel._rootElement) {
-                    const matchViewportControl = settingsPanel._rootElement.querySelector('input[data-setting="MatchViewportRes"]') ||
-                                               settingsPanel._rootElement.querySelector('input[id*="MatchViewportRes"]') ||
-                                               settingsPanel._rootElement.querySelector('input[name*="MatchViewportRes"]');
-                    
-                    if (matchViewportControl) {
-                      console.log('🎯 Found MatchViewportRes control post-connection, simulating toggle...');
-                      
-                      // Simulate the exact sequence: off -> on
-                      matchViewportControl.checked = false;
-                      matchViewportControl.dispatchEvent(new Event('change', { bubbles: true }));
-                      
-                      setTimeout(() => {
-                        matchViewportControl.checked = true;
-                        matchViewportControl.dispatchEvent(new Event('change', { bubbles: true }));
-                        matchViewportControl.dispatchEvent(new Event('input', { bubbles: true }));
-                        matchViewportControl.click();
-                        
-                        console.log('✅ Post-connection MatchViewportRes toggle completed');
-                        
-                        // Dispatch resize after toggle
-                        setTimeout(() => {
-                          window.dispatchEvent(new Event('resize'));
-                        }, 100);
-                      }, 100);
-                    }
-                  }
-                } catch (error) {
-                  console.warn('Could not simulate toggle post-connection:', error);
-                }
-              };
-              
-              simulateToggle();
+            const currentConfig = getStreamConfig(newStream);
+            const settingsObject = currentConfig?._settingsObj;
+            if (!settingsObject) {
+              return;
             }
+
+            console.log('🔧 Post-connection MatchViewportRes check:', settingsObject.MatchViewportRes);
+
+            if (settingsObject.MatchViewportRes !== true) {
+              console.log('⚠️ MatchViewportRes was false after connection, forcing to true');
+              settingsObject.MatchViewportRes = true;
+              currentConfig?.setStreamingSettings?.({ MatchViewportRes: true });
+            }
+
+            console.log('🎯 Attempting to simulate manual toggle after connection...');
+
+            const simulateToggle = () => {
+              try {
+                const settingsPanel = currentConfig?.settingsPanel;
+                const root = settingsPanel?._rootElement;
+                if (!root) {
+                  return;
+                }
+
+                const matchViewportControl =
+                  root.querySelector<HTMLInputElement>('input[data-setting="MatchViewportRes"]') ||
+                  root.querySelector<HTMLInputElement>('input[id*="MatchViewportRes"]') ||
+                  root.querySelector<HTMLInputElement>('input[name*="MatchViewportRes"]');
+
+                if (!matchViewportControl) {
+                  return;
+                }
+
+                console.log('🎯 Found MatchViewportRes control post-connection, simulating toggle...');
+
+                matchViewportControl.checked = false;
+                matchViewportControl.dispatchEvent(new Event('change', { bubbles: true }));
+
+                setTimeout(() => {
+                  matchViewportControl.checked = true;
+                  matchViewportControl.dispatchEvent(new Event('change', { bubbles: true }));
+                  matchViewportControl.dispatchEvent(new Event('input', { bubbles: true }));
+                  matchViewportControl.click();
+
+                  console.log('✅ Post-connection MatchViewportRes toggle completed');
+
+                  setTimeout(() => {
+                    window.dispatchEvent(new Event('resize'));
+                  }, 100);
+                }, 100);
+              } catch (error) {
+                console.warn('Could not simulate toggle post-connection:', error);
+              }
+            };
+
+            simulateToggle();
           } catch (error) {
             console.warn('Could not check post-connection settings:', error);
           }
@@ -465,9 +519,7 @@ const connect = useCallback(async (overrideUrl?: string) => {
           console.log('🔄 Second attempt at resolution matching...');
           // We'll call forceResolutionMatch() from the global scope later
           setTimeout(() => {
-            if ((window as any).forceResolutionMatch) {
-              (window as any).forceResolutionMatch();
-            }
+            window.forceResolutionMatch?.();
           }, 100);
         }, 3000);
       });
@@ -487,16 +539,16 @@ const connect = useCallback(async (overrideUrl?: string) => {
 
       // Enhanced WebSocket monitoring for mobile debugging
       const setupWebSocketMonitoring = () => {
-        const wsController = (newStream as any)._webSocketController;
-        
+        const wsController = getStreamInternals(newStream)?._webSocketController;
+
         if (wsController) {
           console.log('🔌 Setting up WebSocket event monitoring...');
           addDebugMsg('🔌 Setting up WebSocket event monitoring...');
-          
+
           // Store original handlers to avoid double-wrapping
           if (!wsController._fitspaceMonitoringSetup) {
             wsController._fitspaceMonitoringSetup = true;
-            
+
             const originalOnOpen = wsController.onopen;
             wsController.onopen = (event: Event) => {
               addDebugMsg('✅ WebSocket opened successfully!');
@@ -504,7 +556,7 @@ const connect = useCallback(async (overrideUrl?: string) => {
               console.log('📱 Mobile WebSocket open event:', {
                 isMobile,
                 timestamp: new Date().toISOString(),
-                url: wsController.webSocket?.url
+                url: wsController.webSocket?.url ?? wsController._webSocket?.url ?? null
               });
               if (originalOnOpen) originalOnOpen.call(wsController, event);
             };
@@ -571,9 +623,9 @@ const connect = useCallback(async (overrideUrl?: string) => {
         // Set up data channel message reception
         setTimeout(() => {
           try {
-            const webRtcController = (newStream as any)._webRtcController;
-            const sendrecvController = webRtcController?.sendrecvDataChannelController;
-            
+            const webRtcController = getStreamInternals(newStream)?._webRtcController;
+            const sendrecvController = webRtcController?.sendrecvDataChannelController ?? null;
+
             if (sendrecvController?.dataChannel) {
               const dataChannel = sendrecvController.dataChannel;
               
@@ -615,89 +667,61 @@ const connect = useCallback(async (overrideUrl?: string) => {
       // Multiple attempts to ensure MatchViewportRes is always enforced
       const forceDefaultSettings = () => {
         try {
-          const currentConfig = (newStream as any).config;
-          if (currentConfig && currentConfig._settingsObj) {
-            console.log('🔧 Applying enforced default settings to Epic Games config...');
-            
-            // Force our important defaults with MatchViewportRes ALWAYS true
-            const forceDefaults = {
-              MatchViewportRes: true, // ALWAYS TRUE - never allow false
-              WebRTCFPS: 30,
-              ...connectionSettings // Include any debug overrides but still enforce MatchViewportRes
-            };
-            
-            // Always override MatchViewportRes to be true regardless of connectionSettings
-            forceDefaults.MatchViewportRes = true;
-            
-            // Update the library's internal settings
-            Object.assign(currentConfig._settingsObj, forceDefaults);
-            
-            // Try to find and call the exact same methods that the UI toggle calls
-            // Look for the settings UI methods
-            console.log('🔍 Searching for Epic Games UI methods...');
-            
-            // Method 1: Try setEncoderSettings and setStreamingSettings
-            if (currentConfig.setEncoderSettings) {
-              currentConfig.setEncoderSettings({ 
-                WebRTCFPS: forceDefaults.WebRTCFPS 
-              });
-              console.log('✅ Called setEncoderSettings');
+          const currentConfig = getStreamConfig(newStream);
+          const settingsObject = currentConfig?._settingsObj;
+          if (!settingsObject) {
+            return;
+          }
+
+          console.log('🔧 Applying enforced default settings to Epic Games config...');
+
+          const forceDefaults: Partial<AllSettings> = {
+            MatchViewportRes: true,
+            WebRTCFPS: 30,
+            ...connectionSettings,
+          };
+          forceDefaults.MatchViewportRes = true;
+
+          Object.assign(settingsObject, forceDefaults);
+
+          console.log('🔍 Searching for Epic Games UI methods...');
+
+          currentConfig?.setEncoderSettings?.({
+            WebRTCFPS: forceDefaults.WebRTCFPS,
+          });
+
+          currentConfig?.setStreamingSettings?.({
+            MatchViewportRes: true,
+          });
+
+          const root = currentConfig?.settingsPanel?._rootElement;
+          if (root) {
+            console.log('📱 Found settings panel, looking for MatchViewportRes control...');
+            const matchViewportControl =
+              root.querySelector<HTMLInputElement>('input[data-setting="MatchViewportRes"]') ||
+              root.querySelector<HTMLInputElement>('input[id*="MatchViewportRes"]') ||
+              root.querySelector<HTMLInputElement>('input[name*="MatchViewportRes"]');
+
+            if (matchViewportControl) {
+              console.log('🎯 Found MatchViewportRes control, simulating toggle...');
+              matchViewportControl.checked = true;
+              matchViewportControl.dispatchEvent(new Event('change', { bubbles: true }));
+              matchViewportControl.dispatchEvent(new Event('input', { bubbles: true }));
+            } else {
+              console.log('❌ Could not find MatchViewportRes control');
             }
-            
-            if (currentConfig.setStreamingSettings) {
-              currentConfig.setStreamingSettings({ 
-                MatchViewportRes: true // Always force true
-              });
-              console.log('✅ Called setStreamingSettings');
-            }
-            
-            // Method 2: Try to find the settings object and trigger change events
-            const settingsPanel = (currentConfig as any).settingsPanel;
-            if (settingsPanel) {
-              console.log('📱 Found settings panel, looking for MatchViewportRes control...');
-              
-              // Try to find the checkbox/toggle for MatchViewportRes
-              const matchViewportControl = settingsPanel._rootElement?.querySelector('input[data-setting="MatchViewportRes"]') ||
-                                         settingsPanel._rootElement?.querySelector('input[id*="MatchViewportRes"]') ||
-                                         settingsPanel._rootElement?.querySelector('input[name*="MatchViewportRes"]');
-              
-              if (matchViewportControl) {
-                console.log('🎯 Found MatchViewportRes control, simulating toggle...');
-                
-                // Set the value
-                matchViewportControl.checked = true;
-                
-                // Dispatch change events to mimic user interaction
-                matchViewportControl.dispatchEvent(new Event('change', { bubbles: true }));
-                matchViewportControl.dispatchEvent(new Event('input', { bubbles: true }));
-                
-                console.log('✅ Simulated MatchViewportRes toggle to true');
-              } else {
-                console.log('❌ Could not find MatchViewportRes control');
-              }
-            }
-            
-            // Method 3: Look for any update/apply methods on the config
-            if (typeof (currentConfig as any).updateAllSettings === 'function') {
-              (currentConfig as any).updateAllSettings();
-              console.log('✅ Called updateAllSettings');
-            }
-            
-            if (typeof (currentConfig as any).applySettings === 'function') {
-              (currentConfig as any).applySettings();
-              console.log('✅ Called applySettings');
-            }
-            
-            // Method 4: Try triggering a settings change event
-            if (currentConfig.dispatchEvent && typeof currentConfig.dispatchEvent === 'function') {
-              const settingsEvent = new CustomEvent('settingsChanged', {
-                detail: { MatchViewportRes: true }
-              });
-              currentConfig.dispatchEvent(settingsEvent);
-              console.log('✅ Dispatched settingsChanged event');
-            }
-            
-            console.log('✅ Enforced default settings applied to Epic Games config (MatchViewportRes: true)');
+
+          currentConfig?.updateAllSettings?.();
+          currentConfig?.applySettings?.();
+
+          if (typeof currentConfig?.dispatchEvent === 'function') {
+            const settingsEvent = new CustomEvent('settingsChanged', {
+              detail: { MatchViewportRes: true },
+            });
+            currentConfig.dispatchEvent(settingsEvent);
+          }
+
+          console.log('✅ Enforced default settings applied to Epic Games config (MatchViewportRes: true)');
           }
         } catch (error) {
           console.warn('Could not force default settings:', error);
@@ -758,14 +782,15 @@ const connect = useCallback(async (overrideUrl?: string) => {
         }
         
         try {
-          const currentConfig = (newStream as any).config;
-          if (currentConfig?._settingsObj) {
-            console.log('  - MatchViewportRes setting:', currentConfig._settingsObj.MatchViewportRes);
+          const currentConfig = getStreamConfig(newStream);
+          const settingsObject = currentConfig?._settingsObj;
+          if (settingsObject) {
+            console.log('  - MatchViewportRes setting:', settingsObject.MatchViewportRes);
             console.log('  - All streaming settings:', {
-              MatchViewportRes: currentConfig._settingsObj.MatchViewportRes,
-              WebRTCFPS: currentConfig._settingsObj.WebRTCFPS,
-              AutoPlayVideo: currentConfig._settingsObj.AutoPlayVideo,
-              StartVideoMuted: currentConfig._settingsObj.StartVideoMuted
+              MatchViewportRes: settingsObject.MatchViewportRes,
+              WebRTCFPS: settingsObject.WebRTCFPS,
+              AutoPlayVideo: settingsObject.AutoPlayVideo,
+              StartVideoMuted: settingsObject.StartVideoMuted,
             });
           }
         } catch (error) {
@@ -893,13 +918,13 @@ const connect = useCallback(async (overrideUrl?: string) => {
 
     try {
       console.log('🔧 Forcing resolution match (mimicking manual double-toggle)...');
-      const currentConfig = (stream as any).config;
-      
+      const currentConfig = getStreamConfig(stream);
+
       if (currentConfig) {
         // First, let's inspect the entire Epic Games UI structure
         console.log('🔍 Inspecting Epic Games UI structure...');
-        
-        const application = (stream as any)._application;
+
+        const application = getStreamInternals(stream)?._application;
         if (application && application.rootElement) {
           console.log('📱 Application root element found');
           
@@ -1077,9 +1102,9 @@ const connect = useCallback(async (overrideUrl?: string) => {
 
   // Expose debug function globally for console access
   React.useEffect(() => {
-    (window as any).forceResolutionMatch = forceResolutionMatch;
+    window.forceResolutionMatch = forceResolutionMatch;
     return () => {
-      delete (window as any).forceResolutionMatch;
+      delete window.forceResolutionMatch;
     };
   }, [forceResolutionMatch]);
 

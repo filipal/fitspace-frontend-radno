@@ -11,16 +11,18 @@ type UECommand =
   | 'resetAvatar'
   | 'saveLook';
 
+type UECommandPayload = Record<string, unknown> | undefined
+
 export function useQueuedUnreal(
-  sendFittingRoomCommand: (cmd: UECommand, payload?: any) => void,
+  sendFittingRoomCommand: (cmd: UECommand, payload?: UECommandPayload) => void,
   connectionState: 'connected' | 'connecting' | 'disconnected',
   throttleMs = 50
 ) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pendingRef = useRef<{ cmd: UECommand; payload?: any; label?: string } | null>(null);
+  const pendingRef = useRef<{ cmd: UECommand; payload?: UECommandPayload; label?: string } | null>(null);
 
   const send = useCallback(
-    (cmd: UECommand, payload?: any, label = 'update') => {
+    (cmd: UECommand, payload?: UECommandPayload, label = 'update') => {
       if (connectionState !== 'connected') {
         pendingRef.current = { cmd, payload, label };
         console.info(`Queued ${label} until connection resumes`, { cmd, payload, connectionState });

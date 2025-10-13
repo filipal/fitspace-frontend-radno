@@ -7,7 +7,7 @@ import {
   validateBackendMorphData,
 } from '../services/avatarTransformationService';
 import { generateUnrealAvatarCommand, validateAvatarConfiguration, getMorphStatistics } from '../services/avatarCommandService';
-import { buildBackendMorphPayload } from '../services/avatarApi';
+import { buildBackendMorphPayload, type AvatarMorphPayload, type AvatarPayload } from '../services/avatarApi';
 import type { MorphAttribute } from '../data/morphAttributes';
 
 
@@ -50,8 +50,9 @@ export function useAvatarLoader() {
         (backendData.quickModeSettings?.measurements || backendData.bodyMeasurements)
       ) {
         // minimalni payload iz postojećih polja
-        const pseudoPayload = {
+        const pseudoPayload: AvatarPayload = {
           name: backendData.name,
+          avatarName: backendData.name,
           gender: backendData.gender,
           ageRange: backendData.ageRange,
           basicMeasurements: backendData.basicMeasurements,
@@ -60,13 +61,14 @@ export function useAvatarLoader() {
           quickModeSettings: backendData.quickModeSettings ?? null,
         };
 
-        const morphs = buildBackendMorphPayload(pseudoPayload as any);
+        const morphs = buildBackendMorphPayload(pseudoPayload);
 
         if (Array.isArray(morphs)) {
           backendMorphTargets = morphs
-            .map(m => {
-              const name = (m as any).backendKey ?? (m as any).id;
-              const value = Number((m as any).sliderValue);
+            .map((morph: AvatarMorphPayload | null | undefined) => {
+              if (!morph) return null;
+              const name = morph.backendKey ?? morph.id;
+              const value = morph.sliderValue;
               if (!name || !Number.isFinite(value)) return null;
               return { name, value };
             })
@@ -96,7 +98,7 @@ export function useAvatarLoader() {
       const { morphAttributes } = await import('../data/morphAttributes');
 
       // currentMorphs je *uvijek* definiran i točnog tipa
-      let currentMorphs: MorphAttribute[] = morphAttributes.map(m => ({ ...m, value: 50 }));
+      const currentMorphs: MorphAttribute[] = morphAttributes.map(m => ({ ...m, value: 50 }));
 
       console.log('Current morphs before transformation:', currentMorphs.length);
       

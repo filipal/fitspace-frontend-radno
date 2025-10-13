@@ -11,6 +11,7 @@ import { useAvatarApi } from '../../services/avatarApi'
 import { useAvatarConfiguration } from '../../context/AvatarConfigurationContext'
 import { usePixelStreaming } from '../../context/PixelStreamingContext'
 import { useQueuedUnreal } from '../../services/queuedUnreal'
+import { getAvatarDisplayName } from '../../utils/avatarName'
 
 // Tipovi “extra” itema
 const EXTRA_TYPES = ['Earrings', 'Glasses', 'Hats'] as const
@@ -159,7 +160,7 @@ export default function ExtrasAccordion() {
     const avatarId = currentAvatar?.avatarId
     if (!avatarId) return
 
-    const safeName = currentAvatar?.avatarName ?? (currentAvatar as any)?.name ?? 'Avatar'
+    const safeName = getAvatarDisplayName(currentAvatar)
     const safeAgeRange = currentAvatar?.ageRange ?? ''
 
     try {

@@ -1,6 +1,25 @@
-// Using any type since User is not exported from react-oidc-context
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type User = any
+interface OidcProfile {
+  sub?: string
+  iat?: number
+  auth_time?: number
+  email?: string
+  email_verified?: boolean
+  phone_number?: string
+  phone_number_verified?: boolean
+  token_use?: string
+  aud?: string
+  iss?: string
+  [key: string]: unknown
+}
+
+interface OidcUser {
+  profile?: OidcProfile | null
+  id_token?: string
+  access_token?: string
+  refresh_token?: string
+  token_type?: string
+  expires_at?: number
+}
 
 export interface AuthInfo {
   // User identifiers
@@ -58,7 +77,7 @@ export function decodeJWT(token: string) {
  * Extract authentication information from react-oidc-context User object
  * This is equivalent to AWS Amplify's Auth.currentAuthenticatedUser() and Auth.currentSession()
  */
-export function getAuthInfo(user: User | null | undefined, isAuthenticated: boolean): AuthInfo {
+export function getAuthInfo(user: OidcUser | null | undefined, isAuthenticated: boolean): AuthInfo {
   if (!isAuthenticated || !user) {
     return { isAuthenticated: false }
   }

@@ -44,7 +44,7 @@ export default function FaceScan({ onClose }: { onClose?: () => void }) {
 
   // Resetira naslijeđeni scroll + isključi auto-restoration
   useEffect(() => {
-    const prev = (history as any).scrollRestoration;
+    const prev = history.scrollRestoration ?? 'auto';
     if ('scrollRestoration' in history) {
       history.scrollRestoration = 'manual';
     }
@@ -56,16 +56,16 @@ export default function FaceScan({ onClose }: { onClose?: () => void }) {
 
     // (opcionalno, za svaki slučaj) Zaključaj scroll dok je FaceScan aktivan
     const prevHtmlOverflow = document.documentElement.style.overflow;
-    const prevBodyOverscroll = (document.body.style as any).overscrollBehaviorY || '';
+    const prevBodyOverscroll = document.body.style.overscrollBehaviorY || '';
     document.documentElement.style.overflow = 'hidden';
-    (document.body.style as any).overscrollBehaviorY = 'none';
+    document.body.style.overscrollBehaviorY = 'none';
 
     return () => {
       if ('scrollRestoration' in history) {
         history.scrollRestoration = prev ?? 'auto';
       }
       document.documentElement.style.overflow = prevHtmlOverflow;
-      (document.body.style as any).overscrollBehaviorY = prevBodyOverscroll;
+      document.body.style.overscrollBehaviorY = prevBodyOverscroll;
     };
   }, []);
 

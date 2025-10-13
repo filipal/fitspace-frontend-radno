@@ -8,6 +8,7 @@ import { useInstanceManagement } from '../../context/InstanceManagementContext'
 import { PixelStreamingWrapper } from '../PixelStreamingDebugWrapper/PixelStreamingDebugWrapper'
 import packageJson from '../../../package.json'
 import styles from './DebugOverlay.module.scss'
+import { getNetworkInformation } from '../../utils/networkInfo'
 
 export default function DebugOverlay() {
   const { isDebug, toggleDebug } = useDebug()
@@ -474,12 +475,7 @@ export default function DebugOverlay() {
                     screenSize: `${window.screen.width}x${window.screen.height}`,
                     viewport: `${window.innerWidth}x${window.innerHeight}`,
                     devicePixelRatio: window.devicePixelRatio,
-                    connection: (navigator as any).connection ? {
-                      effectiveType: (navigator as any).connection.effectiveType,
-                      downlink: (navigator as any).connection.downlink,
-                      rtt: (navigator as any).connection.rtt,
-                      saveData: (navigator as any).connection.saveData
-                    } : 'not available',
+                    connection: getNetworkInformation(navigator) ?? 'not available',
                     languages: navigator.languages,
                     cookieEnabled: navigator.cookieEnabled,
                     doNotTrack: navigator.doNotTrack,
@@ -522,7 +518,7 @@ export default function DebugOverlay() {
                     console.log('Screen Size:', `${window.screen.width}x${window.screen.height}`);
                     console.log('Viewport:', `${window.innerWidth}x${window.innerHeight}`);
                     console.log('Device Pixel Ratio:', window.devicePixelRatio);
-                    console.log('Connection:', (navigator as any).connection);
+                    console.log('Connection:', getNetworkInformation(navigator));
                     console.log('Touch Points:', navigator.maxTouchPoints);
                     console.log('Languages:', navigator.languages);
                     console.log('Online:', navigator.onLine);

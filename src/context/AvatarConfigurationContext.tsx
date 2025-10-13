@@ -77,6 +77,7 @@ export interface BackendAvatarData {
 export interface AvatarConfiguration {
   avatarId?: string;
   avatarName?: string;
+  name?: string;
   gender: 'male' | 'female';
   ageRange?: string;
   basicMeasurements?: Partial<BasicMeasurements>;
@@ -209,6 +210,7 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
       const avatarConfig: AvatarConfiguration = {
         avatarId: nextAvatarId,     // ⬅️ koristi varijablu
         avatarName: backendData.name,
+        name: backendData.name,
         gender: backendData.gender,
         ageRange: backendData.ageRange,
         basicMeasurements,
@@ -286,11 +288,11 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
             [measurementKey]: recalculatedMeasurement,
           };
 
-          const previousSettings: QuickModeSettings = (prev.quickModeSettings ?? {}) as QuickModeSettings;
+          const previousSettings = prev.quickModeSettings ?? undefined;
           updatedQuickModeSettings = {
-            ...previousSettings,
+            ...(previousSettings ?? {}),
             measurements: {
-              ...(previousSettings.measurements ?? {}),
+              ...(previousSettings?.measurements ?? {}),
               [measurementKey]: recalculatedMeasurement,
             },
             updatedAt: new Date().toISOString(),
