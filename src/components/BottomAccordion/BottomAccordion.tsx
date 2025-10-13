@@ -51,7 +51,7 @@ export default function BottomAccordion({ variant = 'mobile' }: BottomAccordionP
   const Left = carouselItems[leftIdx]
   const Center = carouselItems[index]
   const Right = carouselItems[rightIdx]
- if (variant === 'desktop') {
+  if (variant === 'desktop') {
     return (
       <div className={`${styles.container} ${styles.desktop}`}>
         <div className={styles.carouselRow}>

@@ -299,7 +299,8 @@ export default function VirtualTryOn() {
         )}
       />
 
-  <div className={`${styles.canvasWrapper} ${accordionOpen ? styles.withAccordion : ''} ${(topOpen && !(fullBodyMode && fullBodyDetail)) ? styles.topZoom : ''} ${(bottomOpen && !(fullBodyMode && fullBodyDetail)) ? styles.bottomZoom : ''} ${topExpandedFooter ? styles.footerTopExpanded : ''} ${bottomExpandedFooter ? styles.footerBotExpanded : ''} ${(fullBodyMode && fullBodyDetail) ? styles.fullBodyDetail : ''}`}>
+      <div className={`${styles.mainArea} ${isDesktop ? styles.desktopMainArea : ''}`}>
+        <div className={`${styles.canvasWrapper} ${accordionOpen ? styles.withAccordion : ''} ${(topOpen && !(fullBodyMode && fullBodyDetail)) ? styles.topZoom : ''} ${(bottomOpen && !(fullBodyMode && fullBodyDetail)) ? styles.bottomZoom : ''} ${topExpandedFooter ? styles.footerTopExpanded : ''} ${bottomExpandedFooter ? styles.footerBotExpanded : ''} ${(fullBodyMode && fullBodyDetail) ? styles.fullBodyDetail : ''}`}>
         
         {/* PixelStreaming kad je stvarno connected (ili u localhost DEV), inače fallback slika */}
         {((connectionState === 'connected' && application) || devMode === 'localhost') ? (
@@ -776,13 +777,8 @@ export default function VirtualTryOn() {
                 TOP
               </button>
               <div className={styles.desktopPanelContent}>
-                <div className={styles.desktopMainColumn}>
+                <div className={styles.desktopTopMain}>
                   <TopAccordion variant="desktop" />
-                  <div className={styles.desktopFutureRow}>
-                    {[0, 1, 2, 3].map(idx => (
-                      <div key={`top-future-${idx}`} className={styles.desktopFutureCell} />
-                    ))}
-                  </div>
                 </div>
                 <div className={`${styles.desktopSideBox} ${styles.desktopSizeBox}`}>
                   <div className={`${styles.sizeArrows} ${styles.sizeArrowsFirst} ${styles.desktopSizeArrows}`}>
@@ -820,6 +816,38 @@ export default function VirtualTryOn() {
                     </button>
                   </div>
                 </div>
+                <div className={styles.desktopBottomMain}>
+                  <div className={styles.desktopFutureRow}>
+                    {[0, 1, 2, 3].map(idx => (
+                      <div key={`top-future-${idx}`} className={styles.desktopFutureCell} />
+                    ))}
+                  </div>
+                </div>
+                <div className={`${styles.desktopSideBox} ${styles.desktopColorsBox}`}>
+                  <div className={`${styles.topExpandedRight} ${styles.desktopColorsStack}`}>
+                    <div className={`${styles.topExpandedColorsInner} ${styles.desktopColorsInner}`}>
+                      <button type="button" className={styles.colorCircleBtnWrapper}>
+                        <ColorBtn size={45} color={baseColor} active />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className={`${styles.desktopSideBox} ${styles.desktopOptionsBox}`}>
+                  <div className={`${styles.topExpandedLeft} ${styles.desktopOptionsStack}`}>
+                    <div className={`${styles.topExpandedLeftInner} ${styles.desktopOptionsInner}`}>
+                      <button type="button" className={styles.topExpandedArrowsBtn} onClick={cycleTopPrev}>
+                        <img src={ArrowUp} alt="Previous option" />
+                      </button>
+                      <div className={styles.topExpandedTextBlock}>
+                        <div className={styles.topExpandedMain}>{`Option ${topOptionIndex + 1}`}</div>
+                        <div className={styles.topExpandedSub}>{topOptions[topOptionIndex]}</div>
+                      </div>
+                      <button type="button" className={styles.topExpandedArrowsBtn} onClick={cycleTopNext}>
+                        <img src={ArrowDown} alt="Next option" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             <div className={styles.footerRight}>
@@ -827,13 +855,8 @@ export default function VirtualTryOn() {
                 BOTTOM
               </button>
               <div className={styles.desktopPanelContent}>
-                <div className={styles.desktopMainColumn}>
+                <div className={styles.desktopTopMain}>
                   <BottomAccordion variant="desktop" />
-                  <div className={styles.desktopFutureRow}>
-                    {[0, 1, 2, 3].map(idx => (
-                      <div key={`bottom-future-${idx}`} className={styles.desktopFutureCell} />
-                    ))}
-                  </div>
                 </div>
                 <div className={`${styles.desktopSideBox} ${styles.desktopSizeBox}`}>
                   <div className={`${styles.sizeArrows} ${styles.sizeArrowsFirst} ${styles.desktopSizeArrows}`}>
@@ -879,6 +902,38 @@ export default function VirtualTryOn() {
                     <button type="button" className={styles.categoryArrowBtn} onClick={() => cycleLower(1)}>
                       <img src={ArrowDown} alt="Next category" />
                     </button>
+                  </div>
+                </div>
+                <div className={styles.desktopBottomMain}>
+                  <div className={styles.desktopFutureRow}>
+                    {[0, 1, 2, 3].map(idx => (
+                      <div key={`bottom-future-${idx}`} className={styles.desktopFutureCell} />
+                    ))}
+                  </div>
+                </div>
+                <div className={`${styles.desktopSideBox} ${styles.desktopColorsBox}`}>
+                  <div className={`${styles.topExpandedRight} ${styles.desktopColorsStack}`}>
+                    <div className={`${styles.topExpandedColorsInner} ${styles.desktopColorsInner}`}>
+                      <button type="button" className={styles.colorCircleBtnWrapper}>
+                        <ColorBtn size={45} color={baseColor} active />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className={`${styles.desktopSideBox} ${styles.desktopOptionsBox}`}>
+                  <div className={`${styles.topExpandedLeft} ${styles.desktopOptionsStack}`}>
+                    <div className={`${styles.topExpandedLeftInner} ${styles.desktopOptionsInner}`}>
+                      <button type="button" className={styles.topExpandedArrowsBtn} onClick={cycleTopPrev}>
+                        <img src={ArrowUp} alt="Previous option" />
+                      </button>
+                      <div className={styles.topExpandedTextBlock}>
+                        <div className={styles.topExpandedMain}>{`Option ${topOptionIndex + 1}`}</div>
+                        <div className={styles.topExpandedSub}>{topOptions[topOptionIndex]}</div>
+                      </div>
+                      <button type="button" className={styles.topExpandedArrowsBtn} onClick={cycleTopNext}>
+                        <img src={ArrowDown} alt="Next option" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1022,5 +1077,6 @@ export default function VirtualTryOn() {
         )}
       </div>
     </div>
-  )
+  </div>
+)
 }

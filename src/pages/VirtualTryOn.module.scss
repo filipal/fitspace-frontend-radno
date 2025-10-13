@@ -23,6 +23,15 @@ $design-w: 430; // baseline širina dizajna
   margin: 0 auto;
 }
 
+.mainArea {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: cqw(20);
+  box-sizing: border-box;
+}
+
 .avatarButton {
   background: none;
   border: none;
@@ -566,36 +575,45 @@ $design-w: 430; // baseline širina dizajna
   .page {
     max-width: none;
     width: 100%;
+    align-items: stretch;
+    padding: 0;
+    margin: 0;
+  }
+
+  .desktopMainArea {
     flex-direction: row;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 40px;
-    padding: 0 48px 32px;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    gap: 0;
   }
 
-  .canvasWrapper {
-    flex: 1 1 0;
-    max-width: calc(100% - 520px - 40px);
-    height: auto;
-    aspect-ratio: 3 / 4;
+  .desktopMainArea .canvasWrapper {
+    width: 504px;
+    height: 954px;
+    flex: 0 0 auto;
+    max-width: none;
+    aspect-ratio: auto;
   }
 
-  .canvasWrapper.withAccordion,
-  .canvasWrapper.footerTopExpanded,
-  .canvasWrapper.footerBotExpanded,
-  .canvasWrapper.footerTopExpanded.withAccordion,
-  .canvasWrapper.footerBotExpanded.withAccordion {
-    height: auto;
+  .desktopMainArea .canvasWrapper.withAccordion,
+  .desktopMainArea .canvasWrapper.footerTopExpanded,
+  .desktopMainArea .canvasWrapper.footerBotExpanded,
+  .desktopMainArea .canvasWrapper.footerTopExpanded.withAccordion,
+  .desktopMainArea .canvasWrapper.footerBotExpanded.withAccordion {
+    height: 954px;
   }
 
   .footer {
     width: 520px;
     height: 954px;
-    margin-left: auto;
     border-top: none;
     background: transparent;
     flex-direction: column;
     gap: 20px;
+    flex: 0 0 auto;
   }
 
   .desktopFooter {
@@ -646,15 +664,29 @@ $design-w: 430; // baseline širina dizajna
     flex: 1;
     display: grid;
     grid-template-columns: 300px 110px 110px;
-    column-gap: 20px;
-    padding: 20px 0 0;
+    grid-template-rows: 314px 113px;
+    column-gap: 0;
+    row-gap: 0;
+    padding: 0;
     box-sizing: border-box;
   }
 
-  .desktopMainColumn {
+  .desktopTopMain {
+    grid-column: 1;
+    grid-row: 1;
     display: flex;
-    flex-direction: column;
-    gap: 20px;
+    align-items: center;
+    justify-content: center;
+    width: 300px;
+  }
+
+  .desktopBottomMain {
+    grid-column: 1;
+    grid-row: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 300px;
   }
 
   .desktopFutureRow {
@@ -674,15 +706,101 @@ $design-w: 430; // baseline širina dizajna
 
   .desktopSideBox {
     width: 110px;
+    flex: 0 0 110px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
   }
 
-  .desktopSizeBox,
-  .desktopCategoryBox {
+  .desktopSizeBox {
+    grid-column: 2;
+    grid-row: 1;
     height: 214px;
+    align-self: center;
+  }
+
+  .desktopCategoryBox {
+    grid-column: 3;
+    grid-row: 1;
+    height: 214px;
+    align-self: center;
+  }
+
+  .desktopColorsBox {
+    grid-column: 2;
+    grid-row: 2;
+    height: 113px;
+    align-self: center;
+  }
+
+  .desktopOptionsBox {
+    grid-column: 3;
+    grid-row: 2;
+    height: 113px;
+    align-self: center;
+  }
+
+  .desktopColorsStack,
+  .desktopOptionsStack {
+    position: static;
+    top: auto;
+    right: auto;
+    left: auto;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .desktopColorsInner {
+    width: 55px;
+    height: 90px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .desktopColorsInner .colorCircleBtnWrapper {
+    width: 55px;
+    height: 55px;
+    padding: 0;
+  }
+
+  .desktopOptionsInner {
+    width: 90.45px;
+    height: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .desktopOptionsStack .topExpandedLeftInner {
+    width: 90.45px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .desktopOptionsStack .topExpandedArrowsBtn {
+    position: static;
+    width: 24.09px;
+    height: 32.8px;
+  }
+
+  .desktopOptionsInner .topExpandedTextBlock {
+    height: auto;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
   }
 
   .desktopSizeArrows,
