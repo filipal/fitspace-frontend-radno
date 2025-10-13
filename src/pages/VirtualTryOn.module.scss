@@ -130,75 +130,74 @@ $design-w: 430; // baseline širina dizajna
 /* Size selector (right side when top expanded) */
 .sizeArrows {
   position: absolute;
-  width: 33px; /* match arrow column width */
-  height: 150px;
+  width: cqw(33); /* match arrow column width */
+  height: cqw(150);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  right: calc(20px + 25px - 16.5px); /* align with previous imageArrows center */
+  right: calc(#{cqw(20)} + #{cqw(25)} - #{cqw(16.5)}); /* align with previous imageArrows center */
 }
-.sizeArrowsFirst { top: 230px; }
+.sizeArrowsFirst { top: cqw(230); }
 .sizeDisplay {
-  width: 24.14px;
-  height: 82.86px;
+  width: cqw(24.14);
+  height: cqw(82.86);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
 }
 .sizeSmall {
-  width: 12.7px;
-  height: 25.86px;
+  width: cqw(12.7);
+  height: cqw(25.86);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
+  font-size: fsz(15);
   font-weight: 400;
   line-height: 1;
   opacity: 0.25;
 }
 .sizeMain {
-  width: 24.14px;
-  height: 34.48px;
+  width: cqw(24.14);
+  height: cqw(34.48);
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 30px;
+  font-size: fsz(30);
   font-weight: 400;
   line-height: 1;
 }
 
 /* Bottom detailed (waist/length) size display */
 .sizeDisplayBottom {
-  width: 50px;
-  height: 86px; /* 26 + 34 + 26 */
+  width: cqw(50);
+  height: cqw(86); /* 26 + 34 + 26 */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
 }
 .sizeSmallBottom {
-  width: 50px;
-  height: 26px;
+  width: cqw(50);
+  height: cqw(26);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: fsz(10);
   font-weight: 400;
   line-height: 1.05;
   opacity: 0.25;
   text-align: center;
 }
 .sizeMainBottom {
-  width: 50px;
-  height: 34px;
+  width: cqw(50);
+  height: cqw(34);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 17px;
+  font-size: fsz(17);
   font-weight: 400;
   line-height: 1.05;
   text-align: center;
@@ -228,14 +227,14 @@ $design-w: 430; // baseline širina dizajna
   justify-content: space-between;
 }
 /* Full body specific arrow & text alignment (reuse existing patterns with new top) */
-.categoryArrowsFullBody { top: 310px; }
-.categoryTextGroupFullBody { top: calc(310px + (150px/2) - (71px/2)); }
-.imageArrowsFullBody { top: 310px; }
-.imageDisplayFullBody { top: calc(310px + (150px/2) - (50px/2)); }
+.categoryArrowsFullBody { top: cqw(310); }
+.categoryTextGroupFullBody { top: calc(#{cqw(310)} + (#{cqw(150)} / 2) - (#{cqw(71)} / 2)); }
+.imageArrowsFullBody { top: cqw(310); }
+.imageDisplayFullBody { top: calc(#{cqw(310)} + (#{cqw(150)} / 2) - (#{cqw(50)} / 2)); }
 
 /* Full body footer layout */
 .footerFullBody {
-  height: 51px;
+  height: cqw(51);
   display: flex;
   align-items: center;
   position: relative;
@@ -243,11 +242,11 @@ $design-w: 430; // baseline širina dizajna
 }
 .footerFullBodyTitle {
   position: absolute;
-  left: 22px;
+  left: cqw(22);
   top: 50%;
   transform: translateY(-50%);
-  width: 224px;
-  font-size: 13px;
+  width: cqw(224);
+  font-size: fsz(13);
   font-weight: 300;
   display: flex;
   align-items: center;
@@ -547,8 +546,8 @@ $design-w: 430; // baseline širina dizajna
 
 .homeButtonCircle {
   position: relative;
-  width: 40px;
-  height: 40px;
+  width: cqw(40);
+  height: cqw(40);
   border: none;
   background: none;
   padding: 0;
