@@ -151,26 +151,15 @@ export default function VirtualTryOn() {
           element.classList.remove(styles.desktopCategoryTextMainWrapped)
         }
 
-        const range = document.createRange()
-        range.selectNodeContents(element)
-        const rects = range.getClientRects()
+        const previousWhiteSpace = element.style.whiteSpace
+        element.style.whiteSpace = 'nowrap'
 
-        if (!rects.length) {
-          if (hadWrapClass) {
-            element.classList.add(styles.desktopCategoryTextMainWrapped)
-          }
-          delete element.dataset.measuring
-          setter(false)
-          return
-        }
+        const availableWidth = element.clientWidth
+        const requiredWidth = element.scrollWidth
 
-        const firstRect = rects[0]
-        const lastRect = rects[rects.length - 1]
-        const totalHeight = lastRect.bottom - firstRect.top
-        const baseLineHeight = firstRect.height
-        const tolerance = Math.max(1, baseLineHeight * 0.1)
+        const isWrapped = requiredWidth - availableWidth > 1
 
-        const isWrapped = rects.length > 1 || totalHeight - baseLineHeight > tolerance
+        element.style.whiteSpace = previousWhiteSpace
         if (hadWrapClass) {
           element.classList.add(styles.desktopCategoryTextMainWrapped)
         }
