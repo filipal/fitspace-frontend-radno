@@ -828,7 +828,24 @@ export default function VirtualTryOn() {
                   <span className={styles.desktopFooterBrand}>Pando Moto</span>
                 </div>
               </div>
-            ) : null}
+            ) : (
+              <div className={styles.desktopFooterBottomDetails}>
+                <div className={styles.desktopFooterPriceGroup} aria-label="Price and cart">
+                  <div className={styles.desktopFooterPrice} aria-label="Price">
+                    $ 459
+                  </div>
+                  <img
+                    className={styles.desktopFooterAddToCart}
+                    src={AddToCartIcon}
+                    alt="Add to cart"
+                  />
+                </div>
+                <div className={styles.desktopFooterBottomInfo} aria-label="Product details">
+                  <span className={styles.desktopFooterBottomName}>BOSS DYN 01 JEANS</span>
+                  <span className={styles.desktopFooterBottomBrand}>Pando Moto</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <div className={styles.desktopFooterRight}>
