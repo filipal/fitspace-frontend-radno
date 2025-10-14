@@ -225,6 +225,7 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
   const rowsRef = useRef<HTMLDivElement | null>(null)
   const trackRef = useRef<HTMLDivElement | null>(null)
   const draggingRef = useRef(false)
+  const activeSliderRef = useRef<number | null>(null)
   const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n))
 
   // Track viewport size to switch behavior at the ≥1024px breakpoint
@@ -356,26 +357,37 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
   const view = list
 
   // Slider row component
+  const morphValueMap = useMemo(() => {
+    const map = new Map<number, number>()
+    const morphValues = avatar?.morphValues ?? EMPTY_MORPH_VALUES
+    for (const morph of morphValues) {
+      const numeric =
+        typeof morph.value === 'number' && Number.isFinite(morph.value)
+          ? morph.value
+          : 50
+      map.set(morph.morphId, numeric)
+    }
+    return map
+  }, [avatar?.morphValues])
+
   function SliderRow({ attr }: { attr: MorphAttribute }) {
-    const barRef = useRef<HTMLDivElement | null>(null);
-    const morphValues = avatar?.morphValues ?? EMPTY_MORPH_VALUES;
+    const barRef = useRef<HTMLDivElement | null>(null)
+    const morphValue = morphValueMap.get(attr.morphId) ?? 50
 
-    const getMorphValue = useCallback(() => {
-      const morph = morphValues.find(item => item.morphId === attr.morphId)
-      return morph?.value ?? 50
-    }, [attr.morphId, morphValues])
-
-    const [val, setVal] = useState(() => getMorphValue());
-    const [barWidth, setBarWidth] = useState(0);
+    const [val, setVal] = useState(morphValue)
+    const [barWidth, setBarWidth] = useState(0)
+    const lastEmittedRef = useRef(morphValue)
 
     useLayoutEffect(() => {
-      setBarWidth(barRef.current?.clientWidth ?? 0);
-    }, []);
+      setBarWidth(barRef.current?.clientWidth ?? 0)
+    }, [])
 
     // Sync slider with backend values when avatar or attribute changes
     useEffect(() => {
-      setVal(getMorphValue());
-    }, [getMorphValue]);
+      lastEmittedRef.current = morphValue
+      if (activeSliderRef.current === attr.morphId) return
+      setVal(prev => (prev === morphValue ? prev : morphValue))
+    }, [attr.morphId, morphValue])
 
     const onStart = (event: PointerEvent) => {
       const bar = barRef.current;
@@ -385,6 +397,7 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
 
       const rect = bar.getBoundingClientRect();
       draggingRef.current = true;
+      activeSliderRef.current = attr.morphId;
 
       const clearSelection = () => {
         if (typeof window === 'undefined') return;
@@ -399,10 +412,11 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
         const pct = clamp(Math.round((rel / width) * 100), 0, 100);
         setVal(pct);
 
-        // lokalni callback za UI
-        updateMorph?.(attr.morphId, attr.morphName, pct);
-        // ⬅️ queue autosave prema backendu
-        queueMorphSave(attr.morphId, pct);
+       if (pct !== lastEmittedRef.current) {
+          lastEmittedRef.current = pct;
+          updateMorph?.(attr.morphId, attr.morphName, pct);
+          queueMorphSave(attr.morphId, pct);
+        }
 
         clearSelection();
       };
@@ -416,6 +430,7 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
         window.removeEventListener('pointermove', move);
         window.removeEventListener('pointerup', up);
         draggingRef.current = false;
+        activeSliderRef.current = null;
       };
 
       clearSelection();

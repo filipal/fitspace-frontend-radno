@@ -695,34 +695,43 @@ export default function UnrealMeasurements() {
   const avatarImage = selectedNav === 'Body' ? unrealFBBodyButton : avatarSrc
 
   // Your real updateMorph: receives slider %, updates state + UE value, queues if offline
-  const updateMorph = (morphId: number, morphName: string, sliderPercentage: number) => {
-    updateMorphValue(morphId, sliderPercentage)
+  const updateMorph = useCallback(
+    (morphId: number, morphName: string, sliderPercentage: number) => {
+      updateMorphValue(morphId, sliderPercentage)
 
-    if (!hasDirtyMorphsRef.current) {
-      hasDirtyMorphsRef.current = true
-      setHasDirtyMorphs(true)
-    }
+      if (!hasDirtyMorphsRef.current) {
+        hasDirtyMorphsRef.current = true
+        setHasDirtyMorphs(true)
+      }
 
-    if (connectionState === 'connected') {
-      dispatchMorphUpdate(morphId, sliderPercentage)
-      console.log('🧬 Sent live morph update', { morphId, morphName, sliderPercentage })
-      return
-    }
+      if (connectionState === 'connected') {
+        dispatchMorphUpdate(morphId, sliderPercentage)
+        console.log('🧬 Sent live morph update', { morphId, morphName, sliderPercentage })
+        return
+      }
 
-    const queue = pendingMorphUpdatesRef.current
-    const existingIndex = queue.findIndex(update => update.morphId === morphId)
-    const queuedUpdate: PendingMorphUpdate = { morphId, sliderValue: sliderPercentage }
+      const queue = pendingMorphUpdatesRef.current
+      const existingIndex = queue.findIndex(update => update.morphId === morphId)
+      const queuedUpdate: PendingMorphUpdate = { morphId, sliderValue: sliderPercentage }
 
-    if (existingIndex >= 0) queue[existingIndex] = queuedUpdate
-    else queue.push(queuedUpdate)
+      if (existingIndex >= 0) queue[existingIndex] = queuedUpdate
+      else queue.push(queuedUpdate)
 
-    console.info('⏸️ Queued morph update until connection resumes', {
-      morphId,
-      morphName,
-      sliderPercentage,
-      connectionState
-    })
-  }
+      console.info('⏸️ Queued morph update until connection resumes', {
+        morphId,
+        morphName,
+        sliderPercentage,
+        connectionState
+      })
+    },
+    [
+      connectionState,
+      dispatchMorphUpdate,
+      pendingMorphUpdatesRef,
+      setHasDirtyMorphs,
+      updateMorphValue,
+    ],
+  )
 
   const handleControlClick = (controlKey: string) => {
     // Update selected control state
