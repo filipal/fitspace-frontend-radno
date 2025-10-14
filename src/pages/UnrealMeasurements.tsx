@@ -123,6 +123,7 @@ export default function UnrealMeasurements() {
   const pageRef = useRef<HTMLDivElement | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
   const accordionRef = useRef<HTMLDivElement | null>(null)
+
   // State used by effects below must be declared before effects
   const [selectedControl, setSelectedControl] = useState<string | null>(null)
   const [selectedNav, setSelectedNav] = useState<NavKey | null>(null)
@@ -136,6 +137,21 @@ export default function UnrealMeasurements() {
   const hasDirtyMorphsRef = useRef(false)
   const isSavingMorphsRef = useRef(false)
   const isMountedRef = useRef(true)
+
+  const lastViewportHRef = useRef<number | null>(null)
+  const lastZoomHeightRef = useRef<number | null>(null)
+
+  const computeFocusedAvatarZoom = useCallback((height: number) => {
+    if (!Number.isFinite(height) || height <= 0) return 1.85
+    const minH = 520
+    const maxH = 953
+    const h = Math.min(Math.max(height, minH), maxH)
+    const t = (h - minH) / (maxH - minH)
+    const Zmax = 2.05
+    const Zmin = 1.75
+    const z = Zmax - t * (Zmax - Zmin)
+    return Number.isFinite(z) ? z : 1.85
+  }, [])
 
   useLayoutEffect(() => {
     const el = pageRef.current
@@ -175,52 +191,88 @@ export default function UnrealMeasurements() {
     }
   }, [])
 
-  useLayoutEffect(() => {
-    const page = pageRef.current
-    const header = document.querySelector('[data-app-header]') as HTMLElement | null
-    const bottom = bottomRef.current
-    if (!page || !header || !bottom) return
-    const set = () => {
-      const docEl = document.documentElement
-      const headerH = Math.round(header.getBoundingClientRect().height)
-      const w = window.innerWidth
-      // Sidebar accordion tek za ≥1024: tada visina ostaje ista (samo širina)
-      const verticalNav = w >= 1024
-      const sideAccordion = verticalNav
-      // Kada je navigacija bočno (desktop breakpoint)
-      const measuredBottomH = Math.round(bottom.getBoundingClientRect().height)
-      const bottomH = verticalNav ? 0 : measuredBottomH
-      // Ako je accordion otvoren, oduzmi njegovu stvarnu visinu
-      const accEl = accordionRef.current
-      const accH = sideAccordion ? 0 : (accEl ? Math.round(accEl.getBoundingClientRect().height) : 0)
-      const docHeight = docEl?.clientHeight ?? 0
-      const viewportH = verticalNav
-        ? window.innerHeight || docHeight || window.visualViewport?.height || 0
-        : window.visualViewport?.height ?? window.innerHeight ?? docHeight
-      const layoutHeight = Math.max(viewportH - headerH - bottomH - accH, 200)
-      const panelScale = Math.min(1, layoutHeight / 953)
-      page.style.setProperty('--bottom-real-h', `${measuredBottomH}px`)
-      page.style.setProperty('--avatar-h', `${layoutHeight}px`)
-      page.style.setProperty('--panel-scale', panelScale.toString())
-    }
+useLayoutEffect(() => {
+  const page = pageRef.current
+  const header = document.querySelector('[data-app-header]') as HTMLElement | null
+  const bottom = bottomRef.current
+  if (!page || !header || !bottom) return
 
-    set()
-    window.addEventListener('resize', set)
-    window.addEventListener('orientationchange', set)
-    window.visualViewport?.addEventListener('resize', set)
-    window.visualViewport?.addEventListener('scroll', set)
-    // Promjene visine accordeona (npr. sadržaj) – promatraj i njega
-    const ro = new ResizeObserver(() => set())
-    if (accordionRef.current) ro.observe(accordionRef.current)
+  const set = () => {
+    const docEl = document.documentElement
+    const headerH = Math.round(header.getBoundingClientRect().height)
+    const w = window.innerWidth
+    const verticalNav = w >= 1024
+    const sideAccordion = verticalNav
 
-    return () => {
-      window.removeEventListener('resize', set)
-      window.removeEventListener('orientationchange', set)
-      window.visualViewport?.removeEventListener('resize', set)
-      window.visualViewport?.removeEventListener('scroll', set)
-      ro.disconnect()
+    const measuredBottomH = Math.round(bottom.getBoundingClientRect().height)
+    const bottomH = verticalNav ? 0 : measuredBottomH
+
+    const accEl = accordionRef.current
+    const accH = sideAccordion ? 0 : (accEl ? Math.round(accEl.getBoundingClientRect().height) : 0)
+
+    const docHeight = docEl?.clientHeight ?? 0
+    const viewportH =
+      verticalNav
+        ? (window.innerHeight || docHeight || window.visualViewport?.height || 0)
+        : (window.visualViewport?.height ?? window.innerHeight ?? docHeight)
+
+    const layoutHeight = Math.max(viewportH - headerH - bottomH - accH, 200)
+    const panelScale = Math.min(1, layoutHeight / 953)
+
+    page.style.setProperty('--bottom-real-h', `${measuredBottomH}px`)
+    page.style.setProperty('--avatar-h', `${layoutHeight}px`)
+    page.style.setProperty('--panel-scale', panelScale.toString())
+
+    // 🔒 GUARD: mijenjaj zoom/shift SAMO kad se promijeni visina (ne širina)
+    const viewportHeightChanged =
+      lastViewportHRef.current == null || Math.abs(viewportH - lastViewportHRef.current) > 0.5
+    const layoutHeightChanged =
+      lastZoomHeightRef.current == null || Math.abs(layoutHeight - lastZoomHeightRef.current) > 0.5
+
+    if (viewportHeightChanged || layoutHeightChanged) {
+      lastViewportHRef.current = viewportH
+      lastZoomHeightRef.current = layoutHeight
+
+      const z = computeFocusedAvatarZoom(layoutHeight)
+
+      page.style.setProperty('--avatar-zoom-face',   z.toFixed(3))
+      page.style.setProperty('--avatar-zoom-hair',   z.toFixed(3))
+      page.style.setProperty('--avatar-zoom-extras', z.toFixed(3))
+
+      const baseShiftFace  = -28
+      const baseShiftHair  = -18
+      const baseShiftExtra = -18
+      const k = 22 // px po 0.1 zoom-a
+      const shiftFor = (zz: number, base: number, minCap: number, maxCap: number) => {
+        const delta = (zz - 1.8) * (k * 10)
+        const raw = base + delta
+        return Math.max(Math.min(raw, maxCap), minCap)
+      }
+
+      page.style.setProperty('--avatar-shift-face',   `${shiftFor(z, baseShiftFace,  -160, -8).toFixed(1)}px`)
+      page.style.setProperty('--avatar-shift-hair',   `${shiftFor(z, baseShiftHair,  -140, -6).toFixed(1)}px`)
+      page.style.setProperty('--avatar-shift-extras', `${shiftFor(z, baseShiftExtra, -140, -6).toFixed(1)}px`)
     }
-  }, [selectedNav])
+  }
+
+  set()
+  window.addEventListener('resize', set)
+  window.addEventListener('orientationchange', set)
+  window.visualViewport?.addEventListener('resize', set)
+  window.visualViewport?.addEventListener('scroll', set)
+
+  const ro = new ResizeObserver(() => set())
+  if (accordionRef.current) ro.observe(accordionRef.current)
+
+  return () => {
+    window.removeEventListener('resize', set)
+    window.removeEventListener('orientationchange', set)
+    window.visualViewport?.removeEventListener('resize', set)
+    window.visualViewport?.removeEventListener('scroll', set)
+    ro.disconnect()
+  }
+  // uključujemo computeFocusedAvatarZoom jer ga koristimo u set()
+}, [selectedNav, computeFocusedAvatarZoom])
 
   const navigate = useNavigate()
   const location = useLocation()

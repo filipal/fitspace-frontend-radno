@@ -45,11 +45,12 @@ $design-w: 430; /* jedan izvor istine */
 .centralWrapper {
   --acc-h: 0;
   --acc-gap: 0px;
+  --avatar-stage-max-w: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
-  height: var(--avatar-h);  
+  height: var(--avatar-h);
 }
 
 /* Kada je accordion otvoren, smanji središnje područje za visinu accordeona */
@@ -327,17 +328,21 @@ $design-w: 430; /* jedan izvor istine */
 /* Face mode: show top-cropped/zoomed view at 430x670 */
 .faceSelected {
   height: min(var(--avatar-h), cqw(670));
-  --avatar-zoom: 1.6;
+  --avatar-zoom: var(--avatar-zoom-face, 2.1);
+  --avatar-shift: var(--avatar-shift-face, -24px);
   overflow: hidden;
   align-items: flex-start;
 }
 
 .faceSelected .avatarImage {
-  width: 100%;
-  height: 100%;
+  width: auto;
+  min-width: 100%;
+  max-width: none;
+  height: auto;
+  min-height: 100%;
   object-fit: cover;
   object-position: top center;
-  transform: scale(var(--avatar-zoom, 1));
+  transform: translateY(var(--avatar-shift, 0px)) scale(var(--avatar-zoom, 1));
   transform-origin: top center;
   will-change: transform;
 }
@@ -362,16 +367,20 @@ $design-w: 430; /* jedan izvor istine */
 .hairSelected {
   height: min(var(--avatar-h), cqw(630));
   overflow: hidden;
-  --avatar-zoom: 1.6;
+  --avatar-zoom: var(--avatar-zoom-hair, 2.1);
+  --avatar-shift: var(--avatar-shift-hair, -12px);
   align-items: flex-start;
 }
 
 .hairSelected .avatarImage {
-  width: 100%;
-  height: 100%;
+  width: auto;
+  min-width: 100%;
+  max-width: none;
+  height: auto;
+  min-height: 100%;
   object-fit: cover; /* match Face behavior */
   object-position: top center; /* focus on the top area */
-  transform: scale(var(--avatar-zoom, 1));
+  transform: translateY(var(--avatar-shift, 0px)) scale(var(--avatar-zoom, 1));
   transform-origin: top center;
   will-change: transform;
 }
@@ -380,16 +389,20 @@ $design-w: 430; /* jedan izvor istine */
 .extrasSelected {
   height: min(var(--avatar-h), cqw(630));
   overflow: hidden;
-  --avatar-zoom: 1.6;
+  --avatar-zoom: var(--avatar-zoom-extras, 2.1);
+  --avatar-shift: var(--avatar-shift-extras, -12px);
   align-items: flex-start;
 }
 
 .extrasSelected .avatarImage {
-  width: 100%;
-  height: 100%;
+  width: auto;
+  min-width: 100%;
+  max-width: none;
+  height: auto;
+  min-height: 100%;
   object-fit: cover;
   object-position: top center;
-  transform: scale(var(--avatar-zoom, 1));
+  transform: translateY(var(--avatar-shift, 0px)) scale(var(--avatar-zoom, 1));
   transform-origin: top center;
   will-change: transform;
 }
@@ -591,6 +604,7 @@ $design-w: 430; /* jedan izvor istine */
     padding-right: 0;
     --panel-scale: clamp(0, calc(var(--avatar-h, 953px) / 953px), 1);
     --desktop-gap-scale: clamp(0, calc((100vw - 90px - var(--acc-w, 0px)) / 1015px), 1);
+    --avatar-stage-max-w: calc(100vw - 90px - var(--acc-w, 0px));
   }
   
 
@@ -683,15 +697,17 @@ $design-w: 430; /* jedan izvor istine */
     justify-content: center;
     position: relative;
   }
-  .accFace .faceSelected { align-items: flex-start; --avatar-zoom: 1.65; --avatar-shift: -36px; }
-  .accHair .hairSelected { align-items: flex-start; --avatar-zoom: 1.4; --avatar-shift: -16px; }
-  .accExtras .extrasSelected { align-items: flex-start; --avatar-zoom: 1.4; --avatar-shift: -16px; }
+  .accFace .faceSelected { align-items: flex-start; --avatar-zoom: var(--avatar-zoom-face, 2.1); --avatar-shift: var(--avatar-shift-face, -36px); }
+  .accHair .hairSelected { align-items: flex-start; --avatar-zoom: var(--avatar-zoom-hair, 2.1); --avatar-shift: var(--avatar-shift-hair, -16px); }
+  .accExtras .extrasSelected { align-items: flex-start; --avatar-zoom: var(--avatar-zoom-extras, 2.1); --avatar-shift: var(--avatar-shift-extras, -16px); }
   .accFace .faceSelected .avatarImage,
   .accHair .hairSelected .avatarImage,
   .accExtras .extrasSelected .avatarImage {
-    width: 100%;
+    width: auto;
+    min-width: 100%;
+    max-width: none;
     height: auto;
-    max-height: none;
+    min-height: 100%;
     object-fit: cover;
     transform: translateY(var(--avatar-shift, 0px)) scale(var(--avatar-zoom, 1.5));
     transform-origin: top center;
@@ -703,7 +719,12 @@ $design-w: 430; /* jedan izvor istine */
     flex: 1 1 auto;
     min-width: 410px;
     max-width: 604px;
+    min-width: min(410px, 100%);
+    max-width: min(100%, var(--avatar-stage-max-w, 1015px));
     height: 100%;
+  }
+  .accBody .avatarSection {
+    max-width: min(604px, var(--avatar-stage-max-w, 604px));
   }
   .controlGroup {
     width: 410px;
