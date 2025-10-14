@@ -1,12 +1,9 @@
 import {
   useEffect,
-  useRef,
   useState,
   type ComponentType,
   type SVGProps,
   type CSSProperties,
-  type Dispatch,
-  type SetStateAction,
 } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header/Header'
@@ -90,10 +87,6 @@ export default function VirtualTryOn() {
   const topOptions = ['with armor', 'option 2', 'option 3', 'option 4', 'option 5']
   const [bottomOptionIndex, setBottomOptionIndex] = useState(0)
   const bottomOptions = ['tapered fit', 'regular fit', 'loose fit', 'boot cut', 'straight fit']
-  const topCategoryMainRef = useRef<HTMLDivElement | null>(null)
-  const bottomCategoryMainRef = useRef<HTMLDivElement | null>(null)
-  const [topCategoryWrapped, setTopCategoryWrapped] = useState(false)
-  const [bottomCategoryWrapped, setBottomCategoryWrapped] = useState(false)
   useEffect(() => {
     if (typeof window === 'undefined') return
     const mediaQuery = window.matchMedia('(min-width: 1024px)')
@@ -124,71 +117,7 @@ export default function VirtualTryOn() {
       setSelectedControl(null)
     }
   }, [isDesktop])
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof ResizeObserver === 'undefined') {
-      return
-    }
-
-    if (!isDesktop) {
-      setTopCategoryWrapped(false)
-      setBottomCategoryWrapped(false)
-      return
-    }
-
-    const watchers: Array<{ compute: () => void; observer: ResizeObserver }> = []
-
-    const handleWrap = (
-      element: HTMLDivElement | null,
-      setter: Dispatch<SetStateAction<boolean>>,
-    ) => {
-      if (!element) return
-      const calculate = () => {
-        if (element.dataset.measuring === '1') {
-          return
-        }
-        element.dataset.measuring = '1'
-
-        const hadWrapClass = element.classList.contains(
-          styles.desktopCategoryTextMainWrapped,
-        )
-        if (hadWrapClass) {
-          element.classList.remove(styles.desktopCategoryTextMainWrapped)
-        }
-
-        const previousWhiteSpace = element.style.whiteSpace
-        element.style.whiteSpace = 'nowrap'
-
-        const availableWidth = element.clientWidth
-        const requiredWidth = element.scrollWidth
-
-        const isWrapped = requiredWidth - availableWidth > 1
-
-        element.style.whiteSpace = previousWhiteSpace
-        if (hadWrapClass) {
-          element.classList.add(styles.desktopCategoryTextMainWrapped)
-        }
-        delete element.dataset.measuring
-        setter((prev) => (prev === isWrapped ? prev : isWrapped))
-      }
-      calculate()
-      const observer = new ResizeObserver(calculate)
-      observer.observe(element)
-      watchers.push({ compute: calculate, observer })
-    }
-
-    handleWrap(topCategoryMainRef.current, setTopCategoryWrapped)
-    handleWrap(bottomCategoryMainRef.current, setBottomCategoryWrapped)
-
-    const handleWindowResize = () => {
-      watchers.forEach(({ compute }) => compute())
-    }
-    window.addEventListener('resize', handleWindowResize)
-
-    return () => {
-      watchers.forEach(({ observer }) => observer.disconnect())
-      window.removeEventListener('resize', handleWindowResize)
-    }
-  }, [isDesktop])
+  const shouldShrinkCategoryText = (text: string) => text.trim().length >= 10
   const cycleTopPrev = () => {
     setTopOptionIndex((i) => {
       const newIndex = (i + 5 - 1) % 5
@@ -281,6 +210,8 @@ export default function VirtualTryOn() {
     lowerCategories[(lowerCenterIdx - 1 + lowerCategories.length) % lowerCategories.length]
   const lowerMain = lowerCategories[lowerCenterIdx]
   const lowerBottom = lowerCategories[(lowerCenterIdx + 1) % lowerCategories.length]
+  const topCategoryWrapped = isDesktop && shouldShrinkCategoryText(upperMain)
+  const bottomCategoryWrapped = isDesktop && shouldShrinkCategoryText(lowerMain)
 
   // Full body categories (cyclic) - initial display Jumpsuit (top), Dress (main), Suit (bottom)
   const fullBodyCategories = ['Jumpsuit', 'Dress', 'Suit']
@@ -714,7 +645,6 @@ export default function VirtualTryOn() {
         <div className={styles.desktopCategoryTexts}>
           <div className={styles.desktopCategoryTextTop}>{textTop}</div>
           <div
-            ref={focus === 'top' ? topCategoryMainRef : bottomCategoryMainRef}
             className={`${styles.desktopCategoryTextMain} ${
               (focus === 'top' ? topCategoryWrapped : bottomCategoryWrapped)
                 ? styles.desktopCategoryTextMainWrapped

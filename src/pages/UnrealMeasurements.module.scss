@@ -584,6 +584,7 @@ $design-w: 430; /* jedan izvor istine */
     flex-direction: row;
     align-items: flex-start;
     justify-content: center;
+    background: #ADADAC;
     width: calc(100vw - 90px - var(--acc-w, 0px));
     max-width: none;
     height: calc(100vh - var(--header-real-h, 70px));
@@ -663,7 +664,7 @@ $design-w: 430; /* jedan izvor istine */
 
   .accBody .avatarSection,
   .accHair .avatarSection,
-  .accExtras .avatarSection { align-items: center; justify-content: center; }
+  .accExtras .avatarSection { align-items: center; justify-content: center; margin-left: 0;}
   .accFace .avatarShifted,
   .accHair .avatarShifted,
   .accExtras .avatarShifted { margin-left: 0; }
