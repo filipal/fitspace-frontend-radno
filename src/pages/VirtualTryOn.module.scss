@@ -589,6 +589,13 @@ $design-w: 430; // baseline širina dizajna
   height: 100%;
   box-sizing: border-box;
 }
+.desktopFooterFullBody {
+  width: 285px;
+  min-height: 954px;
+  gap: 0;
+  align-self: flex-start;
+  background: transparent;
+}
 .desktopFooterSection {
   width: 520px;
   height: 467px;
@@ -598,6 +605,159 @@ $design-w: 430; // baseline širina dizajna
   background: #ececec;
   box-sizing: border-box;
   border-top: none;
+}
+.desktopFullBodyFooter {
+  width: 285px;
+  min-height: 954px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: #ececec;
+  border: 1px solid #000;
+  border-top: none;
+  box-sizing: border-box;
+  margin-bottom: auto;
+}
+.desktopFullBodyHeading {
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 500;
+  border-bottom: 1px solid #000;
+}
+.desktopFullBodyRow,
+.desktopFullBodyRowBottom {
+  width: 100%;
+  display: flex;
+  background: #ececec;
+}
+.desktopFullBodyRow {
+  height: 214px;
+  border-bottom: 1px solid #000;
+}
+.desktopFullBodyRowBottom {
+  height: 213px;
+}
+.desktopFullBodyCol {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+.desktopFullBodyRow .desktopFullBodyCol + .desktopFullBodyCol,
+.desktopFullBodyRowBottom .desktopFullBodyCol + .desktopFullBodyCol {
+  border-left: 1px solid #000;
+}
+.desktopFullBodySizeSelector,
+.desktopFullBodyColorSelector,
+.desktopFullBodyOptionSelector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.desktopFullBodySizeSelector {
+  width: 138.22px;
+}
+.desktopFullBodySizeSelector .desktopSizeSelector {
+  width: 100%;
+}
+.desktopFullBodyCategoryCol {
+  flex-direction: column;
+}
+.desktopFullBodyCategoryInner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.desktopFullBodyCategoryCol .categoryArrows,
+.desktopFullBodyCategoryCol .fullBodyCategory,
+.desktopFullBodyCategoryCol .categoryTextGroupFullBody {
+  position: static;
+}
+.desktopFullBodyCategoryArrows {
+  width: 32.8px;
+  height: 138.01px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.desktopFullBodyCategoryArrows .categoryArrowBtn {
+  width: 32.8px;
+  height: 24px;
+}
+.desktopFullBodyCategoryTexts {
+  width: 100px;
+  height: 80px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.desktopFullBodyCategoryTexts .categoryTextMain {
+  width: 90.25px;
+  height: auto;
+  font-size: 22px;
+}
+.desktopFullBodyCategoryTexts .categoryTextTop,
+.desktopFullBodyCategoryTexts .categoryTextBottom {
+  width: 90.25px;
+  font-size: 13px;
+  opacity: 1;
+} 
+.desktopFullBodyAccordion {
+  width: 100%;
+  height: 354px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #000;
+}
+.desktopFullBodyAccordion :global(.TopAccordion-module__container__Pv2NL) {
+  width: 100%;
+}
+.desktopFullBodyAccordion :global(.TopAccordion-module__desktop__EyXm8) {
+  width: 100%;
+}
+.desktopFullBodyDetails {
+  width: 100%;
+  height: 133px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #000;
+}
+.desktopFullBodyDetails .desktopFooterTopDetails {
+  height: 100%;
+}
+.desktopFullBodyColorSelector {
+  width: 71.5px;
+}
+.desktopFullBodyColorSelector .desktopColorSelector {
+  width: 100%;
+}
+.desktopFullBodyOptionSelector {
+  width: 100px;
+}
+.desktopFullBodyOptionSelector .desktopOptionSelector {
+  width: 100%;
+}
+.desktopFullBodyColorCol,
+.desktopFullBodyOptionCol,
+.desktopFullBodySizeCol {
+  background: #ececec;
+}
+.desktopFooterRootFullBody {
+  align-items: flex-start;
+}
+.footerColumnFullBody {
+  flex: 0 0 285px;
+  justify-content: flex-start;
 }
 .desktopFooterHeading {
   height: 40px;
@@ -643,7 +803,7 @@ $design-w: 430; // baseline širina dizajna
   height: 100%;
   padding: 15px 22.52px 15px 20px;
   box-sizing: border-box;
-  gap: 24px;
+  gap: 12px;
 }
 
 .desktopFooterBottomDetails {
@@ -910,12 +1070,14 @@ $design-w: 430; // baseline širina dizajna
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;;
+  justify-content: space-between;
 }
 
 .desktopOptionText {
   width: 100%;
-  height: 100px;
+  height: calc(100% - 65.6px);
+  min-height: calc(100% - 65.6px);
+  flex: 1 0 calc(100% - 65.6px);
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -797,6 +797,45 @@ export default function VirtualTryOn() {
     </div>
   )
 
+  const renderDesktopTopDetails = () => (
+    <div className={styles.desktopFooterTopDetails}>
+      <div className={styles.desktopFooterPriceGroup} aria-label="Price and cart">
+        <div className={styles.desktopFooterPrice} aria-label="Price">
+          $ 459
+        </div>
+        <img
+          className={styles.desktopFooterAddToCart}
+          src={AddToCartIcon}
+          alt="Add to cart"
+        />
+      </div>
+      <div className={styles.desktopFooterModelGroup} aria-label="Model details">
+        <span className={styles.desktopFooterModel}>FALCON LEATHER</span>
+        <span className={styles.desktopFooterProduct}>AVIATOR JACKET</span>
+        <span className={styles.desktopFooterBrand}>Pando Moto</span>
+      </div>
+    </div>
+  )
+
+  const renderDesktopBottomDetails = () => (
+    <div className={styles.desktopFooterBottomDetails}>
+      <div className={styles.desktopFooterPriceGroup} aria-label="Price and cart">
+        <div className={styles.desktopFooterPrice} aria-label="Price">
+          $ 459
+        </div>
+        <img
+          className={styles.desktopFooterAddToCart}
+          src={AddToCartIcon}
+          alt="Add to cart"
+        />
+      </div>
+      <div className={styles.desktopFooterBottomInfo} aria-label="Product details">
+        <span className={styles.desktopFooterBottomName}>BOSS DYN 01 JEANS</span>
+        <span className={styles.desktopFooterBottomBrand}>Pando Moto</span>
+      </div>
+    </div>
+  )
+
   const renderDesktopFooterSection = (focus: 'top' | 'bottom') => (
     <div className={styles.desktopFooterSection} key={focus}>
       <div className={styles.desktopFooterHeading}>{focus === 'top' ? 'TOP' : 'BOTTOM'}</div>
@@ -811,40 +850,9 @@ export default function VirtualTryOn() {
           </div>
           <div className={styles.desktopFooterLeftBottom}>
             {focus === 'top' ? (
-              <div className={styles.desktopFooterTopDetails}>
-                <div className={styles.desktopFooterPriceGroup} aria-label="Price and cart">
-                  <div className={styles.desktopFooterPrice} aria-label="Price">
-                    $ 459
-                  </div>
-                  <img
-                    className={styles.desktopFooterAddToCart}
-                    src={AddToCartIcon}
-                    alt="Add to cart"
-                  />
-                </div>
-                <div className={styles.desktopFooterModelGroup} aria-label="Model details">
-                  <span className={styles.desktopFooterModel}>FALCON LEATHER</span>
-                  <span className={styles.desktopFooterProduct}>AVIATOR JACKET</span>
-                  <span className={styles.desktopFooterBrand}>Pando Moto</span>
-                </div>
-              </div>
+              renderDesktopTopDetails()
             ) : (
-              <div className={styles.desktopFooterBottomDetails}>
-                <div className={styles.desktopFooterPriceGroup} aria-label="Price and cart">
-                  <div className={styles.desktopFooterPrice} aria-label="Price">
-                    $ 459
-                  </div>
-                  <img
-                    className={styles.desktopFooterAddToCart}
-                    src={AddToCartIcon}
-                    alt="Add to cart"
-                  />
-                </div>
-                <div className={styles.desktopFooterBottomInfo} aria-label="Product details">
-                  <span className={styles.desktopFooterBottomName}>BOSS DYN 01 JEANS</span>
-                  <span className={styles.desktopFooterBottomBrand}>Pando Moto</span>
-                </div>
-              </div>
+              renderDesktopBottomDetails()
             )}
           </div>
         </div>
@@ -862,6 +870,66 @@ export default function VirtualTryOn() {
             <div className={styles.desktopFooterRightCol}>
               {renderDesktopOptionSelector(focus)}
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  const renderDesktopFullBodyFooter = () => (
+    <div className={styles.desktopFullBodyFooter}>
+      <div className={`${styles.desktopFooterHeading} ${styles.desktopFullBodyHeading}`}>
+        FULL BODY
+      </div>
+      <div className={styles.desktopFullBodyRow}>
+        <div className={`${styles.desktopFullBodyCol} ${styles.desktopFullBodySizeCol}`}>
+          <div className={styles.desktopFullBodySizeSelector}>
+            {renderDesktopSizeSelector('top')}
+          </div>
+        </div>
+        <div className={`${styles.desktopFullBodyCol} ${styles.desktopFullBodyCategoryCol}`}>
+          <div className={styles.desktopFullBodyCategoryInner}>
+            <div
+              className={`${styles.categoryArrows} ${styles.categoryArrowsFullBody} ${styles.desktopFullBodyCategoryArrows}`}
+            >
+              <button
+                type="button"
+                className={styles.categoryArrowBtn}
+                onClick={() => cycleFullBody(-1)}
+              >
+                <img src={ArrowUp} alt="Previous category" />
+              </button>
+              <div
+                className={`${styles.fullBodyCategory} ${styles.categoryTextGroupFullBody} ${styles.desktopFullBodyCategoryTexts}`}
+              >
+                <div className={styles.categoryTextTop}>{fbTop}</div>
+                <div className={styles.categoryTextMain}>{fbMain}</div>
+                <div className={styles.categoryTextBottom}>{fbBottom}</div>
+              </div>
+              <button
+                type="button"
+                className={styles.categoryArrowBtn}
+                onClick={() => cycleFullBody(1)}
+              >
+                <img src={ArrowDown} alt="Next category" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className={styles.desktopFullBodyAccordion}>
+        <TopAccordion variant="desktop" />
+      </div>
+      <div className={styles.desktopFullBodyDetails}>{renderDesktopTopDetails()}</div>
+      <div className={styles.desktopFullBodyRowBottom}>
+        <div className={`${styles.desktopFullBodyCol} ${styles.desktopFullBodyColorCol}`}>
+          <div className={styles.desktopFullBodyColorSelector}>
+            {renderDesktopColorSelector()}
+          </div>
+        </div>
+        <div className={`${styles.desktopFullBodyCol} ${styles.desktopFullBodyOptionCol}`}>
+          <div className={styles.desktopFullBodyOptionSelector}>
+            {renderDesktopOptionSelector('top')}
           </div>
         </div>
       </div>
@@ -1320,7 +1388,11 @@ export default function VirtualTryOn() {
           )}
         </div>
 
-        <div className={`${styles.footerColumn} ${isDesktop ? styles.footerColumnDesktop : ''}`}>
+        <div
+          className={`${styles.footerColumn} ${isDesktop ? styles.footerColumnDesktop : ''} ${
+            isDesktop && fullBodyMode && !fullBodyDetail ? styles.footerColumnFullBody : ''
+          }`}
+        >
           <div
             className={`${styles.footer} ${
               topExpandedFooter
@@ -1330,13 +1402,23 @@ export default function VirtualTryOn() {
                   : fullBodyMode
                     ? styles.footerFullBody
                     : ''
-            } ${isDesktop ? styles.desktopFooterRoot : ''}`}
+            } ${isDesktop ? styles.desktopFooterRoot : ''} ${
+              isDesktop && fullBodyMode && !fullBodyDetail
+                ? styles.desktopFooterRootFullBody
+                : ''
+            }`}
           >
             {isDesktop ? (
-              <div className={styles.desktopFooter}>
-                {(['top', 'bottom'] as const).map((focus) =>
-                  renderDesktopFooterSection(focus),
-                )}
+              <div
+                className={`${styles.desktopFooter} ${
+                  fullBodyMode && !fullBodyDetail ? styles.desktopFooterFullBody : ''
+                }`}
+              >
+                {fullBodyMode && !fullBodyDetail
+                  ? renderDesktopFullBodyFooter()
+                  : (['top', 'bottom'] as const).map((focus) =>
+                      renderDesktopFooterSection(focus),
+                    )}
               </div>
             ) : (
               <>
