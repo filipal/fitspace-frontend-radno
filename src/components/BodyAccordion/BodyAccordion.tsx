@@ -377,33 +377,51 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
       setVal(getMorphValue());
     }, [getMorphValue]);
 
-    const onStart = (clientX: number) => {
+    const onStart = (event: PointerEvent) => {
       const bar = barRef.current;
       if (!bar) return;
+
+      event.preventDefault();
+
       const rect = bar.getBoundingClientRect();
       draggingRef.current = true;
 
+      const clearSelection = () => {
+        if (typeof window === 'undefined') return;
+        const selection = window.getSelection();
+        if (!selection) return;
+        if (selection.type !== 'None') selection.removeAllRanges();
+      };
+
       const update = (x: number) => {
-        const rel = x - rect.left
-        const width = rect.width
-        const pct = clamp(Math.round((rel / width) * 100), 0, 100)
-        setVal(pct)
+        const rel = x - rect.left;
+        const width = rect.width;
+        const pct = clamp(Math.round((rel / width) * 100), 0, 100);
+        setVal(pct);
 
         // lokalni callback za UI
-        updateMorph?.(attr.morphId, attr.morphName, pct)
+        updateMorph?.(attr.morphId, attr.morphName, pct);
         // ⬅️ queue autosave prema backendu
-        queueMorphSave(attr.morphId, pct)
-      }
+        queueMorphSave(attr.morphId, pct);
 
-      update(clientX);
-      const move = (e: PointerEvent) => update(e.clientX);
+        clearSelection();
+      };
+
+      const move = (e: PointerEvent) => {
+        e.preventDefault();
+        update(e.clientX);
+      };
+
       const up = () => {
         window.removeEventListener('pointermove', move);
         window.removeEventListener('pointerup', up);
         draggingRef.current = false;
       };
-      window.addEventListener('pointermove', move);
-      window.addEventListener('pointerup', up);
+
+      clearSelection();
+      update(event.clientX);
+      window.addEventListener('pointermove', move, { passive: false });
+      window.addEventListener('pointerup', up, { passive: false });
     };
 
     const leftPx = (val / 100) * barWidth;
@@ -412,14 +430,26 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
       <div className={styles.row}>
         <div className={styles.rowLabel} title={attr.labelName}>{attr.labelName}</div>
         <div className={styles.sliderGroup}>
-          <div className={styles.sliderBar} ref={barRef} onPointerDown={(e) => onStart(e.clientX)}>
+          <div
+            className={styles.sliderBar}
+            ref={barRef}
+            onPointerDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onStart(e.nativeEvent);
+            }}
+          >
             <button
               type="button"
               className={styles.sliderThumb}
               style={{ left: `${leftPx}px` }}
               aria-label={`Adjust ${attr.labelName}`}
               tabIndex={0}
-              onPointerDown={(e) => { e.stopPropagation(); onStart(e.clientX); }}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onStart(e.nativeEvent);
+              }}
             />
           </div>
         </div>

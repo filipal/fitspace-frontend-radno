@@ -132,6 +132,8 @@ $design-w: 430;
   grid-template-columns: 1fr min(cqw(10), 10px) min(cqw(158), 158px) min(cqw(49), 49px);
   align-items: center;
   gap: 0;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .rowLabel { 
@@ -160,6 +162,8 @@ $design-w: 430;
   border-radius: min(cqw(10), 10px);
   box-shadow: inset 0 0 0 min(cqw(1.5), 1.5px) #000;
   touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .sliderThumb {
@@ -167,15 +171,17 @@ $design-w: 430;
   transform: translate(-50%, -50%);
   inline-size: min(cqw(25), 25px);
   block-size: min(cqw(25), 25px);
-  background: transparent; 
-  border: none; 
-  border-radius: 50%; 
+  background: transparent;
+  border: none;
+  border-radius: 50%;
   cursor: grab;
   background-image: url('../../assets/skinbarbtn.svg');
-  background-repeat: no-repeat; 
-  background-size: contain; 
+  background-repeat: no-repeat;
+  background-size: contain;
   background-position: center;
   touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .rowPct {
