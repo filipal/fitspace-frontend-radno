@@ -382,10 +382,9 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
       setBarWidth(barRef.current?.clientWidth ?? 0)
     }, [])
 
-    // Sync slider with backend values when avatar or attribute changes
-    useEffect(() => {
-      lastEmittedRef.current = morphValue
+    useLayoutEffect(() => {
       if (activeSliderRef.current === attr.morphId) return
+      lastEmittedRef.current = morphValue
       setVal(prev => (prev === morphValue ? prev : morphValue))
     }, [attr.morphId, morphValue])
 
@@ -412,7 +411,7 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
         const pct = clamp(Math.round((rel / width) * 100), 0, 100);
         setVal(pct);
 
-       if (pct !== lastEmittedRef.current) {
+        if (pct !== lastEmittedRef.current) {
           lastEmittedRef.current = pct;
           updateMorph?.(attr.morphId, attr.morphName, pct);
           queueMorphSave(attr.morphId, pct);
@@ -426,9 +425,10 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
         update(e.clientX);
       };
 
-      const up = () => {
+      const stop = () => {
         window.removeEventListener('pointermove', move);
-        window.removeEventListener('pointerup', up);
+        window.removeEventListener('pointerup', stop);
+        window.removeEventListener('pointercancel', stop);
         draggingRef.current = false;
         activeSliderRef.current = null;
       };
@@ -436,7 +436,8 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
       clearSelection();
       update(event.clientX);
       window.addEventListener('pointermove', move, { passive: false });
-      window.addEventListener('pointerup', up, { passive: false });
+      window.addEventListener('pointerup', stop, { passive: false });
+      window.addEventListener('pointercancel', stop, { passive: false });
     };
 
     const leftPx = (val / 100) * barWidth;
