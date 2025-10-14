@@ -42,6 +42,12 @@ $design-w: 430; // baseline širina dizajna
 
 .footerColumnDesktop {border-top: none;}
 
+.headerButtonGroup {
+  display: flex;
+  align-items: center;
+  gap: cqw(30.6);
+}
+
 .avatarButton {
   background: none;
   border: none;
@@ -53,6 +59,18 @@ $design-w: 430; // baseline širina dizajna
   justify-content: center;
 }
 .avatarButton img { width: 100%; height: 100%; object-fit: contain; }
+
+.cartButton {
+  background: none;
+  border: none;
+  padding: 0;
+  width: min(30px, cqw(30));
+  height: min(25px, cqw(25));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cartButton img { width: 100%; height: 100%; object-fit: contain; }
 
 .canvasWrapper {
   width: 100%;
@@ -744,7 +762,7 @@ $design-w: 430; // baseline širina dizajna
 .desktopFullBodyOptionSelector {
   width: 100px;
 }
-.desktopFullBodyOptionSelector .desktopOptionSelector {
+.desktopFullBodyOptionSelector {
   width: 100%;
 }
 .desktopFullBodyColorCol,
@@ -757,7 +775,11 @@ $design-w: 430; // baseline širina dizajna
 }
 .footerColumnFullBody {
   flex: 0 0 285px;
-  justify-content: flex-start;
+  width: 285px;
+  max-width: 285px;
+  justify-content: flex-end;
+  align-items: stretch;
+  margin-left: auto;
 }
 .desktopFooterHeading {
   height: 40px;
@@ -814,7 +836,7 @@ $design-w: 430; // baseline širina dizajna
   height: 100%;
   padding: 15px 22.52px 15px 20px;
   box-sizing: border-box;
-  gap: 24px;
+  gap: 9px;
 }
 
 .desktopFooterPriceGroup {
@@ -899,7 +921,7 @@ $design-w: 430; // baseline širina dizajna
   display: flex;
   align-items: flex-end;
   min-height: 20px;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 300;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -1066,7 +1088,7 @@ $design-w: 430; // baseline širina dizajna
 
 .desktopOptionSelector {
   width: 100px;
-  height: 139.02px;
+  height: 147.02px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1083,6 +1105,7 @@ $design-w: 430; // baseline širina dizajna
   align-items: center;
   justify-content: center;
   gap: 6px;
+  line-height: 1.1;
 }
 .desktopOptionTitle {
   font-size: 18px;
@@ -1139,6 +1162,14 @@ $design-w: 430; // baseline širina dizajna
     justify-content: flex-end;
     align-items: stretch;
     height: 100%;
+  }
+  .headerButtonGroup {
+    gap: 30.6px;
+  }
+  .avatarButton,
+  .cartButton {
+    width: 30px;
+    height: 25px;
   }
   .controlGroup,
   .controlGroupDesktop {

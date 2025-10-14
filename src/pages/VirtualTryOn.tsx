@@ -31,6 +31,7 @@ import HomeButton from '../assets/home-button.svg?react'
 import TopAccordion from '../components/TopAccordion/TopAccordion'
 import BottomAccordion from '../components/BottomAccordion/BottomAccordion'
 import CartButton from '../assets/cart-button.svg'
+import cartIcon from '../assets/cart.svg'
 import AddToCartIcon from '../assets/add-to-cart.svg'
 import FullBodyButton from '../assets/full-body-button.svg'
 import TopBotButton from '../assets/top-bot-button.svg'
@@ -967,13 +968,20 @@ export default function VirtualTryOn() {
         title={title}
         onExit={() => navigate(-1)}
         rightContent={
-          <button
-            className={styles.avatarButton}
-            onClick={() => navigate('/unreal-measurements')}
-            type="button"
-          >
-            <img src={avatarsButton} alt="Avatars" />
-          </button>
+          <div className={styles.headerButtonGroup}>
+            {isDesktop ? (
+              <button className={styles.cartButton} type="button">
+                <img src={cartIcon} alt="Cart" />
+              </button>
+            ) : null}
+            <button
+              className={styles.avatarButton}
+              onClick={() => navigate('/unreal-measurements')}
+              type="button"
+            >
+              <img src={avatarsButton} alt="Avatars" />
+            </button>
+          </div>
         }
       />
 
