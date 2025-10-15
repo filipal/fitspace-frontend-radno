@@ -1,85 +1,95 @@
 .callbackPage {
-  inline-size: 100%;
-  block-size: 100dvh;
-  display: grid;
-  place-items: center;
-  background: var(--color-background, #ffffff);
-  color: var(--color-text, #111);
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
 }
 
 .container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2.5rem;
+  gap: 3rem;
 }
 
 .logo {
-  inline-size: clamp(140px, 30vw, 220px);
-  block-size: auto;
-  display: block;
+  width: 200px;
+  height: auto;
 }
 
-.card {
+.spinnerContainer {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.875rem;
-  background: var(--card-bg, #fff);
-  padding: 2rem 2.5rem;
+  gap: 1rem;
+  background: white;
+  padding: 3rem 4rem;
   border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0,0,0,.08);
-  min-inline-size: min(90vw, 460px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 }
 
 .spinner {
-  inline-size: 3rem;
-  block-size: 3rem;
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #667eea;
   border-radius: 50%;
-  border: 0.4rem solid rgba(0,0,0,0.1);
-  border-top-color: var(--color-accent, #667eea);
-  animation: spin .9s linear infinite;
+  animation: spin 1s linear infinite;
 }
 
-.title {
-  margin: 0;
-  font-size: 1.125rem;
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loadingText {
+  font-size: 1.25rem;
   font-weight: 600;
-  letter-spacing: .01em;
-  color: var(--color-text-strong, #222);
-  text-align: center;
+  color: #333;
+  margin: 0;
 }
 
-.message {
+.subText {
+  font-size: 0.9rem;
+  color: #666;
   margin: 0;
-  font-size: 0.975rem;
-  color: var(--color-text, #444);
-  text-align: center;
-  max-inline-size: 38ch;
 }
 
-.subtle {
-  margin: 0;
-  font-size: .9rem;
-  color: #888;
-  font-style: italic;
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  background: white;
+  padding: 3rem 4rem;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  text-align: center;
 }
 
 .errorIcon {
-  font-size: 2rem;
-  line-height: 1;
+  font-size: 3rem;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+.errorTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
 
-/* Dark-mode friendly defaults (opcionalno) */
-@media (prefers-color-scheme: dark) {
-  .callbackPage { 
-    --color-background: #0a0a0a; 
-    --color-text: #f7f7f7; 
-    --card-bg: #111; 
-    --color-text-strong: #fafafa;
-  }
-  .card { box-shadow: 0 10px 40px rgba(0,0,0,.35); }
-  .spinner { border-color: rgba(255,255,255,.15); }
+.errorMessage {
+  font-size: 1rem;
+  color: #666;
+  margin: 0;
+  max-width: 400px;
+}
+
+.redirectMessage {
+  font-size: 0.9rem;
+  color: #999;
+  margin: 0;
+  font-style: italic;
 }

@@ -56,7 +56,7 @@ export default function BeforeUnloadHandler() {
       }
     }
 
-    window.addEventListener('beforeunload', handleBeforeUnload)
+    // window.addEventListener('beforeunload', handleBeforeUnload)
     window.addEventListener('pagehide', handlePageHide)
     document.addEventListener('visibilitychange', handleVisibilityChange)
 

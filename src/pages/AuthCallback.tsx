@@ -1,6 +1,5 @@
-// src/pages/AuthCallback.tsx
-import { useEffect, useState } from 'react'
-import { useAuth } from 'react-oidc-context'
+import { useAuth } from "react-oidc-context"
+import { useEffect, useState } from "react"
 import logo from '../assets/fitspace-logo-gradient-nobkg.svg'
 import styles from './AuthCallback.module.scss'
 
@@ -10,57 +9,62 @@ export default function AuthCallback() {
   const [hasRedirected, setHasRedirected] = useState(false)
 
   useEffect(() => {
-    // 1) Pričekaj da završi OIDC handshake
-    if (auth.isLoading) return
-
-    // 2) Uspjeh → kratka odgoda da storage sigurno upiše tokene, pa hard-redirect
-    if (auth.isAuthenticated && !hasRedirected) {
-      setHasRedirected(true)
-      setTimeout(() => {
-        if (typeof window !== 'undefined') {
-          window.location.replace('/logged-in')
-        }
-      }, 500)
+    // Wait for auth to finish loading
+    if (auth.isLoading) {
+      console.log('Auth is still loading...')
       return
     }
 
-    // 3) Greška → pokaži poruku i vrati na /login
-    if (auth.error) {
-      setError(auth.error.message || 'Authentication failed.')
+    // If authentication is successful AND we haven't redirected yet
+    if (auth.isAuthenticated && !hasRedirected) {
+      console.log('Authentication successful!')
+      console.log('User:', auth.user)
+      
+      // Add a small delay to ensure tokens are stored
+      setHasRedirected(true)
       setTimeout(() => {
-        if (typeof window !== 'undefined') {
-          window.location.replace('/login?error=auth_failed')
-        }
+        console.log('Redirecting to /logged-in')
+        window.location.replace('/logged-in')
+      }, 500) // 500ms delay to ensure storage completes
+    }
+    
+    // If there's an error
+    if (auth.error) {
+      console.error('Authentication error:', auth.error)
+      setError(auth.error.message)
+      
+      setTimeout(() => {
+        window.location.replace('/login?error=auth_failed')
       }, 3000)
     }
-  }, [auth.isLoading, auth.isAuthenticated, auth.error, hasRedirected])
+  }, [auth.isAuthenticated, auth.isLoading, auth.error, auth.user, hasRedirected])
 
-  // ——— UI: error state ———
+  // Show error state
   if (error) {
     return (
       <div className={styles.callbackPage}>
-        <div className={styles.container} role="status" aria-live="polite" aria-busy="true">
+        <div className={styles.container}>
           <img src={logo} alt="Fitspace" className={styles.logo} />
-          <div className={styles.card}>
-            <div className={styles.errorIcon} aria-hidden="true">⚠️</div>
-            <h2 className={styles.title}>Authentication Failed</h2>
-            <p className={styles.message}>{error}</p>
-            <p className={styles.subtle}>Redirecting to login…</p>
+          <div className={styles.errorContainer}>
+            <div className={styles.errorIcon}>⚠️</div>
+            <h2 className={styles.errorTitle}>Authentication Failed</h2>
+            <p className={styles.errorMessage}>{error}</p>
+            <p className={styles.redirectMessage}>Redirecting to login page...</p>
           </div>
         </div>
       </div>
     )
   }
 
-  // ——— UI: loading state ———
+  // Show loading state
   return (
     <div className={styles.callbackPage}>
-      <div className={styles.container} role="status" aria-live="polite" aria-busy="true">
+      <div className={styles.container}>
         <img src={logo} alt="Fitspace" className={styles.logo} />
-        <div className={styles.card}>
-          <div className={styles.spinner} aria-hidden="true" />
-          <p className={styles.title}>Completing sign-in…</p>
-          <p className={styles.subtle}>Please wait while we log you in</p>
+        <div className={styles.spinnerContainer}>
+          <div className={styles.spinner}></div>
+          <p className={styles.loadingText}>Completing sign-in...</p>
+          <p className={styles.subText}>Please wait while we log you in</p>
         </div>
       </div>
     </div>

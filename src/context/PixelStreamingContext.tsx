@@ -10,6 +10,7 @@ import {
 import type { AllSettings } from '@epicgames-ps/lib-pixelstreamingfrontend-ue5.6/dist/types/Config/Config';
 import { getPixelStreamingConfig } from '../config/pixelStreamingConfig';
 import { getNetworkInformation } from '../utils/networkInfo';
+import { useAuthData } from '../hooks/useAuthData';
 
 declare global {
   interface Window {
@@ -159,6 +160,9 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [stream, setStream] = useState<PixelStreaming | null>(null);
   const [application, setApplication] = useState<Application | null>(null);
+  
+  // Auth data for session management
+  const authData = useAuthData();
   
   // Debug state
   const [debugMode, setDebugMode] = useState<boolean>(false);
@@ -829,6 +833,21 @@ const connect = useCallback(async (overrideUrl?: string) => {
       } catch (testError) {
         addDebugMsg('❌ Failed to create test WebSocket');
         console.error('❌ Failed to create test WebSocket:', testError);
+      }
+
+      // Set ALB stickiness cookie before WebSocket connection
+      if (authData.sessionId) {
+        const sessionId = authData.sessionId;
+        
+        // Set cookie that ALB stickiness will use
+        const cookieValue = `PSSESSION=${sessionId}; Path=/; Secure; SameSite=None; Max-Age=86400`;
+        document.cookie = cookieValue;
+        
+        //addDebugMsg(`🍪 Set ALB stickiness cookie: PSSESSION=${sessionId}`);
+        console.log('🍪 Set ALB stickiness cookie for session:', sessionId);
+      } else {
+        //addDebugMsg('⚠️ No sessionId available for ALB stickiness cookie');
+        console.warn('⚠️ No sessionId available for ALB stickiness cookie');
       }
 
       // Stvarni connect

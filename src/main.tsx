@@ -39,6 +39,7 @@ if (import.meta.env.DEV && 'serviceWorker' in navigator) {
 
 // Minimalni OIDC callback: očisti URL; redirect rješava <AuthCallback />
 const onSigninCallback = () => {
+  // Just clean up the URL - the AuthCallback component handles the redirect
   window.history.replaceState({}, document.title, window.location.pathname)
 }
 

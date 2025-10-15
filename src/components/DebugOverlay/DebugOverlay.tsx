@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useDebug } from '../../hooks/useDebug'
 import { usePixelStreamingSettings } from '../../hooks/usePixelStreamingSettings'
 import { usePixelStreaming } from '../../context/PixelStreamingContext'
@@ -11,6 +12,7 @@ import styles from './DebugOverlay.module.scss'
 import { getNetworkInformation } from '../../utils/networkInfo'
 
 export default function DebugOverlay() {
+  const navigate = useNavigate()
   const { isDebug, toggleDebug } = useDebug()
   const { settings, updateSettings } = usePixelStreamingSettings()
   const { devMode, setDevMode, hideNativeOverlay, setHideNativeOverlay } = usePixelStreaming()
@@ -82,6 +84,20 @@ export default function DebugOverlay() {
     } catch (error) {
       console.error('❌ Failed to terminate UE server:', error);
       alert(`Failed to terminate UE server: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // Debug navigation function to simulate loading flow
+  const handleDebugLaunchInstance = () => {
+    try {
+      console.log('🚀 Debug: Launching instance navigation');
+      const targetRoute = '/virtual-try-on';
+      navigate(`/loading?destination=${encodeURIComponent(targetRoute)}`, {
+        state: { debug: true }
+      });
+    } catch (error) {
+      console.error('❌ Failed to launch debug instance:', error);
+      alert(`Failed to launch debug instance: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -281,6 +297,32 @@ export default function DebugOverlay() {
                   marginTop: '4px'
                 }}>
                   Terminates the current UE server instance{instanceData?.instanceId ? ` (${instanceData.instanceId})` : ' (no instance ID available)'}
+                </div>
+              </div>
+              
+              <div style={{ marginBottom: '8px' }}>
+                <button 
+                  onClick={handleDebugLaunchInstance}
+                  style={{ 
+                    padding: '8px 16px', 
+                    fontSize: '12px', 
+                    borderRadius: '4px',
+                    backgroundColor: '#007acc',
+                    color: 'white',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: 'bold'
+                  }}
+                  title="Launch a debug instance that navigates to virtual-try-on"
+                >
+                  🚀 Launch Instance
+                </button>
+                <div style={{ 
+                  fontSize: '10px', 
+                  color: '#888',
+                  marginTop: '4px'
+                }}>
+                  Launches debug navigation to virtual-try-on via loading page
                 </div>
               </div>
             </div>

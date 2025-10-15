@@ -377,6 +377,7 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
     const [val, setVal] = useState(morphValue)
     const [barWidth, setBarWidth] = useState(0)
     const lastEmittedRef = useRef(morphValue)
+    const pointerOffsetRef = useRef(0)
 
     useLayoutEffect(() => {
       setBarWidth(barRef.current?.clientWidth ?? 0)
@@ -388,7 +389,7 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
       setVal(prev => (prev === morphValue ? prev : morphValue))
     }, [attr.morphId, morphValue])
 
-    const onStart = (event: PointerEvent) => {
+    const onStart = (event: PointerEvent, fromThumb: boolean) => {
       const bar = barRef.current;
       if (!bar) return;
 
@@ -398,6 +399,11 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
       draggingRef.current = true;
       activeSliderRef.current = attr.morphId;
 
+      const barWidthPx = rect.width;
+      const currentPx = (val / 100) * barWidthPx;
+      const pointerPx = event.clientX - rect.left;
+      pointerOffsetRef.current = fromThumb ? pointerPx - currentPx : 0;
+
       const clearSelection = () => {
         if (typeof window === 'undefined') return;
         const selection = window.getSelection();
@@ -406,7 +412,7 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
       };
 
       const update = (x: number) => {
-        const rel = x - rect.left;
+        const rel = x - rect.left - pointerOffsetRef.current;
         const width = rect.width;
         const pct = clamp(Math.round((rel / width) * 100), 0, 100);
         setVal(pct);
@@ -431,6 +437,7 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
         window.removeEventListener('pointercancel', stop);
         draggingRef.current = false;
         activeSliderRef.current = null;
+        pointerOffsetRef.current = 0;
       };
 
       clearSelection();
@@ -452,7 +459,7 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
             onPointerDown={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              onStart(e.nativeEvent);
+              onStart(e.nativeEvent, false);
             }}
           >
             <button
@@ -464,7 +471,7 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
               onPointerDown={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                onStart(e.nativeEvent);
+                onStart(e.nativeEvent, true);
               }}
             />
           </div>

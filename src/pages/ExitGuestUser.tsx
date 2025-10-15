@@ -22,14 +22,20 @@ export default function ExitGuestUser() {
     try {
       const saved = sessionStorage.getItem(GUEST_AVATAR_NAME_KEY);
       if (saved) setAvatarName(saved);
-    } catch {}
+    } catch (_err) {
+      // namjerno ignorirano (npr. Safari private mode)
+      void _err;
+    }
   }, []);
 
   const handleSignIn = useCallback(() => {
     // spremi upisano ime da ga kasnije pročitaš nakon povratka iz OIDC-a
     try {
       sessionStorage.setItem(GUEST_AVATAR_NAME_KEY, avatarName.trim());
-    } catch {}
+    } catch (_err) {
+        // namjerno ignorirano (npr. Safari private mode)
+        void _err;
+      }
 
     const state = location.state as { from?: Location } | undefined;
     const redirectTarget = state?.from

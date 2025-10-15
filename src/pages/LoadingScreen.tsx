@@ -62,24 +62,24 @@ export default function LoadingScreen() {
       
       // Check if dev mode is enabled
       if (devMode === 'dev') {
-        console.log(`🔧 LoadingScreen: Dev mode enabled, skipping lambda calls and redirecting to /${destination}`)
+        console.log(`🔧 LoadingScreen: Dev mode enabled, skipping lambda calls and redirecting to ${destination}`)
         // setProgress(100)
         
         // Simulate loading for visual feedback
         setTimeout(() => {
-          navigate(`/${destination}`)
+          navigate(destination)
         }, 1500)
         return
       }
       
       // Check if localhost mode is enabled
       if (devMode === 'localhost') {
-        console.log(`🔧 LoadingScreen: Localhost mode enabled, skipping lambda calls and redirecting to /${destination}`)
+        console.log(`🔧 LoadingScreen: Localhost mode enabled, skipping lambda calls and redirecting to ${destination}`)
         // setProgress(100)
         
         // Simulate loading for visual feedback
         setTimeout(() => {
-          navigate(`/${destination}`)
+          navigate(destination)
         }, 1500)
         return
       }
@@ -118,7 +118,7 @@ export default function LoadingScreen() {
     // Navigate when fully connected
     if (isConnectedToInstance && connectionState === 'connected') {
       setTimeout(() => {
-        navigate(`/${destination}`)
+        navigate(destination)
       }, 1000) // Small delay to show completion
     }
   }, [devMode, isConnectedToInstance, connectionState, navigate, destination])
