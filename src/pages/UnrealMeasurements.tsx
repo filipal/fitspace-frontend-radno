@@ -3,7 +3,14 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import Header from '../components/Header/Header'
 import { usePixelStreaming } from '../context/PixelStreamingContext'
 import { PixelStreamingView } from '../components/PixelStreamingView/PixelStreamingView'
-import { useAvatarConfiguration, type BasicMeasurements, type BodyMeasurements } from '../context/AvatarConfigurationContext'
+import {
+  useAvatarConfiguration,
+  type AvatarCreationMode,
+  type BasicMeasurements,
+  type BodyMeasurements,
+  type BackendAvatarMorphTarget,
+  type QuickModeSettings,
+} from '../context/AvatarConfigurationContext'
 import { convertSliderValueToUnrealValue } from '../services/avatarCommandService'
 import {
   convertMorphValueToBackendValue,
@@ -21,6 +28,7 @@ import {
   useAvatarApi,
 } from '../services/avatarApi'
 import { useAuthData } from '../hooks/useAuthData'
+import type { CreateAvatarCommand } from '../types/provisioning'
 
 import avatarsButton from '../assets/avatars-button.png'
 import RLeft from '../assets/r-left.svg?react'
@@ -390,12 +398,6 @@ export default function UnrealMeasurements() {
     if (!hasDirtyMorphsRef.current) return true
     if (isSavingMorphsRef.current) return false
 
-    const activeAvatarId = getActiveAvatarId()
-    if (!activeAvatarId) {
-      console.warn('Cannot persist morph targets without an avatar identifier')
-      return false
-    }
-
     try {
       if (isMountedRef.current) {
         setIsSavingMorphs(true)
@@ -438,7 +440,7 @@ export default function UnrealMeasurements() {
         ageRange: currentAvatar.ageRange ?? '20-29',
         creationMode: currentAvatar.creationMode ?? 'manual',
         quickMode: currentAvatar.quickMode ?? true,
-        source: currentAvatar.source ?? 'web',
+        source: currentAvatar.source ?? (isAuthenticated ? 'web' : 'guest'),
         // koristimo basicNoMode (bez creationMode) i NE dodajemo ponovno original
         ...(basicNoMode ? { basicMeasurements: basicNoMode } : {}),
         // OVDJE koristimo mergedBody (koji već sadrži postojeće + procijenjene vrijednosti)
@@ -454,6 +456,133 @@ export default function UnrealMeasurements() {
             }
           : {}),
         morphTargets,
+      }
+
+      if (!isAuthenticated) {
+        try {
+          const guestBasicMeasurements = currentAvatar.basicMeasurements
+            ? { ...currentAvatar.basicMeasurements }
+            : basePayload.basicMeasurements
+              ? { ...basePayload.basicMeasurements }
+              : undefined
+
+          if (guestBasicMeasurements && basePayload.creationMode) {
+            const creationMode = guestBasicMeasurements.creationMode ?? basePayload.creationMode
+            guestBasicMeasurements.creationMode = creationMode
+          }
+
+          const cloneAsRecord = (
+            source?: Record<string, unknown> | null,
+          ): Record<string, number | string | null> | undefined => {
+            if (!source) return undefined
+            const cloned = Object.entries(source).reduce<
+              Record<string, number | string | null>
+            >((acc, [key, value]) => {
+              if (!key) return acc
+              if (value === undefined) return acc
+              if (value === null) {
+                acc[key] = null
+                return acc
+              }
+              if (typeof value === 'number' && Number.isFinite(value)) {
+                acc[key] = value
+                return acc
+              }
+              if (typeof value === 'string') {
+                acc[key] = value
+                return acc
+              }
+              return acc
+            }, {})
+
+            return Object.keys(cloned).length ? cloned : undefined
+          }
+
+          const guestCommand: CreateAvatarCommand = {
+            type: 'createAvatar',
+            data: {
+              avatarName: basePayload.name,
+              gender: basePayload.gender,
+              ageRange: basePayload.ageRange,
+              basicMeasurements: cloneAsRecord(
+                guestBasicMeasurements as Record<string, unknown> | undefined,
+              ),
+              bodyMeasurements: cloneAsRecord(
+                basePayload.bodyMeasurements as Record<string, unknown> | undefined,
+              ),
+              morphTargets: basePayload.morphTargets ?? undefined,
+              quickModeSettings: currentAvatar.quickModeSettings ?? null,
+            },
+          }
+
+          const storageMorphTargets = basePayload.morphTargets
+            ? Object.entries(basePayload.morphTargets).reduce<BackendAvatarMorphTarget[]>(
+                (acc, [key, value]) => {
+                  if (!key) return acc
+                  const numericValue = Number(value)
+                  if (Number.isFinite(numericValue)) {
+                    acc.push({ name: key, value: numericValue })
+                  }
+                  return acc
+                },
+                [],
+              )
+            : undefined
+
+          if (typeof window !== 'undefined') {
+            try {
+              window.localStorage.setItem('pendingAvatarData', JSON.stringify(guestCommand))
+            } catch (storageError) {
+              console.warn('Failed to persist guest avatar command', storageError)
+            }
+
+            try {
+              window.sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, 'guest')
+            } catch (storageError) {
+              console.warn('Failed to persist guest avatar id', storageError)
+            }
+
+            try {
+              window.sessionStorage.setItem(
+                LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
+                JSON.stringify({
+                  avatarId: null,
+                  name: basePayload.name,
+                  avatarName: basePayload.name,
+                  gender: basePayload.gender,
+                  ageRange: basePayload.ageRange,
+                  basicMeasurements: guestBasicMeasurements ?? null,
+                  bodyMeasurements: basePayload.bodyMeasurements ?? null,
+                  morphTargets: storageMorphTargets ?? null,
+                  quickMode: basePayload.quickMode,
+                  creationMode: basePayload.creationMode,
+                  quickModeSettings: currentAvatar.quickModeSettings ?? null,
+                  source: 'guest',
+                }),
+              )
+            } catch (storageError) {
+              console.warn('Failed to persist guest avatar metadata', storageError)
+            }
+          }
+
+          if (isMountedRef.current) {
+            setHasDirtyMorphs(false)
+          }
+          hasDirtyMorphsRef.current = false
+          return true
+        } catch (guestError) {
+          console.error('Failed to persist morph targets for guest user', guestError)
+          if (isMountedRef.current) {
+            setSaveError(guestError instanceof Error ? guestError.message : 'Failed to save guest avatar changes')
+          }
+          return false
+        }
+      }
+
+      const activeAvatarId = getActiveAvatarId()
+      if (!activeAvatarId) {
+        console.warn('Cannot persist morph targets without an avatar identifier')
+        return false
       }
 
       const morphs = buildBackendMorphPayload({ ...basePayload })
@@ -539,7 +668,15 @@ export default function UnrealMeasurements() {
       isSavingMorphsRef.current = false
       if (isMountedRef.current) setIsSavingMorphs(false)
     }
-  }, [currentAvatar, fetchAvatarById, getActiveAvatarId, loadAvatar, updateAvatarMeasurements, computedFallbacks])
+  }, [
+    currentAvatar,
+    fetchAvatarById,
+    getActiveAvatarId,
+    loadAvatar,
+    updateAvatarMeasurements,
+    computedFallbacks,
+    isAuthenticated,
+  ])
 
   // Auto-load avatar if none loaded
   const { isLoading: isAvatarLoading } = loaderState
@@ -578,6 +715,249 @@ export default function UnrealMeasurements() {
     void load()
     return () => { cancelled = true }
   }, [avatarIdFromState, currentAvatar, fetchAvatarById, loadAvatar, isAvatarLoading])
+
+  useEffect(() => {
+    if (isAuthenticated) return
+    if (currentAvatar) return
+    if (typeof window === 'undefined') return
+
+    let cancelled = false
+
+    const readStoredMetadata = () => {
+      try {
+        const raw = window.sessionStorage.getItem(LAST_CREATED_AVATAR_METADATA_STORAGE_KEY)
+        if (!raw) return null
+        return JSON.parse(raw) as Record<string, unknown>
+      } catch (error) {
+        console.warn('Failed to parse guest avatar metadata', error)
+        return null
+      }
+    }
+
+    const readPendingCommand = () => {
+      try {
+        const raw = window.localStorage.getItem('pendingAvatarData')
+        if (!raw) return null
+        const parsed = JSON.parse(raw) as CreateAvatarCommand
+        if (parsed?.type === 'createAvatar' && parsed.data) return parsed
+      } catch (error) {
+        console.warn('Failed to parse pending guest avatar command', error)
+      }
+      return null
+    }
+
+    const toMorphArray = (source: unknown): BackendAvatarMorphTarget[] => {
+      if (!source) return []
+      if (Array.isArray(source)) {
+        return source
+          .map(entry => {
+            if (!entry || typeof entry !== 'object') return null
+            const record = entry as Record<string, unknown>
+            const name = typeof record.name === 'string'
+              ? record.name
+              : typeof record.backendKey === 'string'
+                ? record.backendKey
+                : typeof record.id === 'string'
+                  ? record.id
+                  : null
+            const valueCandidate =
+              typeof record.value === 'number'
+                ? record.value
+                : typeof record.sliderValue === 'number'
+                  ? record.sliderValue
+                  : typeof record.unrealValue === 'number'
+                    ? record.unrealValue
+                    : typeof record.defaultValue === 'number'
+                      ? record.defaultValue
+                      : Number(record.value)
+            const value = typeof valueCandidate === 'number' && Number.isFinite(valueCandidate)
+              ? valueCandidate
+              : Number.isFinite(Number(valueCandidate))
+                ? Number(valueCandidate)
+                : null
+            if (!name || value == null) return null
+            return { name, value }
+          })
+          .filter((entry): entry is BackendAvatarMorphTarget => Boolean(entry))
+      }
+
+      if (typeof source === 'object' && source) {
+        return Object.entries(source as Record<string, unknown>).reduce<BackendAvatarMorphTarget[]>(
+          (acc, [name, rawValue]) => {
+            if (!name) return acc
+            const value = Number(rawValue)
+            if (Number.isFinite(value)) acc.push({ name, value })
+            return acc
+          },
+          [],
+        )
+      }
+
+      return []
+    }
+
+    const normalizeBasicMeasurements = (
+      source: unknown,
+    ): Partial<BasicMeasurements> | undefined => {
+      if (!source || typeof source !== 'object') return undefined
+      const normalized = Object.entries(source as Record<string, unknown>).reduce<
+        Partial<BasicMeasurements>
+      >((acc, [key, value]) => {
+        if (!key) return acc
+        if (value === null) {
+          acc[key] = null
+          return acc
+        }
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          acc[key] = value
+          return acc
+        }
+        if (typeof value === 'string') {
+          const numeric = Number(value)
+          if (Number.isFinite(numeric)) {
+            acc[key] = numeric
+            return acc
+          }
+          acc[key] = value as AvatarCreationMode
+        }
+        return acc
+      }, {})
+
+      return Object.keys(normalized).length ? normalized : undefined
+    }
+
+    const normalizeBodyMeasurements = (
+      source: unknown,
+    ): Partial<BodyMeasurements> | undefined => {
+      if (!source || typeof source !== 'object') return undefined
+      const normalized = Object.entries(source as Record<string, unknown>).reduce<
+        Partial<BodyMeasurements>
+      >((acc, [key, value]) => {
+        if (!key) return acc
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          acc[key as keyof BodyMeasurements] = value
+          return acc
+        }
+        if (typeof value === 'string') {
+          const numeric = Number(value)
+          if (Number.isFinite(numeric)) {
+            acc[key as keyof BodyMeasurements] = numeric
+          }
+        }
+        return acc
+      }, {})
+
+      return Object.keys(normalized).length ? normalized : undefined
+    }
+
+    const loadGuestAvatar = async () => {
+      const metadata = readStoredMetadata()
+      const command = readPendingCommand()
+
+      const fallbackName =
+        (metadata?.avatarName as string | undefined) ??
+        (metadata?.name as string | undefined) ??
+        command?.data.avatarName ??
+        'Guest Avatar'
+
+      const gender =
+        (metadata?.gender as 'male' | 'female' | undefined) ??
+        command?.data.gender ??
+        'female'
+
+      const ageRange =
+        (metadata?.ageRange as string | undefined) ??
+        command?.data.ageRange ??
+        '20-29'
+
+     const basicMeasurements = normalizeBasicMeasurements(
+        command?.data.basicMeasurements ?? metadata?.basicMeasurements,
+      )
+      const bodyMeasurements = normalizeBodyMeasurements(
+        command?.data.bodyMeasurements ?? metadata?.bodyMeasurements,
+      )
+
+      const morphTargetsSource =
+        command?.data.morphTargets ?? metadata?.morphTargets ?? null
+      let morphTargets = toMorphArray(morphTargetsSource)
+
+      if (!morphTargets.length) {
+        const pseudoPayload: AvatarPayload = {
+          name: fallbackName,
+          gender,
+          ageRange,
+          quickMode: true,
+          creationMode: 'quickMode',
+          ...(basicMeasurements ? { basicMeasurements } : {}),
+          ...(bodyMeasurements ? { bodyMeasurements } : {}),
+          ...(command?.data.quickModeSettings
+            ? { quickModeSettings: command.data.quickModeSettings }
+            : {}),
+        }
+        const morphs = buildBackendMorphPayload(pseudoPayload)
+        if (Array.isArray(morphs)) {
+          morphTargets = morphs
+            .map(morph => {
+              if (!morph) return null
+              const key = morph.backendKey ?? morph.id
+              if (!key) return null
+              const value = Number(morph.sliderValue)
+              return Number.isFinite(value) ? { name: key, value } : null
+            })
+            .filter((entry): entry is BackendAvatarMorphTarget => Boolean(entry))
+        }
+      }
+
+      const quickModeSettings =
+        (command?.data.quickModeSettings ?? metadata?.quickModeSettings ?? null) as
+          | QuickModeSettings
+          | null
+
+      const guestAvatar = {
+        type: 'createAvatar' as const,
+        id: (metadata?.avatarId as string | null | undefined) ?? 'guest',
+        name: fallbackName,
+        gender,
+        ageRange,
+        quickMode: true,
+        creationMode:
+          (metadata?.creationMode as AvatarCreationMode | null | undefined) ?? 'quickMode',
+        source: 'guest' as const,
+        createdAt: null,
+        updatedAt: null,
+        createdBySession: null,
+        basicMeasurements: basicMeasurements as BasicMeasurements | undefined,
+        bodyMeasurements: bodyMeasurements as BodyMeasurements | undefined,
+        morphTargets,
+        quickModeSettings,
+      }
+
+      try {
+        const loadResult = await loadAvatar(guestAvatar)
+        if (!loadResult.success) {
+          throw new Error(loadResult.error ?? 'Failed to load guest avatar')
+        }
+        if (!cancelled) {
+          try {
+            window.sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, String(guestAvatar.id))
+          } catch (storageError) {
+            console.warn('Failed to persist loaded guest avatar id', storageError)
+          }
+        }
+      } catch (error) {
+        if (cancelled) return
+        const message = error instanceof Error ? error.message : 'Failed to load guest avatar'
+        setAutoLoadError(message)
+        console.error('Failed to load guest avatar', error)
+      }
+    }
+
+    void loadGuestAvatar()
+
+    return () => {
+      cancelled = true
+    }
+  }, [currentAvatar, isAuthenticated, loadAvatar])
 
   // Flush queued morph updates when connected
   useEffect(() => {
