@@ -20,6 +20,7 @@ import {
   type AvatarPayload,
   useAvatarApi,
 } from '../services/avatarApi'
+import { useAuthData } from '../hooks/useAuthData'
 
 import avatarsButton from '../assets/avatars-button.png'
 import RLeft from '../assets/r-left.svg?react'
@@ -135,6 +136,7 @@ export default function UnrealMeasurements() {
   const [hasDirtyMorphs, setHasDirtyMorphs] = useState(false)
   const [isSavingMorphs, setIsSavingMorphs] = useState(false)
 
+  const { isAuthenticated } = useAuthData()
   const lastAutoLoadedIdRef = useRef<string | null>(null)
   const hasDirtyMorphsRef = useRef(false)
   const isSavingMorphsRef = useRef(false)
@@ -814,13 +816,21 @@ export default function UnrealMeasurements() {
     }
   }, [loaderState.isLoading, loaderState.stage])
 
+  const handleExit = useCallback(() => {
+    if (isAuthenticated) {
+      navigate('/')
+    } else {
+      navigate('/exit-guest-user')
+    }
+  }, [isAuthenticated, navigate])
+
   return (
     <div ref={pageRef} className={styles.page}>
       <Header
         data-app-header
         title="Your Avatar"
         variant="dark"
-        onExit={() => navigate('/')}
+        onExit={handleExit}
         rightContent={(
           <button className={styles.avatarButton} onClick={() => navigate('/logged-in')} type="button">
             <img src={avatarsButton} alt="Avatars" />

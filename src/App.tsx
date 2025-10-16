@@ -80,10 +80,10 @@ export default function App() {
                   <Route path="/body-scan-info" element={<BodyScanInfo />} />
                   <Route path="/face-scan-info" element={<FaceScanInfo />} />
 
-                  <Route path="/quickmode" element={<PrivateRoute><QuickMode /></PrivateRoute>} />
+                  <Route path="/quickmode" element={<QuickMode />} />
                   <Route path="/body-scan" element={<PrivateRoute><BodyScan /></PrivateRoute>} />
                   <Route path="/face-scan" element={<PrivateRoute><FaceScan /></PrivateRoute>} />
-                  <Route path="/unreal-measurements" element={<PrivateRoute><UnrealMeasurements /></PrivateRoute>} />
+                  <Route path="/unreal-measurements" element={<UnrealMeasurements />} />
                   <Route path="/virtual-try-on" element={<PrivateRoute><VirtualTryOn /></PrivateRoute>} />
                   <Route path="/scan-qr-bodyscan" element={<PrivateRoute><ScanQRBodyscan /></PrivateRoute>} />
                   <Route path="/body-photos-check" element={<PrivateRoute><BodyPhotosCheck /></PrivateRoute>} />

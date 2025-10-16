@@ -18,6 +18,7 @@ import { useAvatars } from '../context/AvatarContext'
 import { useAvatarConfiguration } from '../context/AvatarConfigurationContext'
 import type { BackendAvatarMorphTarget } from '../context/AvatarConfigurationContext'
 import useIsMobile from '../hooks/useIsMobile';
+import { useAuthData } from '../hooks/useAuthData'
 
 const ages = ['15-19', ...Array.from({ length: 8 }, (_, i) => {
   const start = 20 + i * 10
@@ -39,6 +40,7 @@ export default function AvatarInfoPage() {
   const { createAvatar } = useAvatarApi()
   const { loadAvatarFromBackend } = useAvatarConfiguration()
   const { avatars, maxAvatars, refreshAvatars, setPendingAvatarName } = useAvatars()
+  const authData = useAuthData()
   const age = usePicker(1, ages)
   const height = usePicker(2, heights)
   const weight = usePicker(2, weights)
@@ -235,6 +237,37 @@ export default function AvatarInfoPage() {
                     bodyMeasurements: {},
                     morphTargets: {},
                     quickModeSettings: null,
+                  }
+                  if (!authData.isAuthenticated) {
+                    if (typeof window !== 'undefined') {
+                      try {
+                        window.sessionStorage.removeItem(LAST_LOADED_AVATAR_STORAGE_KEY)
+                        window.sessionStorage.setItem(
+                          LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
+                          JSON.stringify({
+                            avatarId: null,
+                            name: basePayload.name,
+                            avatarName: basePayload.name,
+                            gender: basePayload.gender,
+                            ageRange: basePayload.ageRange,
+                            basicMeasurements: basePayload.basicMeasurements,
+                            bodyMeasurements: basePayload.bodyMeasurements,
+                            morphTargets: null,
+                            quickMode: basePayload.quickMode,
+                            creationMode: basePayload.creationMode,
+                            quickModeSettings: basePayload.quickModeSettings,
+                            source: 'guest',
+                          }),
+                        )
+                      } catch (storageError) {
+                        console.warn('Failed to persist guest avatar metadata', storageError)
+                      }
+                    }
+
+                    setPendingAvatarName(null)
+                    setIsSubmitting(false)
+                    navigate('/quickmode')
+                    return
                   }
 
                   const morphs = buildBackendMorphPayload(basePayload)
