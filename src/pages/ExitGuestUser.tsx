@@ -6,9 +6,12 @@ import logo from '../assets/fitspace-logo-gradient-nobkg.svg';
 import googleLogo from '../assets/google-logo.svg';
 
 import styles from './ExitGuestUser.module.scss';
-import { DEFAULT_POST_LOGIN_ROUTE, POST_LOGIN_REDIRECT_KEY } from '../config/authRedirect';
-
-const GUEST_AVATAR_NAME_KEY = 'fitspace:guestAvatarName';
+import {
+  DEFAULT_POST_LOGIN_ROUTE,
+  POST_LOGIN_REDIRECT_KEY,
+  GUEST_AVATAR_NAME_KEY,
+  GUEST_POST_LOGIN_REDIRECT,
+} from '../config/authRedirect';
 
 export default function ExitGuestUser() {
   const auth = useAuth();
@@ -16,8 +19,8 @@ export default function ExitGuestUser() {
   const location = useLocation();
 
   const [avatarName, setAvatarName] = useState('');
+  const [hasPendingAvatarData, setHasPendingAvatarData] = useState(false);
 
-  // Učitaj eventualno već upisano ime iz sessionStorage-a
   useEffect(() => {
     try {
       const saved = sessionStorage.getItem(GUEST_AVATAR_NAME_KEY);
@@ -26,21 +29,57 @@ export default function ExitGuestUser() {
       // namjerno ignorirano (npr. Safari private mode)
       void _err;
     }
+
+    try {
+      const pendingData = localStorage.getItem('pendingAvatarData');
+      const pendingId = localStorage.getItem('pendingAvatarId');
+      setHasPendingAvatarData(Boolean(pendingData || pendingId));
+    } catch (_err) {
+      // ako ne možemo pristupiti localStorage-u samo pretpostavi da nema pending podataka
+      void _err;
+      setHasPendingAvatarData(false);
+    }
   }, []);
+
+  const trimmedAvatarName = avatarName.trim();
 
   const handleSignIn = useCallback(() => {
     // spremi upisano ime da ga kasnije pročitaš nakon povratka iz OIDC-a
     try {
-      sessionStorage.setItem(GUEST_AVATAR_NAME_KEY, avatarName.trim());
+      sessionStorage.setItem(GUEST_AVATAR_NAME_KEY, trimmedAvatarName);
     } catch (_err) {
-        // namjerno ignorirano (npr. Safari private mode)
-        void _err;
-      }
+      // namjerno ignorirano (npr. Safari private mode)
+      void _err;
+    }
 
+    if (trimmedAvatarName) {
+      try {
+        const pendingRaw = localStorage.getItem('pendingAvatarData');
+        if (pendingRaw) {
+          const pending = JSON.parse(pendingRaw) as {
+            type?: string;
+            data?: { avatarName?: string };
+          } | null;
+          if (pending?.type === 'createAvatar' && pending.data && typeof pending.data === 'object') {
+            const updated = {
+              ...pending,
+              data: { ...pending.data, avatarName: trimmedAvatarName },
+            };
+            localStorage.setItem('pendingAvatarData', JSON.stringify(updated));
+            setHasPendingAvatarData(true);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to persist guest avatar name to pending data', err);
+      }
+    }
+  
     const state = location.state as { from?: Location } | undefined;
     const redirectTarget = state?.from
       ? `${state.from.pathname ?? ''}${state.from.search ?? ''}${state.from.hash ?? ''}`
-      : DEFAULT_POST_LOGIN_ROUTE;
+      : hasPendingAvatarData
+        ? GUEST_POST_LOGIN_REDIRECT
+        : DEFAULT_POST_LOGIN_ROUTE;
 
     sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, redirectTarget);
 
@@ -49,7 +88,7 @@ export default function ExitGuestUser() {
     } else {
       console.warn('signinRedirect not available', auth);
     }
-  }, [auth, avatarName, location]);
+  }, [auth, trimmedAvatarName, location, hasPendingAvatarData]);
 
   const handleBack = useCallback(() => {
     // povratak na prethodni ekran
