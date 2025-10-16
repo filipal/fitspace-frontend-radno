@@ -1,22 +1,54 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { useInstanceProvisioning } from '../hooks/useInstanceProvisioning'
 import { usePixelStreamingConnection } from '../hooks/usePixelStreamingConnection'
 import { usePixelStreaming } from '../context/PixelStreamingContext'
 import fitspaceLogo from '../assets/fitspace-logo-gradient-nobkg.svg'
 import styles from './LoadingScreen.module.scss'
+import { useAuthData } from '../hooks/useAuthData'
 
 export default function LoadingScreen() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams] = useSearchParams()
   const destination = searchParams.get('destination') || 'unreal-measurements' // Default to unreal-measurements
   // const [progress, setProgress] = useState(0)
   // const [showDebugMessages, setShowDebugMessages] = useState(false)
+  const resolvedDestination = destination.startsWith('/') ? destination : `/${destination}`
   const [connectionTimeout, setConnectionTimeout] = useState(false)
   const hasStartedProvisioning = useRef(false)
   const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const { devMode } = usePixelStreaming()
   
+  const authData = useAuthData()
+  const [allowGuestFlow, setAllowGuestFlow] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    if (authData.isAuthenticated) {
+      setAllowGuestFlow(false)
+      return
+    }
+
+    let hasGuestBootData = false
+    if (typeof window !== 'undefined') {
+      try {
+        const pendingData = window.localStorage.getItem('pendingAvatarData')
+        const pendingId = window.localStorage.getItem('pendingAvatarId')
+        hasGuestBootData = Boolean(pendingData || pendingId)
+      } catch (error) {
+        console.warn('Failed to inspect pending avatar data for guest flow', error)
+      }
+    }
+
+    if (!hasGuestBootData) {
+      setAllowGuestFlow(false)
+      navigate('/login', { replace: true, state: { from: location } })
+      return
+    }
+
+    setAllowGuestFlow(true)
+  }, [authData.isAuthenticated, navigate, location])
+
   // Spinner and loading messages
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
   const loadingMessages = [
@@ -62,28 +94,43 @@ export default function LoadingScreen() {
       
       // Check if dev mode is enabled
       if (devMode === 'dev') {
-        console.log(`🔧 LoadingScreen: Dev mode enabled, skipping lambda calls and redirecting to ${destination}`)
+        console.log(`🔧 LoadingScreen: Dev mode enabled, skipping lambda calls and redirecting to ${resolvedDestination}`)
         // setProgress(100)
-        
+
         // Simulate loading for visual feedback
         setTimeout(() => {
-          navigate(destination)
+          navigate(resolvedDestination)
         }, 1500)
         return
       }
-      
+
+      if (!authData.isAuthenticated) {
+        if (allowGuestFlow !== true) {
+          if (allowGuestFlow === false) {
+            console.warn('Guest user attempted to load without pending avatar data; staying on login flow')
+          }
+          return
+        }
+
+        console.log(`🧑‍🤝‍🧑 Guest flow detected, skipping provisioning and redirecting to ${resolvedDestination}`)
+        setTimeout(() => {
+          navigate(resolvedDestination)
+        }, 1500)
+        return
+      }
+
       // Check if localhost mode is enabled
       if (devMode === 'localhost') {
-        console.log(`🔧 LoadingScreen: Localhost mode enabled, skipping lambda calls and redirecting to ${destination}`)
+        console.log(`🔧 LoadingScreen: Localhost mode enabled, skipping lambda calls and redirecting to ${resolvedDestination}`)
         // setProgress(100)
         
         // Simulate loading for visual feedback
         setTimeout(() => {
-          navigate(destination)
+          navigate(resolvedDestination)
         }, 1500)
         return
       }
-      
+
       console.log('🚀 LoadingScreen: About to call startProvisioningWorkflow (first time)')
       
       try {
@@ -103,7 +150,14 @@ export default function LoadingScreen() {
     }
     
     // No cleanup function to prevent re-mounting issues
-  }, [devMode, navigate, destination, startProvisioningWorkflow]) // Added devMode, navigate and destination to dependencies
+  }, [
+    allowGuestFlow,
+    authData.isAuthenticated,
+    devMode,
+    navigate,
+    resolvedDestination,
+    startProvisioningWorkflow
+  ]) // Added devMode, navigate and destination to dependencies
   
   // Update progress based on provisioning status
   useEffect(() => {
@@ -118,10 +172,10 @@ export default function LoadingScreen() {
     // Navigate when fully connected
     if (isConnectedToInstance && connectionState === 'connected') {
       setTimeout(() => {
-        navigate(destination)
+        navigate(resolvedDestination)
       }, 1000) // Small delay to show completion
     }
-  }, [devMode, isConnectedToInstance, connectionState, navigate, destination])
+  }, [devMode, isConnectedToInstance, connectionState, navigate, resolvedDestination])
   
   // Auto-show debug messages on error
   useEffect(() => {
@@ -165,8 +219,8 @@ export default function LoadingScreen() {
   // }
   
 /*   const progressData = getProgressData()
-  const currentStage = devMode === 'dev' ? `Dev Mode: Redirecting to ${destination}...` : 
-                      devMode === 'localhost' ? `Localhost Mode: Redirecting to ${destination}...` : 
+  const currentStage = devMode === 'dev' ? `Dev Mode: Redirecting to ${resolvedDestination}...` :
+                      devMode === 'localhost' ? `Localhost Mode: Redirecting to ${resolvedDestination}...` :
                       progressData.stage */
 
   return (
@@ -185,8 +239,8 @@ export default function LoadingScreen() {
         <div className={styles.spinnerContainer}>
           <div className={styles.spinner}></div>
           <div className={styles.loadingText}>
-            {devMode === 'dev' ? `Dev Mode: Redirecting to ${destination}...` : 
-             devMode === 'localhost' ? `Localhost Mode: Redirecting to ${destination}...` : 
+            {devMode === 'dev' ? `Dev Mode: Redirecting to ${resolvedDestination}...` :
+             devMode === 'localhost' ? `Localhost Mode: Redirecting to ${resolvedDestination}...` :
              loadingMessages[currentMessageIndex]}
           </div>
         </div>

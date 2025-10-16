@@ -88,7 +88,7 @@ export default function App() {
                   <Route path="/scan-qr-bodyscan" element={<PrivateRoute><ScanQRBodyscan /></PrivateRoute>} />
                   <Route path="/body-photos-check" element={<PrivateRoute><BodyPhotosCheck /></PrivateRoute>} />
                   <Route path="/face-photos-check" element={<PrivateRoute><FacePhotosCheck /></PrivateRoute>} />
-                  <Route path="/loading" element={<PrivateRoute><LoadingScreen /></PrivateRoute>} />
+                  <Route path="/loading" element={<LoadingScreen />} />
                   <Route path="/pixel-streaming-demo" element={<PrivateRoute><PixelStreamingDemo /></PrivateRoute>} />
 
                   <Route path="*" element={<Navigate to="/" />} />
