@@ -405,7 +405,7 @@ export default function QuickMode() {
         data: {
           avatarName: currentAvatar?.avatarName ?? `QuickMode Avatar ${Date.now()}`,
           gender: currentAvatar?.gender ?? 'female',
-          ageRange: currentAvatar?.ageRange ?? '25-35',
+          ageRange: currentAvatar?.ageRange ?? '20-29',
           basicMeasurements: {
             ...(typeof height === 'number' ? { height } : {}),
             ...(typeof weight === 'number' ? { weight } : {}),

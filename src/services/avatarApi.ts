@@ -225,6 +225,24 @@ const ALLOWED_CREATION_MODES: AvatarCreationMode[] = [
   'quickMode',
 ];
 
+const ALLOWED_AGE_RANGES: readonly string[] = [
+  '15-19',
+  '20-29',
+  '30-39',
+  '40-49',
+  '50-59',
+  '60-69',
+  '70-79',
+  '80-89',
+  '90-99',
+];
+
+const AGE_RANGE_FALLBACK_MAP: Record<string, string> = {
+  '25-35': '20-29',
+  '25-35 years': '20-29',
+  '25-35 years old': '20-29',
+};
+
 const normalizeString = (value: unknown): string | undefined => {
   if (typeof value === 'string') {
     const trimmed = value.trim();
@@ -284,6 +302,59 @@ const normalizeCreationMode = (value: unknown): AvatarCreationMode | null => {
   return matched ?? null;
 };
 
+const normalizeCreationModeForBackend = (value: unknown): AvatarCreationMode | null => {
+  const creationMode = normalizeCreationMode(value);
+  if (!creationMode) {
+    return null;
+  }
+  if (creationMode === 'quickMode') {
+    return 'preset';
+  }
+  return creationMode;
+};
+
+const normalizeAgeRange = (value: unknown): string | null => {
+  const normalized = normalizeString(value);
+  if (!normalized) {
+    return null;
+  }
+
+  const lower = normalized.toLowerCase();
+  const directMatch = ALLOWED_AGE_RANGES.find(
+    range => range.toLowerCase() === lower,
+  );
+  if (directMatch) {
+    return directMatch;
+  }
+
+  const fallback = AGE_RANGE_FALLBACK_MAP[lower];
+  if (fallback) {
+    return fallback;
+  }
+
+  const numericMatch = lower.match(/(\d+)\s*-\s*(\d+)/);
+  if (numericMatch) {
+    const start = Number(numericMatch[1]);
+    if (Number.isFinite(start)) {
+      if (start < 20) {
+        return '15-19';
+      }
+      const bucketStart = Math.min(90, Math.floor(start / 10) * 10);
+      if (bucketStart >= 20) {
+        const candidate = `${bucketStart}-${bucketStart + 9}`;
+        const match = ALLOWED_AGE_RANGES.find(
+          range => range.toLowerCase() === candidate.toLowerCase(),
+        );
+        if (match) {
+          return match;
+        }
+      }
+    }
+  }
+
+  return null;
+};
+
 const normalizeGender = (value: unknown): 'male' | 'female' => {
   const normalized = normalizeString(value)?.toLowerCase();
   return normalized === 'female' ? 'female' : 'male';
@@ -313,7 +384,7 @@ const sanitizeMeasurementPayload = (
       }
 
       if (includeCreationMode && key === 'creationMode') {
-        const creationMode = normalizeCreationMode(value);
+        const creationMode = normalizeCreationModeForBackend(value);
         if (creationMode) {
           acc[key] = creationMode;
         }
@@ -470,11 +541,13 @@ const buildBackendAvatarRequestPayload = (
   if (payload.gender) {
     request.gender = payload.gender;
   }
-  if (payload.ageRange) {
-    request.ageRange = payload.ageRange;
+  const normalizedAgeRange = normalizeAgeRange(payload.ageRange);
+  if (normalizedAgeRange) {
+    request.ageRange = normalizedAgeRange;
   }
-  if (payload.creationMode) {
-    request.creationMode = payload.creationMode;
+  const normalizedCreationMode = normalizeCreationModeForBackend(payload.creationMode);
+  if (normalizedCreationMode) {
+    request.creationMode = normalizedCreationMode;
   }
   if (typeof payload.quickMode === 'boolean') {
     request.quickMode = payload.quickMode;
@@ -486,7 +559,7 @@ const buildBackendAvatarRequestPayload = (
   // Uključi creationMode iz measurements SAMO ako nije zadan na top-levelu
   const basicMeasurements = sanitizeMeasurementPayload(
     payload.basicMeasurements as Record<string, unknown> | undefined,
-    { includeCreationMode: !payload.creationMode },
+    { includeCreationMode: !normalizedCreationMode },
   )
   
   if (basicMeasurements) {
@@ -690,7 +763,7 @@ const normalizeBackendAvatar = (payload: unknown): BackendAvatarData | undefined
   const avatarName =
     normalizeString(candidate.avatarName ?? candidate.name) ?? `Avatar ${avatarId}`;
   const gender = normalizeGender(candidate.gender);
-  const ageRange = normalizeString(candidate.ageRange) ?? '';
+  const ageRange = normalizeAgeRange(candidate.ageRange) ?? normalizeString(candidate.ageRange) ?? '';
   const quickMode =
     typeof candidate.quickMode === 'boolean' ? candidate.quickMode : undefined;
   const creationMode =
@@ -768,7 +841,8 @@ const parseAvatarListItem = (payload: unknown): AvatarListItem | null => {
   const name =
     normalizeString(payload.name ?? payload.avatarName) ?? `Avatar ${id}`;
   const gender = normalizeGender(payload.gender);
-  const ageRange = normalizeString(payload.ageRange) ?? undefined;
+  const ageRange =
+    normalizeAgeRange(payload.ageRange) ?? normalizeString(payload.ageRange) ?? undefined;
   const source = normalizeString(payload.source) ?? null;
   const creationMode =
     normalizeCreationMode(payload.creationMode) ?? null;
