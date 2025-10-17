@@ -81,10 +81,20 @@ export default function App() {
                   <Route path="/body-scan-info" element={<BodyScanInfo />} />
                   <Route path="/face-scan-info" element={<FaceScanInfo />} />
 
-                  <Route path="/quickmode" element={<QuickMode />} />
+                  <Route
+                    path="/quickmode"
+                    element={(
+                      <GuestAccessibleRoute allowGuestWithoutTokens>
+                        <QuickMode />
+                      </GuestAccessibleRoute>
+                    )}
+                  />
                   <Route path="/body-scan" element={<PrivateRoute><BodyScan /></PrivateRoute>} />
                   <Route path="/face-scan" element={<PrivateRoute><FaceScan /></PrivateRoute>} />
-                  <Route path="/unreal-measurements" element={<UnrealMeasurements />} />
+                  <Route
+                    path="/unreal-measurements"
+                    element={<GuestAccessibleRoute><UnrealMeasurements /></GuestAccessibleRoute>}
+                  />
                   <Route
                     path="/virtual-try-on"
                     element={<GuestAccessibleRoute><VirtualTryOn /></GuestAccessibleRoute>}
@@ -92,7 +102,10 @@ export default function App() {
                   <Route path="/scan-qr-bodyscan" element={<PrivateRoute><ScanQRBodyscan /></PrivateRoute>} />
                   <Route path="/body-photos-check" element={<PrivateRoute><BodyPhotosCheck /></PrivateRoute>} />
                   <Route path="/face-photos-check" element={<PrivateRoute><FacePhotosCheck /></PrivateRoute>} />
-                  <Route path="/loading" element={<LoadingScreen />} />
+                  <Route
+                    path="/loading"
+                    element={<GuestAccessibleRoute><LoadingScreen /></GuestAccessibleRoute>}
+                  />
                   <Route path="/pixel-streaming-demo" element={<PrivateRoute><PixelStreamingDemo /></PrivateRoute>} />
 
                   <Route path="*" element={<Navigate to="/" />} />

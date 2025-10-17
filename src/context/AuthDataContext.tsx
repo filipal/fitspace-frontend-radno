@@ -34,6 +34,11 @@ export function AuthDataProvider({ children }: AuthDataProviderProps) {
 
   // Process and store auth data whenever auth state changes
   useEffect(() => {
+    if (auth.isLoading || auth.activeNavigator) {
+      setAuthData(prev => (prev === null ? prev : null))
+      return
+    }
+
     const processedAuthData = getAuthInfo(auth.user, auth.isAuthenticated)
     setAuthData(processedAuthData)
     
@@ -41,7 +46,7 @@ export function AuthDataProvider({ children }: AuthDataProviderProps) {
     if (process.env.NODE_ENV === 'development') {
       console.log('🔄 Auth data updated:', processedAuthData)
     }
-  }, [auth.user, auth.isAuthenticated, auth.isLoading])
+  }, [auth.user, auth.isAuthenticated, auth.isLoading, auth.activeNavigator])
 
   // Helper function to manually refresh auth data
   const refreshAuthData = () => {

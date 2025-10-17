@@ -4,6 +4,7 @@ import { useAuthData } from '../hooks/useAuthData'
 
 interface GuestAccessibleRouteProps {
   children: ReactNode
+  allowGuestWithoutTokens?: boolean
 }
 
 const hasGuestAccessTokens = (): boolean => {
@@ -21,17 +22,20 @@ const hasGuestAccessTokens = (): boolean => {
   }
 }
 
-export default function GuestAccessibleRoute({ children }: GuestAccessibleRouteProps): ReactElement {
+export default function GuestAccessibleRoute({
+  children,
+  allowGuestWithoutTokens = false,
+}: GuestAccessibleRouteProps): ReactElement {
   const location = useLocation()
   const { isAuthenticated } = useAuthData()
 
   const allowGuestAccess = useMemo(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated || allowGuestWithoutTokens) {
       return true
     }
 
     return hasGuestAccessTokens()
-  }, [isAuthenticated])
+  }, [allowGuestWithoutTokens, isAuthenticated])
 
   if (!allowGuestAccess) {
     return <Navigate to="/login" replace state={{ from: location }} />

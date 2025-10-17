@@ -17,9 +17,10 @@ export default function PrivateRoute({ children }: PrivateRouteProps): ReactElem
     throw new Error('PrivateRoute must be used within an AuthDataProvider')
   }
 
+  const hasActiveNavigator = typeof auth.activeNavigator === 'string'
   const isAuthDataLoading = authDataContext.authData === null
   const isAuthenticated = auth.isAuthenticated || authDataContext.isAuthenticated
-  const isLoading = auth.isLoading || isAuthDataLoading
+  const isLoading = auth.isLoading || isAuthDataLoading || hasActiveNavigator
 
   if (isLoading) {
     return (
