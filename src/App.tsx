@@ -22,6 +22,7 @@ import PixelStreamingDemo from './pages/PixelStreamingDemo.tsx'
 import DebugOverlay from './components/DebugOverlay/DebugOverlay.tsx'
 import BeforeUnloadHandler from './components/BeforeUnloadHandler/BeforeUnloadHandler.tsx'
 import PrivateRoute from './components/PrivateRoute'
+import GuestAccessibleRoute from './components/GuestAccessibleRoute'
 import { PixelStreamingProvider } from './context/PixelStreamingContext'
 import { AuthDataProvider } from './context/AuthDataContext'
 import { UserSettingsProvider } from './context/UserSettingsContext'
@@ -84,7 +85,10 @@ export default function App() {
                   <Route path="/body-scan" element={<PrivateRoute><BodyScan /></PrivateRoute>} />
                   <Route path="/face-scan" element={<PrivateRoute><FaceScan /></PrivateRoute>} />
                   <Route path="/unreal-measurements" element={<UnrealMeasurements />} />
-                  <Route path="/virtual-try-on" element={<PrivateRoute><VirtualTryOn /></PrivateRoute>} />
+                  <Route
+                    path="/virtual-try-on"
+                    element={<GuestAccessibleRoute><VirtualTryOn /></GuestAccessibleRoute>}
+                  />
                   <Route path="/scan-qr-bodyscan" element={<PrivateRoute><ScanQRBodyscan /></PrivateRoute>} />
                   <Route path="/body-photos-check" element={<PrivateRoute><BodyPhotosCheck /></PrivateRoute>} />
                   <Route path="/face-photos-check" element={<PrivateRoute><FacePhotosCheck /></PrivateRoute>} />

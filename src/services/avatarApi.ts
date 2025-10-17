@@ -237,6 +237,15 @@ const ALLOWED_AGE_RANGES: readonly string[] = [
   '90-99',
 ];
 
+const ALLOWED_SOURCES: readonly string[] = [
+  'android',
+  'api',
+  'integration',
+  'ios',
+  'kiosk',
+  'web',
+];
+
 const AGE_RANGE_FALLBACK_MAP: Record<string, string> = {
   '25-35': '20-29',
   '25-35 years': '20-29',
@@ -302,6 +311,7 @@ const normalizeCreationMode = (value: unknown): AvatarCreationMode | null => {
   return matched ?? null;
 };
 
+
 const normalizeCreationModeForBackend = (value: unknown): AvatarCreationMode | null => {
   const creationMode = normalizeCreationMode(value);
   if (!creationMode) {
@@ -311,6 +321,24 @@ const normalizeCreationModeForBackend = (value: unknown): AvatarCreationMode | n
     return 'preset';
   }
   return creationMode;
+};
+
+const normalizeSourceForBackend = (value: unknown): string | null => {
+  const normalized = normalizeString(value);
+  if (!normalized) {
+    return null;
+  }
+
+  const lower = normalized.toLowerCase();
+  if (ALLOWED_SOURCES.includes(lower)) {
+    return lower;
+  }
+
+  if (lower === 'guest' || lower === 'browser') {
+    return 'web';
+  }
+
+  return null;
 };
 
 const normalizeAgeRange = (value: unknown): string | null => {
@@ -552,8 +580,9 @@ const buildBackendAvatarRequestPayload = (
   if (typeof payload.quickMode === 'boolean') {
     request.quickMode = payload.quickMode;
   }
-  if (payload.source) {
-    request.source = payload.source;
+  const normalizedSource = normalizeSourceForBackend(payload.source);
+  if (normalizedSource) {
+    request.source = normalizedSource;
   }
 
   // Uključi creationMode iz measurements SAMO ako nije zadan na top-levelu
