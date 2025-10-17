@@ -1,14 +1,17 @@
+import { useEffect } from 'react'
 import { useAuth } from "react-oidc-context"
-import { useSearchParams } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import logo from '../assets/fitspace-logo-gradient-nobkg.svg'
 import exitIcon from '../assets/exit.svg'
 import googleLogo from '../assets/google-logo.svg'
 // import appleLogo from '../assets/apple-logo.svg'
 // import facebookLogo from '../assets/facebook-logo.svg'
 import styles from './LoginPage.module.scss'
+import { DEFAULT_POST_LOGIN_ROUTE, POST_LOGIN_REDIRECT_KEY } from '../config/authRedirect'
 
 export default function LoginPage() {
   const auth = useAuth()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const error = searchParams.get('error')
 
@@ -19,9 +22,29 @@ export default function LoginPage() {
   //   }
   // }, [auth.isAuthenticated])
 
+  useEffect(() => {
+    if (auth.isLoading || !auth.isAuthenticated) {
+      return
+    }
+
+    let redirectTarget = DEFAULT_POST_LOGIN_ROUTE
+
+    try {
+      const storedRedirect = sessionStorage.getItem(POST_LOGIN_REDIRECT_KEY)
+      if (storedRedirect) {
+        redirectTarget = storedRedirect
+        sessionStorage.removeItem(POST_LOGIN_REDIRECT_KEY)
+      }
+    } catch (err) {
+      console.warn('Failed to read stored redirect target', err)
+    }
+
+    navigate(redirectTarget, { replace: true })
+  }, [auth.isAuthenticated, auth.isLoading, navigate])
+
   const loginWithGoogle = () => {
     auth.signinRedirect({
-      extraQueryParams: { 
+      extraQueryParams: {
         identity_provider: 'Google' 
       }
     }).catch((error: unknown) => {
