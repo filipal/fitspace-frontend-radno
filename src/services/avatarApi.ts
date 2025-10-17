@@ -8,6 +8,7 @@ import type {
   BodyMeasurements,
   QuickModeSettings,
 } from '../context/AvatarConfigurationContext';
+import type { CreateAvatarCommand } from '../types/provisioning';
 
 // VITE_AVATAR_API_BASE_URL must be defined; otherwise resolveAvatarUrl throws an AvatarApiError.
 const DEFAULT_AVATAR_API_BASE_URL =
@@ -301,6 +302,176 @@ const normalizeUuidLikeIdentifier = (value: unknown): string | undefined => {
 const normalizeUserIdentifier = (value: unknown): string | undefined =>
   normalizeUuidLikeIdentifier(value);
 
+const toFiniteNumber = (value: unknown): number | undefined => {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : undefined;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value.replace(',', '.'));
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  return undefined;
+};
+
+const sanitizeGuestMeasurementRecord = (
+  source?: Record<string, unknown> | null,
+): Record<string, number | string | null> | undefined => {
+  if (!source) {
+    return undefined;
+  }
+
+  const entries = Object.entries(source).reduce<Record<string, number | string | null>>(
+    (acc, [key, value]) => {
+      if (!key || value === undefined) {
+        return acc;
+      }
+
+      if (value === null) {
+        acc[key] = null;
+        return acc;
+      }
+
+      if (typeof value === 'number') {
+        if (Number.isFinite(value)) {
+          acc[key] = value;
+        }
+        return acc;
+      }
+
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (!trimmed) {
+          return acc;
+        }
+
+        const numeric = toFiniteNumber(trimmed);
+        acc[key] = numeric ?? trimmed;
+        return acc;
+      }
+
+      const numeric = toFiniteNumber(value);
+      if (numeric !== undefined) {
+        acc[key] = numeric;
+      }
+
+      return acc;
+    },
+    {},
+  );
+
+  return Object.keys(entries).length ? entries : undefined;
+};
+
+const sanitizeGuestQuickModeSettings = (
+  source?: QuickModeSettingsPayload | null,
+): QuickModeSettings | null => {
+  if (!source) {
+    return null;
+  }
+
+  const bodyShape =
+    typeof source.bodyShape === 'string' && source.bodyShape.trim().length
+      ? source.bodyShape.trim()
+      : undefined;
+
+  const athleticLevel =
+    typeof source.athleticLevel === 'string' && source.athleticLevel.trim().length
+      ? source.athleticLevel.trim()
+      : undefined;
+
+  const measurements = source.measurements;
+  const normalizedMeasurements = measurements
+    ? Object.entries(measurements).reduce<Record<string, number>>((acc, [key, value]) => {
+        if (!key) {
+          return acc;
+        }
+        const numeric = toFiniteNumber(value);
+        if (numeric !== undefined) {
+          acc[key] = numeric;
+        }
+        return acc;
+      }, {})
+    : undefined;
+
+  const updatedAtRaw = source.updatedAt;
+  let updatedAt: string | undefined;
+  if (updatedAtRaw instanceof Date) {
+    updatedAt = updatedAtRaw.toISOString();
+  } else if (typeof updatedAtRaw === 'string') {
+    const trimmed = updatedAtRaw.trim();
+    if (trimmed) {
+      updatedAt = trimmed;
+    }
+  }
+
+  const normalized: QuickModeSettings = {};
+  if (bodyShape) {
+    normalized.bodyShape = bodyShape;
+  }
+  if (athleticLevel) {
+    normalized.athleticLevel = athleticLevel;
+  }
+  if (normalizedMeasurements && Object.keys(normalizedMeasurements).length) {
+    normalized.measurements = normalizedMeasurements;
+  }
+  if (updatedAt) {
+    normalized.updatedAt = updatedAt;
+  }
+
+  return Object.keys(normalized).length ? normalized : null;
+};
+
+const mergeGuestMorphTargets = (
+  payload: AvatarPayload,
+  options?: { morphTargets?: Record<string, number> },
+): Record<string, number> | undefined => {
+  const merged = new Map<string, number>();
+
+  const assignMorph = (key: string | undefined, value: unknown) => {
+    const normalizedKey = normalizeString(key);
+    if (!normalizedKey) {
+      return;
+    }
+
+    const numericValue = toFiniteNumber(value);
+    if (numericValue === undefined) {
+      return;
+    }
+
+    const clamped = Math.max(0, Math.min(100, numericValue));
+    merged.set(normalizedKey, clamped);
+  };
+
+  if (payload.morphTargets) {
+    for (const [key, value] of Object.entries(payload.morphTargets)) {
+      assignMorph(key, value);
+    }
+  }
+
+  if (options?.morphTargets) {
+    for (const [key, value] of Object.entries(options.morphTargets)) {
+      assignMorph(key, value);
+    }
+  }
+
+  if (Array.isArray(payload.morphs)) {
+    for (const morph of payload.morphs) {
+      assignMorph(morph.backendKey ?? morph.id, morph.sliderValue);
+    }
+  }
+
+  if (!merged.size) {
+    return undefined;
+  }
+
+  return Array.from(merged.entries()).reduce<Record<string, number>>((acc, [key, value]) => {
+    acc[key] = value;
+    return acc;
+  }, {});
+};
+
 const normalizeCreationMode = (value: unknown): AvatarCreationMode | null => {
   const normalized = normalizeString(value);
   if (!normalized) {
@@ -381,6 +552,102 @@ const normalizeAgeRange = (value: unknown): string | null => {
   }
 
   return null;
+};
+
+const persistGuestAvatarUpdate = (
+  avatarId: string | number | null | undefined,
+  payload: AvatarPayload,
+  options?: { morphTargets?: Record<string, number> },
+): AvatarApiResult => {
+  const resolvedName = normalizeString(payload.name) ?? 'Guest Avatar';
+  const gender = normalizeGender(payload.gender);
+  const ageRange = normalizeAgeRange(payload.ageRange) ?? '20-29';
+  const creationMode = payload.creationMode ?? null;
+  const quickMode = payload.quickMode ?? null;
+  const source = 'guest';
+
+  const basicMeasurements = sanitizeGuestMeasurementRecord(
+    payload.basicMeasurements ?? undefined,
+  );
+
+  if (creationMode && basicMeasurements && !('creationMode' in basicMeasurements)) {
+    basicMeasurements.creationMode = creationMode;
+  }
+
+  const bodyMeasurements = sanitizeGuestMeasurementRecord(payload.bodyMeasurements ?? undefined);
+  const morphTargets = mergeGuestMorphTargets(payload, options);
+  const quickModeSettings = sanitizeGuestQuickModeSettings(payload.quickModeSettings);
+
+  const command: CreateAvatarCommand = {
+    type: 'createAvatar',
+    data: {
+      avatarName: resolvedName,
+      gender,
+      ageRange,
+      ...(basicMeasurements ? { basicMeasurements } : {}),
+      ...(bodyMeasurements ? { bodyMeasurements } : {}),
+      ...(morphTargets ? { morphTargets } : {}),
+      quickModeSettings: quickModeSettings ?? null,
+    },
+  };
+
+  const resolvedId = avatarId != null ? String(avatarId) : 'guest';
+
+  if (typeof window !== 'undefined') {
+    try {
+      window.localStorage.setItem('pendingAvatarData', JSON.stringify(command));
+    } catch (error) {
+      console.warn('Failed to persist guest avatar command', error);
+    }
+
+    try {
+      window.sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, resolvedId);
+    } catch (error) {
+      console.warn('Failed to persist guest avatar id', error);
+    }
+
+    const storageMorphTargets = morphTargets
+      ? Object.entries(morphTargets).reduce<BackendAvatarMorphTarget[]>((acc, [key, value]) => {
+          if (!key) {
+            return acc;
+          }
+          const numericValue = toFiniteNumber(value);
+          if (numericValue === undefined) {
+            return acc;
+          }
+          acc.push({ name: key, value: numericValue });
+          return acc;
+        }, [])
+      : null;
+
+    try {
+      window.sessionStorage.setItem(
+        LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
+        JSON.stringify({
+          avatarId: resolvedId === 'guest' ? null : resolvedId,
+          name: resolvedName,
+          avatarName: resolvedName,
+          gender,
+          ageRange,
+          basicMeasurements: basicMeasurements ?? null,
+          bodyMeasurements: bodyMeasurements ?? null,
+          morphTargets: storageMorphTargets ?? null,
+          quickMode: quickMode,
+          creationMode,
+          quickModeSettings: quickModeSettings ?? null,
+          source,
+        }),
+      );
+    } catch (error) {
+      console.warn('Failed to persist guest avatar metadata', error);
+    }
+  }
+
+  return {
+    avatarId: resolvedId,
+    backendAvatar: null,
+    responseBody: { storedAs: 'guest' },
+  };
 };
 
 const normalizeGender = (value: unknown): 'male' | 'female' => {
@@ -1255,7 +1522,7 @@ export function useAvatarApi(config?: { baseUrl?: string }) {
       options?: { morphTargets?: Record<string, number> },
     ): Promise<AvatarApiResult> => {
       if (!authData.isAuthenticated || !userId) {
-        throw new AvatarApiError('User is not authenticated to update avatars');
+        return persistGuestAvatarUpdate(avatarId, payload, options);
       }
 
       const mergedMorphTargets =
