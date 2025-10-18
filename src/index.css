@@ -13,7 +13,17 @@ html, body {
   html, body { overflow-x: hidden; }
 }
 
-html, body, #root { height: 100%; margin: 0; }
+/* koristi small/dynamic viewport da isključi URL/tool bar visinu */
+html, body, #root {
+  margin: 0;
+  block-size: 100svh; /* iOS/Chrome mobilni – vidljivi dio ekrana */
+}
+@supports (block-size: 100dvh) {
+  html, body, #root { block-size: 100dvh; } /* kad je dostupno, još bolje */
+}
+
+/* spriječi “mrvice” overflowa */
+body { overflow-y: clip; }
 * { min-width: 0; }
 
 img, video, canvas, svg { max-width: 100%; height: auto; }
@@ -29,18 +39,46 @@ body {
   overflow-x: hidden;
 }
 
-/* ——— Theme + layout varijable ——— */
+/* ——— Globalne varijable za skaliranje ——— */
 :root {
-  /* Primarne varijable (TVOJE) */
-  --page-max-width: 360px;
-  --page-height: 100dvh;
+  --fs-mobile-width: 430px;
+  --fs-mobile-height: 852px;
+  --fs-mobile-safe-height: 780px;
+  --fs-desktop-width: 1440px;
+  --fs-desktop-height: 1024px;
 
-  /* Alias radi kompatibilnosti s tuđim modulima/README-om */
-  --page-width: var(--page-max-width);
+  --fs-design-width: var(--fs-mobile-width);
+  --fs-design-height: var(--fs-mobile-height);
+  --fs-design-safe-height: var(--fs-mobile-safe-height);
 
-  /* Korisno kod centriranih wrappera */
-  --page-bg: #ececec;
-  --page-fg: #111;
+  /* ključna promjena — default na 100svh (vidljivi dio ekrana, bez URL bara) */
+  --fs-viewport-height: 100svh;
+
+  --fs-scale-up-max: calc(var(--fs-desktop-width) / var(--fs-design-width));
+  --fs-scale-width: min(
+    calc(100vw / var(--fs-design-width)),
+    var(--fs-scale-up-max)
+  );
+  --fs-scale-height: min(
+    calc(var(--fs-viewport-height) / var(--fs-design-safe-height)),
+    calc(var(--fs-desktop-height) / var(--fs-design-safe-height))
+  );
+  --fs-scale: min(var(--fs-scale-width), var(--fs-scale-height));
+  --fs-scale-header: min(1, var(--fs-scale));
+
+  --fs-canvas-width: calc(var(--fs-design-width) * var(--fs-scale));
+  --fs-canvas-height: calc(var(--fs-design-height) * var(--fs-scale));
+  --fs-page-max-width: min(var(--fs-desktop-width), var(--fs-canvas-width));
+  --fs-page-max-height: min(var(--fs-desktop-height), var(--fs-canvas-height));
+
+  --page-max-width: var(--fs-page-max-width);
+  --page-width: var(--fs-page-max-width);
+  --page-height: var(--fs-page-max-height);
+
+  --fs-page-bg: #ececec;
+  --fs-page-fg: #111;
+  --page-bg: var(--fs-page-bg);
+  --page-fg: var(--fs-page-fg);
 
   font-family: 'Outfit', sans-serif;
   line-height: 1.5;
@@ -53,24 +91,25 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ——— Breakpointi (zadržavaju tvoj postojeći scale) ——— */
-@media (min-width: 430px)  {
-  :root {
-    --page-max-width: 430px;
-    /* ako želiš fiksnu “dizajn” visinu na ovom breakpointu: */
-    --page-height: 932px;
-  }
+/* ako je dostupno 100dvh (dynamic), još preciznije od svh */
+@supports (height: 100dvh) {
+  :root { --fs-viewport-height: 100dvh; }
 }
-@media (min-width: 768px)  {
-  :root {
-    --page-max-width: 768px;
-    --page-height: 1024px; /* ili ostavi 100dvh ako ti je draže */
-  }
-}
+
 @media (min-width: 1024px) {
   :root {
-    --page-max-width: 1024px;
-    --page-height: 953px;
+    --fs-design-width: var(--fs-desktop-width);
+    --fs-design-height: var(--fs-desktop-height);
+    --fs-design-safe-height: var(--fs-desktop-height);
+    --fs-scale-up-max: 1;
+    --fs-scale-width: min(calc(100vw / var(--fs-design-width)), 1);
+/*     --fs-scale-height: min(
+      calc(var(--fs-viewport-height) / var(--fs-design-safe-height)),
+      1
+    ); */
+/*     --fs-scale: min(var(--fs-scale-width), var(--fs-scale-height)); */
+    /* skaliraj samo po širini na desktopu */
+    --fs-scale: var(--fs-scale-width);
   }
 }
 @media (min-width: 1280px) {
@@ -111,3 +150,8 @@ button:active {
 
 /* iOS “zoom-on-focus” zaštita */
 input, select, textarea, button { font-size: 16px; }
+
+
+@media (min-width: 1024px) and (max-height: 600px) {
+  body { overflow-y: auto; }           /* vrati scroll */
+}

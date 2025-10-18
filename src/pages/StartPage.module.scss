@@ -1,123 +1,98 @@
-@use '../styles' as s;
-
-/* 0) Globalni reset ako ga već nemaš */
-html, body { height: 100%; }
-body { margin: 0; }
-
-/* ——————————————————————————— */
-/* VARS: širina stranice + fiksna visina platna za web */
-:root { --page-max-width: 430px; --canvas-h: 932px; }
-:root {
-  --canvas-h: 932px;
-}
-@include s.respond(xlarge-mobile)  { :root { --page-max-width: 540px; } }
-@include s.respond(xxlarge-mobile) { :root { --page-max-width: 600px; } }
-@include s.respond(tablet)         { :root { --page-max-width: 744px; } }
-@include s.respond(tablet-sd)      { :root { --page-max-width: 768px; } }
-@include s.respond(tablet-md)      { :root { --page-max-width: 820px; } }
-@include s.respond(tablet-lg)      { :root { --page-max-width: 834px; } }
-@include s.respond(tablet-mlg)     { :root { --page-max-width: 853px; } }
-@include s.respond(tablet-xlg)     { :root { --page-max-width: 912px; } }
-@include s.respond(tablet-xxl)     { :root { --page-max-width: 1024px; } }
-@include s.respond(laptop)         { :root { --page-max-width: 960px; } }
-@include s.respond(laptop-lg)      { :root { --page-max-width: 1440px; } }
-
-/* ——————————————————————————— */
-/* PAGE */
 .startPage {
-  inline-size: 100vw;
-  max-inline-size: var(--page-max-width);
-  margin: 0 auto;
+  --start-title-size: 30px;
+  --start-gap: 266px;
+  --start-gap-desktop: 320px;
+  --start-button-mobile: 320px;
+  --start-button-min: 220px;
+  --start-button-desktop: 420px;
+  --start-button-height: 55px;
+  --start-scale-safe: max(var(--fs-scale), 0.0001);
+  --start-gap-value: var(--start-gap);
+  --start-button-width: clamp(
+    calc(var(--start-button-min) / var(--start-scale-safe)),
+    var(--start-button-mobile),
+    calc(var(--start-button-desktop) / var(--start-scale-safe))
+  );
+  inline-size: var(--fs-design-width);
+  block-size: var(--fs-design-height);
   position: relative;
-  font-family: 'Outfit', sans-serif;
-  padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
-  overflow-y: auto;           /* ako je prozor niži od platna → skrolaj stranicu */
 }
 
-/* ——————————————————————————— */
-/* CANVAS – MOBITEL (default): visina = viewport (nema ogromnog platna) */
 .canvas {
-  container-type: inline-size; /* cqw računa po platnu */
-  position: relative;
   inline-size: 100%;
-  aspect-ratio: auto;          /* upravljamo visinom direktno */
-  block-size: 100svh;          /* ⬅︎ rješava <430 i 540 bez skrola */
-}
-@supports not (height: 100svh) {
-  .canvas { block-size: 100vh; }
+  block-size: 100%;
+  position: relative;
 }
 
-/* ——————————————————————————— */
-/* TITLE – 100px @430, ≤100 na širim */
+.startPage,
+.startPage .canvas {
+  overflow-x: visible;
+}
+
 .title {
   position: absolute;
-  /* top: s.cap(s.cqw(100), 100px); */
-  top: 10vw;
   left: 50%;
+  bottom: calc(50% + var(--start-gap-value) + (var(--start-button-height) / 2));
   transform: translateX(-50%);
   margin: 0;
+  inline-size: 100%;
+  font-size: var(--start-title-size);
+  line-height: 1.2;
   text-align: center;
-  max-inline-size: 90vw;
-  font-size: clamp(24px, 7.5vw, 100px);
-  line-height: 1.05;
   color: #000;
 }
 
-/* XS (320–359.98): nijansu manji title */
-@media (min-width: 320px) {
-  .title {
-    font-size: s.fsz(28, .86); // ≈24px @320
-    line-height: 1.06;
-  }
-}
-
-/* XS (320–359.98): nijansu manji title */
-@media (min-width: 360px) {
-  .title {
-    font-size: s.fsz(28, .96); // ≈24px @320
-    line-height: 1.06;
-  }
-}
-
-/* ——————————————————————————— */
-/* BUTTON – MOBITEL: točan centar platna */
 .startButton {
   position: absolute;
-  left: 50%;
   top: 50%;
-  transform: translate(-50%, -50%);     /* centriranje po visini samo na mobu */
-  @include s.app-button-dims(55, 50, 44, 420px); /* širina 55/55 @430; visina ≤ 50px */
-  display: inline-flex; align-items: center; justify-content: center;
-  border: none; background: #000; color: #fff; cursor: pointer;
-  font-size: s.fsz(18); line-height: 1;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  inline-size: var(--start-button-width);
+  min-block-size: var(--start-button-height);
+  display: inline-flex;
+  line-height: 1;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: #000;
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
 }
 
-@media (min-width: 744px) {
+@media (min-width: 1024px) {
+  .startPage {
+    --start-gap-value: var(--start-gap-desktop);
+    --start-title-size: clamp(64px, 6vw, 100px);
+
+    /* ŠIRINA već poništava scale: */
+    --start-button-width: calc(var(--start-button-desktop) / var(--start-scale-safe));
+
+    /* DODAJ: visina gumba također inverzno na skalu -> točno 50 px na ekranu */
+    --start-button-height: calc(50px / var(--start-scale-safe));
+  }
+
+  /* 1 red naslova na desktopu */
+  .title br { display: none; }
   .title {
-    max-inline-size: none;
+    /* jedan red i bez <br> */
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    & br { display: none; }
+
+    /* umjesto left:50%/translateX, koristi puni raspon i flex center */
+    left: 0;
+    right: 0;              /* ili inset-inline: 0; */
+    transform: none;
+    inline-size: 100%;
+    display: flex;
+    justify-content: center;
+    text-align: center;
+
+    /* dodatno: ograniči “rastezanje” i spriječi odrezivanje */
+    max-inline-size: 100%; /* neka ne bude širi od roditelja */
   }
 }
 
-/* ——————————————————————————— */
-/* WEB (≥ tablet 744): fiksna visina platna 932px, gumb fiksno na 466px */
-@include s.respond(tablet) {
-  .canvas {
-    block-size: var(--canvas-h); /* ⬅︎ nema svh/vh, nema aspect-ratio */
-  }
-
-  .startButton {
-    top: calc(var(--canvas-h) / 2);
-    transform: translateX(-50%);
-    max-inline-size: 420px;
-  }
-
-  .title {
-    max-inline-size: none;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+@media (max-height: 800px) {
+  .startPage { --start-gap-desktop: 260px; }
 }

@@ -1,0 +1,64 @@
+.page {
+  /* min-height: var(--fs-page-max-height);  ⟵ makni */
+  inline-size: 100%;
+  /* cijela stranica = točno vidljivi viewport */
+  block-size: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--page-bg);
+  color: var(--page-fg);
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  overflow: clip; /* nema scroll trake od subpiksel overflowa */
+}
+
+.header,
+.footer {
+  inline-size: min(100%, var(--fs-desktop-width));
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
+}
+
+.body {
+  inline-size: min(100%, var(--fs-desktop-width));
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: center;
+  padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
+  position: relative;
+  overflow: clip; /* zaštita */
+}
+
+.canvas {
+  inline-size: var(--fs-canvas-width);
+  /* min-block-size: var(--fs-canvas-height); ⟵ makni “min-” */
+  block-size: var(--fs-canvas-height);
+  display: flex;
+  justify-content: center;
+  position: relative;
+  overflow: clip;
+}
+
+.canvasInner {
+  inline-size: var(--fs-design-width);
+  /* min-block-size: var(--fs-design-height); ⟵ makni “min-” */
+  block-size: var(--fs-design-height);
+  transform-origin: top center;
+  transform: scale(var(--fs-scale));
+  position: relative;
+}
+
+@media (min-width: 1024px) and (max-height: 600px) {
+  .page {
+    /* dopusti da stranica bude viša od viewporta i da se skrola */
+    block-size: auto;
+    min-block-size: 100dvh;
+    overflow-y: auto;
+  }
+  .body, .canvas {
+    overflow: visible; /* nemoj rezati sadržaj po Y u ovom režimu */
+  }
+}
