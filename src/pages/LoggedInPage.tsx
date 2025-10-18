@@ -242,7 +242,11 @@ export default function LoggedInPage() {
         topButtonType="primary"
         backText={showDeleteConfirm ? 'Cancel' : 'Back'}
         actionText={showDeleteConfirm ? (deletingId ? 'Deleting…' : 'Delete Avatar') : 'Create New Avatar'}
-        onBack={() => (showDeleteConfirm ? cancelDelete() : navigate('/login'))}
+        onBack={() => (
+          showDeleteConfirm
+            ? cancelDelete()
+            : navigate('/login', { replace: true })
+        )}
         onAction={() => (showDeleteConfirm ? confirmDelete() : navigate('/avatar-info'))}
         actionDisabled={showDeleteConfirm ? Boolean(deletingId) : avatars.length >= maxAvatars}
         actionType={showDeleteConfirm ? 'black' : 'black'}

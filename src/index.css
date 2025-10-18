@@ -23,7 +23,7 @@ html, body, #root {
 }
 
 /* spriječi “mrvice” overflowa */
-body { overflow-y: clip; }
+body { overflow-y: auto; }
 * { min-width: 0; }
 
 img, video, canvas, svg { max-width: 100%; height: auto; }
@@ -96,20 +96,14 @@ body {
   :root { --fs-viewport-height: 100dvh; }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1200px) {
   :root {
     --fs-design-width: var(--fs-desktop-width);
     --fs-design-height: var(--fs-desktop-height);
     --fs-design-safe-height: var(--fs-desktop-height);
     --fs-scale-up-max: 1;
     --fs-scale-width: min(calc(100vw / var(--fs-design-width)), 1);
-/*     --fs-scale-height: min(
-      calc(var(--fs-viewport-height) / var(--fs-design-safe-height)),
-      1
-    ); */
-/*     --fs-scale: min(var(--fs-scale-width), var(--fs-scale-height)); */
-    /* skaliraj samo po širini na desktopu */
-    --fs-scale: var(--fs-scale-width);
+    --fs-scale: var(--fs-scale-width); /* desktop: skala samo po širini */
   }
 }
 @media (min-width: 1280px) {
@@ -152,6 +146,6 @@ button:active {
 input, select, textarea, button { font-size: 16px; }
 
 
-@media (min-width: 1024px) and (max-height: 600px) {
+@media (min-width: 1200px) and (max-height: 600px) {
   body { overflow-y: auto; }           /* vrati scroll */
 }

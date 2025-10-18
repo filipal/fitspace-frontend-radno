@@ -1,420 +1,287 @@
-@use '../styles' as s;
+.page { block-size: 100%; overflow-y: clip; }   /* mobile: bez skrola */
+.body { align-items: center; overflow: clip; }
 
-/* Design dimenzije: iPhone 15 Pro (portret): 393×852 CSS px */
-:root {
-  --design-w: 393px;
-  --design-h: 852px;
-}
-
-/* TEMP: disable full-screen canvas → allow natural flow+scroll */
 .loginPage {
+  --login-scale-safe: max(var(--fs-scale), 0.0001);
+  --login-horizontal-padding: 24px;
+  --login-panel-width: calc(var(--fs-design-width) - (2 * var(--login-horizontal-padding)));
+  --login-card-width: min(320px, var(--login-panel-width));
+  --login-text-width: min(330px, var(--login-panel-width));
+  --login-social-width: var(--login-card-width);
+  --login-bg-height: 386px;
+  --login-button-height: 50px;
+
+  inline-size: var(--fs-design-width);
+  block-size: var(--fs-design-height); /* mobile zaključano na viewport dizajna */
   position: relative;
-  width: var(--page-width);
-  min-height: auto;
-  margin: 0 auto;
-  overflow: visible;
+  color: #000;
 }
 
-/* Unutarnje "platno" koje se skalira da stane na ekran */
-/* TEMP: neutralize canvas scaling */
 .canvas {
-  position: static;
-  width: 100%;
-  height: auto;
-  transform: none;
-
+  inline-size: 100%;
+  block-size: 100%;
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-sizing: border-box;
-  /* TEMP gutters: osiguraj lijevu/desnu marginu na mobitelu */
-  padding-left: calc(env(safe-area-inset-left));
-  padding-right: calc(env(safe-area-inset-right));
-  /* dodaj dno kao na BodyScanInfo, s safe-area */
-  /* padding-bottom: calc(20px + env(safe-area-inset-bottom)); */
+  padding-block-start: 61px; /* mobile */
+  padding-block-end: calc(32px + env(safe-area-inset-bottom));
+  padding-inline:
+    calc(var(--login-horizontal-padding) + env(safe-area-inset-left))
+    calc(var(--login-horizontal-padding) + env(safe-area-inset-right));
 }
 
-/* 1) Back u kutu – jedina iznimka s absolute */
 .backButton {
   position: absolute;
   top: 61px;
-  left: 35px;
+  left: calc(35px + env(safe-area-inset-left));
   background: none;
   border: none;
   cursor: pointer;
   line-height: 1;
 }
 
-.exitIcon {
-  width: 20px;
-  height: 20px;
-  display: block;
-  object-fit: contain;
-}
+.exitIcon { inline-size: 20px; block-size: 20px; display: block; object-fit: contain; }
+.logo     { inline-size: 156px; block-size: 82px; }
 
-/* 2) Logo – Figma kaže top: 90, pa page dobije padding-top 90 */
-.logo {
-  width: 156px;    /* 155.97 → zaokruženo */
-  height: 82px;
-  margin-top: 61px;
-}
-
-/* 3) Sivi blok 360×373 – centriran, razmak prema Figmi */
-.loginBg {
-  width: 100%;
-  max-width: 319px;
-  height: 386px;
+.webPanel {
+  inline-size: min(100%, var(--login-panel-width));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   margin-top: 9px;
+}
+
+.chromeBar {
+  position: relative;   /* default; ne mijenja layout */
+}
+
+.loginBg {
+  inline-size: var(--login-card-width); /* ⬅︎ umjesto 100% → 320px */
+  block-size: var(--login-bg-height);   /* 386px */
   background: #d9d9d9;
   border-radius: 4px;
 }
 
-/* 4) CTA: Create Your Digital Twin – 320×50 – centriran */
 .createButton {
-  width: 100%;
-  max-width: 320px;
-  height: 50px;
+  inline-size: var(--login-card-width);
+  min-block-size: var(--login-button-height);
   margin-top: 35px;
   background: linear-gradient(to right, #2b214d, #13536c);
-  color: #fff;
-  font-size: 18px;
-  border: none;
-  display: block;
+  color: #fff; font-size: 18px; border: none;
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
 }
 
-/* 5) Login sekcija – grupirana, s razmacima po Figmi */
 .loginFormSection {
-  width: 100%;
-  max-width: 330px;  /* intro tekst je 330px u Figmi */
-  height: 241px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  inline-size: var(--login-text-width);
   margin-top: 28px;
-/*   padding-bottom: 45px; */
+  display: flex; flex-direction: column; align-items: center;
 }
 
-.introText {
-  width: 100%;
-  max-width: 330px;
-  height: 46px;
-  font-weight: 300;  /* Figma “Light” */
-  font-size: 18px;
-  line-height: 1;    /* "leading-trim: NONE" → kontroliraj liniju */
-  text-align: center;
-  color: #000;
-}
+.introText { inline-size: 100%; font-weight: 300; font-size: 18px; line-height: 1; text-align: center; }
 
-/* 6) Forma – stack s točnim razmacima */
-.loginForm {
-  width: 100%;
-  max-width: 320px;
-  height: 180px;
-  display: flex;
-  flex-direction: column;
-  /* 733 - (660 + 46) = 27px razmaka od intro teksta do e-maila */
-  margin-top: 15px;
-  gap: 15px; /* 15px between first and second, second and third; third gets extra bottom spacing via last class */
-  align-items: center;
-}
+.loginForm { inline-size: var(--login-card-width); margin-top: 15px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
 
-/* New social login buttons replacing old inputs */
 .socialButton {
-  width: 320px;
-  height: 50px;
-  background: #000;
-  color: #fff;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 15px;
-  font-size: 17px;
-  font-weight: 400;
-  cursor: pointer;
+  inline-size: var(--login-social-width);
+  min-block-size: var(--login-button-height);
+  background: #000; color: #fff; border: none;
+  display: flex; align-items: center; justify-content: center; gap: 15px;
+  font-size: 17px; font-weight: 400; cursor: pointer;
 }
-.socialIcon { width: 32px; height: 32px; object-fit: contain; }
-.socialIconApple { width: 26px; height: 31px; object-fit: contain; }
-.socialLabel { line-height: 1; }
-/* .socialButtonLast { margin-bottom: calc(5px + env(safe-area-inset-bottom)); } */
 
-/* Mobile: webPanel ne radi ništa posebno – nasljeđuje flex kolonu stranice */
-.webPanel {
-  width: 100%;
-  /* neka visina bude prema sadržaju */
-  height: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;  /* <— ovo vraća centriranje djece */
-}
+.socialIcon { inline-size: 32px; block-size: 32px; object-fit: contain; }
+.socialIconApple { inline-size: 26px; block-size: 31px; object-fit: contain; }
+.socialLabel { line-height: 1; }
 
 .deleteConfirmOverlay {
   position: fixed;
-  left: 0;
-  width: 100%;
-  max-width: var(--page-max-width);
+  inset-inline: 0;
+  inline-size: 100%;
+  max-inline-size: var(--page-max-width);
   z-index: 100;
   display: flex;
   justify-content: center;
   pointer-events: none;
 }
+
 .deleteConfirmRow {
-  background: #D44B3E;
-  max-width: var(--page-max-width);
+  background: #d44b3e;
+  max-inline-size: var(--page-max-width);
   margin: 0 auto;
   color: #fff;
   font-size: 20px;
   display: flex;
-  text-align: center;
-  align-items: center;    /* centriranje okomito   */
-  justify-content: center;/* centriranje vodoravno */
-  width: 100%;
-  height: 100%;
+  align-items: center;
+  justify-content: center;
+  inline-size: 100%;
+  block-size: 100%;
   text-align: center;
   pointer-events: auto;
 }
 
-@media (height <= 931px) {
-  .canvas {
-    padding-bottom: calc(20px + env(safe-area-inset-bottom));
-  }
-  .socialButtonLast { margin-bottom: calc(24px + env(safe-area-inset-bottom)); }
-}
-
-@media (max-width: 400px) {
-  .logo {
-    width: 142.6px;
-    height: 75px;
-    margin-top: 55.8px;
-  }
-  .exitIcon {
-    width: 20px;
-    height: 20px;
-  }
-  .backButton {
-    top: 55.8px;
-    left: 32px;
-  }
-  .loginBg {
-    width: 100%;
-    max-width: 291.5px;
-    height: 352.9px;
-    margin-top: 8.2px;
-  }
-  .webPanel {
-    width: 100%;
-    height: auto;
-  }
-  .createButton {
-    width: 100%;
-    max-width: 292.5px;
-    height: 45.7px;
-    margin-top: 32px;
-    color: #fff;
-    font-size: 18px;
-  }
-  .loginFormSection {
-    width: 100%;
-    max-width: 292.5px;
-    height: 220.3px;
-  }
-  .loginForm {
-    width: 100%;
-    max-width: 292.5px;
-    height: 164.6px;
-    display: flex;
-    flex-direction: column;
-    /* 733 - (660 + 46) = 27px razmaka od intro teksta do e-maila */
-    margin-top: 15px;
-    gap: 15px; /* 15px between first and second, second and third; third gets extra bottom spacing via last class */
-  }
-  .introText {
-    width: 100%;
-    max-width: 292.5px;
-    height: 42px;
-    font-weight: 300;  /* Figma “Light” */
-    font-size: 18px;
-  }
-  .socialButton {
-    width: 292.5px;
-    height: 45.7px;
-    gap: 14px;
-    font-size: 17px;
-    font-weight: 400;
-    cursor: pointer;
-  }
-  .socialIcon { width: 29.3px; height: 29.3px; object-fit: contain; }
-  .socialIconApple { width: 23.6px; height: 28.3px; object-fit: contain; }
-  .socialLabel { line-height: 1; }
-}
-
-/* ——————————————————————— */
-/* WEB MODE (tablet 744px i šire): neskalirajući layout */
-/* ——————————————————————— */
-@media (min-width: 744px) {
-  /* Stranica može imati malo širi cap i slobodan scroll ako je prozor niži */
-  .loginPage {
-    /* ako koristiš var(--page-width), ostavi ga; ovo je sigurna alternativa: */
-    width: min(100%, 960px);
-    margin: 0 auto;
-    min-height: 100svh;  /* stranica pokriva viewport; skrol dozvoljen po potrebi */
-    overflow-y: auto;
-  }
-
-  /* Canvas – na webu ne skaliramo po “dizajnu” nego puštamo prirodnu visinu sadržaja */
-  .canvas {
-    position: relative;
-    width: 100%;
-    height: auto;
-    transform: none;
-    padding-left: env(safe-area-inset-left, 0px);
-    padding-right: env(safe-area-inset-right, 0px);
-  }
-
-  /* Panel s formom: pusti sadržaj da određuje visinu (nema prisilnog “skraćivanja”) */
-  .webPanel {
-    position: relative;   /* ili absolute ako baš želiš, ali “relative” je otpornije */
-    top: 0; left: 0;
-    width: 600px;
-    height: auto;         /* ⬅︎ umjesto fiksnih 928 */
-    min-height: 928px;    /* ⬅︎ po želji: početna visina */
-    display: flex;
-    flex-direction: column;
-    gap: 25px;
-    align-items: center;
-    overflow: visible;    /* ili overflow:auto ako želiš lokalni scroll */
-    margin: 8px auto 0;
-  }
-
-  /* Sivi blok – ukini mobilni cap i zabrani flex-shrink */
-  .loginBg {
-    width: 600px;
-    height: 600px;
-    max-width: none;      /* ⬅︎ pregazi staro max-width:319px */
-    flex: 0 0 600px;      /* ⬅︎ ne smije se skratiti u flex koloni */
-  }
-
-  .loginForm {
-    width: 422px;
-    max-width: none;        /* pregazi mobile cap 320 */
-    align-items: center;    /* centriraj djecu, bez stretch-a */
-  }
-
-  /* 2) CTA je 422px – selektiraj ga direktno (možda NIJE u .loginForm) */
-  .createButton {
-    width: 422px;
-    max-width: none;        /* neutraliziraj globalni max-width:320 */
-    flex: 0 0 50px;         /* spriječi skraćivanje u flex kontekstu */
-    box-sizing: border-box;
-    align-self: center;
-  }
-
-  /* 3) Social gumbi 419px – jača specifičnost + anti-stretch/shrink */
-  .loginForm .socialButton {
-    width: 419px;
-    max-width: 419px;       /* zaštita od generičnog width:100% */
-    flex: 0 0 50px;
-    box-sizing: border-box;
-    align-self: center;
-  }
-
-  /* Sekcija s login formom – pusti content visinu */
-  .loginFormSection {
-    width: 600px;
-    max-width: none;
-    height: auto;
-    margin-top: auto;     /* gura prema dnu panela ako želiš razmak iznad */
-    padding-bottom: 40px;
-  }
-
-  /* Ostalo: ikone, tekst, itd. – može ostati isto ili po želji fiksne px */
-  .socialIcon    { width: 32px; height: 32px; }
-  .socialIconApple { width: 26px; height: 31px; }
-}
-
-/* ——————————————————————— */
-/* Desktop 1440+ – ako želiš specifičan raspored, prepiši ovdje.
-   VAŽNO: zadrži .loginBg max-width:none i flex:0 0 600px da ne padne opet na 319px */
-/* ——————————————————————— */
-@media (min-width: 1024px) {
-  .loginPage {
-    width: 100%;
-    max-width: none;
-    margin: 0;
-    position: relative; /* za absolute pozicioniranje djece */
-    min-height: 100dvh;
-    overflow-y: auto;
-  }
-
-  /* canvas = puna širina ekrana */
-  .canvas {
-    width: 100%;
-    max-width: none;           /* ukloni cap (npr. 960) */
-    margin-inline: 0;
-    box-sizing: border-box;    /* da padding ne stvara horizontalni scroll */
-    padding-left: env(safe-area-inset-left, 0px);
-    padding-right: env(safe-area-inset-right, 0px);
-  }
-
-  .webPanel {
-    margin: 49px auto 0;
-  }
-
-  .backButton {
-    position: absolute;
-    top:  calc(29px + env(safe-area-inset-top, 0px));
-    left: calc(35px + env(safe-area-inset-left, 0px));
-    z-index: 5;
-  }
-
-  .logo {
-    position: absolute;
-    top:   calc(29px + env(safe-area-inset-top, 0px));
-    right: calc(35px + env(safe-area-inset-right, 0px)); /* ⬅︎ 35px od desnog ruba */
-    left: auto;                 /* poništi eventualni left iz nekog drugog pravila */
-    margin: 0;                  /* pregazi stare margine (npr. margin-left) */
-    z-index: 5;
-
-    /* (po želji zadrži dimenzije) */
-    width: 136px;
-    height: 71px;
-  }
-}
-
 .errorBanner {
-  position: absolute;
-  top: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #fee;
-  border: 1px solid #fcc;
-  border-radius: 8px;
-  padding: 1rem 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
-  animation: slideDown 0.3s ease-out;
-  z-index: 1000;
+  position: absolute; inset-block-start: 32px; left: 50%; transform: translateX(-50%);
+  background: #fee; border: 1px solid #fcc; border-radius: 8px; padding: 16px 24px;
+  display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 12px rgba(220,38,38,.15);
+  animation: slideDown .3s ease-out; z-index: 1000;
 }
 
-.errorIcon {
-  font-size: 1.25rem;
-}
+.errorIcon { font-size: 1.25rem; }
+.errorText { color: #c33; font-weight: 500; font-size: .95rem; }
 
-.errorText {
-  color: #c33;
-  font-weight: 500;
-  font-size: 0.95rem;
-}
+@keyframes slideDown { from { opacity: 0; transform: translateX(-50%) translateY(-20px)} to { opacity: 1; transform: translateX(-50%) translateY(0)} }
 
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-20px);
+@media (max-width: 360px) { .loginPage { --login-horizontal-padding: 16px; } }
+
+@media (max-width: 1199.98px) {
+  .body {
+    align-items: flex-start;   /* ⬅︎ prije je bilo center → guralo canvas prema sredini */
   }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
+
+  .canvas {
+    padding-block-start: 0;
+    margin-block-start: 0;
   }
+
+  .loginPage {
+    --mobile-logo-top:   calc(60px + env(safe-area-inset-top, 0px));
+    --mobile-logo-h:     82px;
+    --mobile-gap-below:  17px;
+    --mobile-panel-top-vp: calc(var(--mobile-logo-top) + var(--mobile-logo-h) + var(--mobile-gap-below));
+  }
+
+  .canvas::before {
+    content: "";
+    display: block;
+    block-size: calc(var(--mobile-panel-top-vp) / var(--login-scale-safe));
+  }
+
+  .webPanel {
+    inline-size: var(--login-text-width);  /* 330px */
+    block-size:  733px;
+    margin-top:  0;
+  }
+
+  .backButton {
+    position: fixed;  /* izvan skaliranog canvas-a */
+    top:  calc(60px + env(safe-area-inset-top, 0px));
+    left: calc(35px + env(safe-area-inset-left, 0px));
+    z-index: 1000;
+
+    inline-size: 20px;   /* okvir gumba = 20×20 */
+    block-size: 20px;
+    padding: 0;
+    line-height: 0;
+    background: none;
+    border: none;
+    display: grid;
+    place-items: center;
+  }
+
+  .exitIcon {
+    inline-size: 20px;   /* ikona 20×20 */
+    block-size: 20px;
+    object-fit: contain;
+    display: block;
+    aspect-ratio: 1;
+  }
+
+  .logo {
+    position: fixed;
+    top:  calc(60px + env(safe-area-inset-top, 0px));
+    left: 50%;
+    transform: translateX(-50%);  /* centriraj ga u odnosu na viewport → */
+    z-index: 1000;                /* …pošto je i webPanel centriran, centri su poravnati */
+
+    inline-size: 156px;  /* tvoje mobilne dimenzije loga */
+    block-size:  82px;
+  }
+
+  .loginBg {
+    inline-size: var(--login-card-width);  /* 320px */
+    block-size:  var(--login-bg-height);   /* 386px */
+  }
+}
+
+@media (min-width: 1200px) {
+  /* A) Web: dopusti skrol stranice */
+  .page { block-size: auto; min-block-size: 100dvh; overflow-y: auto; }
+
+  .body { align-items: flex-start; }
+
+  .loginPage {
+    --login-scale-safe: max(var(--fs-scale), 0.0001);
+
+    --web-panel-w: calc(600px / var(--login-scale-safe));
+    --web-panel-h: calc(928px / var(--login-scale-safe));
+    --web-gap:     calc(21px  / var(--login-scale-safe));
+    --btn-w:       calc(422px / var(--login-scale-safe));
+    --btn-h:       calc(50px  / var(--login-scale-safe));
+    --bg-w:        calc(600px / var(--login-scale-safe));
+    --bg-h:        calc(600px / var(--login-scale-safe));
+
+    block-size: auto;                /* više nije vezan za design-height */
+    min-block-size: var(--fs-design-height);
+  }
+
+  .canvas {
+    margin-block-start: 0;
+    padding-block-start: 0;      /* već imaš, neka ostane */
+    padding-inline: 0;           /* već imaš, neka ostane */
+  }
+
+  .backButton {
+    position: fixed;
+    top:  calc(29px + env(safe-area-inset-top, 0px));
+    left: calc(30px + env(safe-area-inset-left, 0px));
+    z-index: 1000;
+    inline-size: 30px;
+    block-size: 20px;
+    padding: 0; line-height: 0; background: none; border: none;
+    display: grid; place-items: center;
+  }
+
+  .exitIcon { inline-size: 20px; block-size: 20px; object-fit: contain; }
+
+  .logo {
+    position: fixed;
+    top:   calc(29px + env(safe-area-inset-top, 0px));
+    right: calc(30px + env(safe-area-inset-right, 0px));
+    z-index: 1000;
+    inline-size: 136px;  /* desktop dimenzije */
+    block-size: 71px;
+  }
+
+  .webPanel {
+    margin-top: calc(49px / var(--login-scale-safe));
+    inline-size: calc(600px / var(--login-scale-safe));
+    block-size:  calc(928px / var(--login-scale-safe));
+  }
+
+  .loginBg {
+    inline-size: var(--bg-w);
+    block-size:  var(--bg-h);
+    min-block-size: var(--bg-h);   /* čvrsta donja granica */
+    flex: 0 0 var(--bg-h);         /* NE shrinkaj, NE rasteži, baza = 600/scale */
+    margin-top: 0;
+  }
+
+  .createButton { inline-size: var(--btn-w); min-block-size: var(--btn-h); margin-top: var(--web-gap); font-size: 18px; }
+  .loginFormSection { inline-size: var(--web-panel-w); margin-top: var(--web-gap); }
+  .introText    { inline-size: var(--web-panel-w); margin-top: 0; font-size: 18px; line-height: 1; text-align: center; font-weight: 300; }
+  .loginForm    { inline-size: var(--btn-w); margin-top: var(--web-gap); display: flex; flex-direction: column; align-items: center; }
+  .socialButton { inline-size: var(--btn-w); min-block-size: var(--btn-h); }
+  .socialButton + .socialButton { margin-top: var(--web-gap); }
+
+  /* PRIVREMENO: rezerviraj prostor za još 2 gumba + 2 razmaka = 142 px */
+  .futureButtonsSpacer {
+    inline-size: var(--btn-w);
+    block-size: calc((2 * var(--btn-h)) + (2 * var(--web-gap)));
+    margin-top: var(--web-gap);
+  }
+}
+
+@media (min-width: 1200px) and (max-width: 1360px) {
+  .webPanel { inline-size: min(100%, calc(var(--web-panel-w) - 60px)); }
 }

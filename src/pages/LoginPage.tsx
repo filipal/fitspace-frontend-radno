@@ -1,11 +1,12 @@
 import { useEffect } from 'react'
-import { useAuth } from "react-oidc-context"
-import { useNavigate, useSearchParams } from "react-router-dom"
+import { useAuth } from 'react-oidc-context'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import logo from '../assets/fitspace-logo-gradient-nobkg.svg'
 import exitIcon from '../assets/exit.svg'
 import googleLogo from '../assets/google-logo.svg'
 // import appleLogo from '../assets/apple-logo.svg'
 // import facebookLogo from '../assets/facebook-logo.svg'
+import ResponsivePage from '../components/ResponsivePage/ResponsivePage'
 import styles from './LoginPage.module.scss'
 import { DEFAULT_POST_LOGIN_ROUTE, POST_LOGIN_REDIRECT_KEY } from '../config/authRedirect'
 
@@ -73,21 +74,25 @@ export default function LoginPage() {
   // }
 
   return (
-    <div className={styles.loginPage}>
+    <ResponsivePage
+      className={styles.page}
+      bodyClassName={styles.body}
+      contentClassName={styles.loginPage}
+      header={
+        <div className={styles.chromeBar}>
+          <button className={styles.backButton} onClick={() => (window.location.href = '/')}>
+            <img src={exitIcon} alt="Exit" className={styles.exitIcon} />
+          </button>
+          <img src={logo} alt="Fitspace" className={styles.logo} />
+        </div>
+      }
+    >
       <div className={styles.canvas}>
-        <button className={styles.backButton} onClick={() => window.location.href = '/'}>
-          <img src={exitIcon} alt="Exit" className={styles.exitIcon} />
-        </button>
-
-        <img src={logo} alt="Fitspace" className={styles.logo} />
-
-        {/* Error Banner */}
+        {/* Error banner ostaje u canvasu */}
         {error && (
           <div className={styles.errorBanner}>
             <span className={styles.errorIcon}>⚠️</span>
-            <span className={styles.errorText}>
-              Authentication failed. Please try again.
-            </span>
+            <span className={styles.errorText}>Authentication failed. Please try again.</span>
           </div>
         )}
 
@@ -97,7 +102,7 @@ export default function LoginPage() {
           <button
             type="button"
             className={styles.createButton}
-            onClick={() => window.location.href = '/avatar-info'}
+            onClick={() => (window.location.href = '/avatar-info')}
           >
             Create Your Digital Twin
           </button>
@@ -108,15 +113,14 @@ export default function LoginPage() {
             </span>
 
             <div className={styles.loginForm}>
-              <button 
-                type="button" 
-                className={styles.socialButton} 
-                onClick={loginWithGoogle}
-              >
+              <button type="button" className={styles.socialButton} onClick={loginWithGoogle}>
                 <img src={googleLogo} alt="Google" className={styles.socialIcon} />
                 <span className={styles.socialLabel}>Log in with Google</span>
               </button>
-              
+
+              {/* privremeni spacer */}
+              <div className={styles.futureButtonsSpacer} aria-hidden="true" />
+         
               {/* <button 
                 type="button" 
                 className={styles.socialButton} 
@@ -138,6 +142,6 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-    </div>
+    </ResponsivePage>
   )
 }
