@@ -7,6 +7,10 @@
   /* skala iz root-a (mobile-first) */
   --login-scale: var(--fs-scale);
   --login-scale-safe: max(var(--login-scale), 0.0001);
+  --login-density: 1;
+  --login-gap-scale: var(--login-density);
+  --login-top-scale: var(--login-density);
+  --login-bg-scale: 1;
 
   /* dizajn dimenzije */
   --design-w: 430px;
@@ -133,6 +137,16 @@
   .socialButton {
     inline-size: calc(422px / var(--login-scale-safe));
     min-block-size: calc(50px / var(--login-scale-safe));
+    background: #000;
+    color: #fff;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    font-size: 18px;
+    font-weight: 400;
+    cursor: pointer;
   }
   .socialButton + .socialButton { margin-top: calc(21px / var(--login-scale-safe)); }
 
@@ -156,7 +170,7 @@
   }
   .backButton {
     position: fixed !important;
-    top:  calc(var(--logo-top) * var(--login-scale) + env(safe-area-inset-top, 0px)) !important;
+    top:  calc(var(--logo-top) * var(--login-top-scale) * var(--login-scale) + env(safe-area-inset-top, 0px)) !important;
     left: calc(var(--exit-left) * var(--login-scale) + env(safe-area-inset-left, 0px)) !important;
     z-index: 1000 !important;
 
@@ -180,7 +194,7 @@
 
   .logo {
     position: fixed;
-    top:  calc(var(--logo-top) * var(--login-scale) + env(safe-area-inset-top, 0px));
+    top:  calc(var(--logo-top) * var(--login-top-scale) * var(--login-scale) + env(safe-area-inset-top, 0px));
     left: 50%;
     right: auto;                               /* reset */
     transform: translateX(-50%);
@@ -196,14 +210,18 @@
     content: "";
     display: block;
     block-size: calc(
-      (var(--logo-top) + var(--logo-h) + var(--gap-below-logo)) * var(--login-scale)
+      (
+        var(--logo-top) * var(--login-top-scale) +
+        var(--logo-h) +
+        var(--gap-below-logo) * var(--login-gap-scale)
+      ) * var(--login-scale)
     );
     pointer-events: none;
   }
 
   .webPanel {
     inline-size: var(--panel-w);   /* 330 */
-    block-size:  var(--panel-h);   /* 733 */
+    block-size: auto;
     margin: 0 auto;                /* nema dodatnog margin-top! */
     display: flex;
     flex-direction: column;
@@ -212,7 +230,7 @@
 
   .loginBg {
     inline-size: var(--card-w);    /* 320 */
-    block-size:  var(--bg-h);      /* 386 — vizualno se smanji zahvaljujući skali */
+    block-size:  calc(var(--bg-h) * var(--login-bg-scale));
     background: #d9d9d9;
     border-radius: 4px;
   }
@@ -220,7 +238,7 @@
   .createButton {
     inline-size: var(--card-w);
     min-block-size: var(--btn-h);
-    margin-top: 35px;              /* dizajn px */
+    margin-top: calc(35px * var(--login-gap-scale));
     background: linear-gradient(to right, #2b214d, #13536c);
     color: #fff;
     font-size: 18px;
@@ -233,14 +251,22 @@
 
   .loginFormSection {
     inline-size: var(--panel-w);
-    margin-top: 28px;              /* dizajn px */
+    margin-top: calc(28px * var(--login-gap-scale));
     display: flex;
     flex-direction: column;
     align-items: center;
   }
 
   .introText { inline-size: 100%; font-weight: 300; font-size: 18px; line-height: 1; text-align: center; }
-  .loginForm  { inline-size: var(--card-w); margin-top: 15px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+
+  .loginForm  {
+    inline-size: var(--card-w);
+    margin-top: calc(15px * var(--login-gap-scale));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: calc(15px * var(--login-gap-scale));
+  }
 
   .socialButton {
     inline-size: var(--card-w);
@@ -260,6 +286,12 @@
   .socialIcon      { inline-size: 32px; block-size: 32px; object-fit: contain; }
   .socialIconApple { inline-size: 26px; block-size: 31px; object-fit: contain; }
   .socialLabel     { line-height: 1; }
+
+  .futureButtonsSpacer {
+    inline-size: var(--card-w);
+    block-size: calc(142px * var(--login-gap-scale));
+    margin-top: calc(21px * var(--login-gap-scale));
+  }
 }
 
 

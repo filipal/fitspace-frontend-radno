@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { useAuth } from 'react-oidc-context'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import logo from '../assets/fitspace-logo-gradient-nobkg.svg'
@@ -10,7 +10,46 @@ import ResponsivePage from '../components/ResponsivePage/ResponsivePage'
 import styles from './LoginPage.module.scss'
 import { DEFAULT_POST_LOGIN_ROUTE, POST_LOGIN_REDIRECT_KEY } from '../config/authRedirect'
 
+const MOBILE_DESIGN_HEIGHT = 932
+const MOBILE_SAFE_VISIBLE_HEIGHT = 658
+const MIN_DENSITY_SCALE = 0.55
+const MIN_GAP_SCALE = 0.55
+const MIN_TOP_SCALE = 0.65
+const MIN_BG_SCALE = 0.6
+
+interface ViewportSize {
+  width: number
+  height: number
+}
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
+
+type LoginPageCssVars = CSSProperties & {
+  '--fs-design-height'?: string
+  '--fs-design-safe-height'?: string
+  '--login-density'?: string
+  '--login-gap-scale'?: string
+  '--login-top-scale'?: string
+  '--login-bg-scale'?: string
+}
+
+function readViewportSize(): ViewportSize {
+  if (typeof window === 'undefined') {
+    return { width: 430, height: MOBILE_SAFE_VISIBLE_HEIGHT }
+  }
+
+  const viewport = window.visualViewport
+  if (viewport) {
+    return { width: viewport.width, height: viewport.height }
+  }
+
+  return { width: window.innerWidth, height: window.innerHeight }
+}
+
 export default function LoginPage() {
+  const [{ height: viewportHeight }, setViewportSize] = useState<ViewportSize>(
+    () => readViewportSize()
+  )
   const auth = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -25,6 +64,39 @@ export default function LoginPage() {
   //     window.location.href = '/logged-in'
   //   }
   // }, [auth.isAuthenticated])
+  useEffect(() => {
+    const handleResize = () => {
+      setViewportSize(readViewportSize())
+    }
+
+    window.addEventListener('resize', handleResize)
+    const viewport = window.visualViewport
+    viewport?.addEventListener('resize', handleResize)
+
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      viewport?.removeEventListener('resize', handleResize)
+    }
+  }, [])
+
+  const layoutVars = useMemo<LoginPageCssVars>(() => {
+    const densityBase = viewportHeight / MOBILE_SAFE_VISIBLE_HEIGHT
+    const density = clamp(densityBase, MIN_DENSITY_SCALE, 1)
+    const gapScale = clamp(density, MIN_GAP_SCALE, 1)
+    const topScale = clamp(density + 0.08, MIN_TOP_SCALE, 1)
+    const bgScale = clamp(density + 0.1, MIN_BG_SCALE, 1)
+
+    const designSafeHeight = MOBILE_SAFE_VISIBLE_HEIGHT / density
+
+    return {
+      '--fs-design-height': `${MOBILE_DESIGN_HEIGHT}px`,
+      '--fs-design-safe-height': `${designSafeHeight.toFixed(2)}px`,
+      '--login-density': density.toFixed(3),
+      '--login-gap-scale': gapScale.toFixed(3),
+      '--login-top-scale': topScale.toFixed(3),
+      '--login-bg-scale': bgScale.toFixed(3)
+    }
+  }, [viewportHeight])
 
   useEffect(() => {
     if (allowAuthenticatedAccess) {
@@ -82,6 +154,7 @@ export default function LoginPage() {
 
   return (
     <ResponsivePage
+      style={layoutVars}
       className={styles.page}
       bodyClassName={styles.body}
       contentClassName={styles.loginPage}
