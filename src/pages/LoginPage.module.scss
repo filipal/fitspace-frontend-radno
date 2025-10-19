@@ -167,7 +167,7 @@
 
 /* Mobile: sve “u dizajn px” + skala drži istočni prikaz */
 @media (max-width: 1199.98px) {
-  .canvas { position: relative; padding: 0; }
+  .canvas {position: relative; padding: 0; }
   .backButton {
     left: auto !important;
     right: auto !important;
@@ -210,7 +210,9 @@
   }
 
   /* 4) Spacer unutar skaliranog canvasa: gura webPanel ispod loga
-        (60 + 82 + 18) = 160 dizajn px prije skaliranja */
+        (60 + 82 + 18) = 160 dizajn px prije skaliranja
+        + safe-area inset (pretvoren u dizajn px) kako bi slijedio fiksni header
+        (transform na .canvasInner već množi s var(--login-scale)) */
   .canvas::before {
     content: "";
     display: block;
@@ -219,7 +221,11 @@
         var(--logo-top) * var(--login-top-scale) +
         var(--logo-h) +
         var(--gap-below-logo) * var(--login-gap-scale)
-      ) * var(--login-scale)
+      ) +
+      (
+        env(safe-area-inset-top, 0px) /
+        var(--login-scale-safe)
+      )
     );
     pointer-events: none;
   }
