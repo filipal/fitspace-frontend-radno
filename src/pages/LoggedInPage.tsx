@@ -245,7 +245,7 @@ export default function LoggedInPage() {
         onBack={() => (
           showDeleteConfirm
             ? cancelDelete()
-            : navigate('/login', { replace: true })
+            : navigate('/login', { replace: true, state: { allowAuthenticated: true } })
         )}
         onAction={() => (showDeleteConfirm ? confirmDelete() : navigate('/avatar-info'))}
         actionDisabled={showDeleteConfirm ? Boolean(deletingId) : avatars.length >= maxAvatars}

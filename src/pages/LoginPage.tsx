@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useAuth } from 'react-oidc-context'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import logo from '../assets/fitspace-logo-gradient-nobkg.svg'
 import exitIcon from '../assets/exit.svg'
 import googleLogo from '../assets/google-logo.svg'
@@ -13,8 +13,11 @@ import { DEFAULT_POST_LOGIN_ROUTE, POST_LOGIN_REDIRECT_KEY } from '../config/aut
 export default function LoginPage() {
   const auth = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams] = useSearchParams()
   const error = searchParams.get('error')
+  const locationState = location.state as { allowAuthenticated?: boolean } | null
+  const allowAuthenticatedAccess = Boolean(locationState?.allowAuthenticated)
 
   // If user is already authenticated, redirect them
   // useEffect(() => {
@@ -24,6 +27,10 @@ export default function LoginPage() {
   // }, [auth.isAuthenticated])
 
   useEffect(() => {
+    if (allowAuthenticatedAccess) {
+      return
+    }
+
     if (auth.isLoading || !auth.isAuthenticated) {
       return
     }
@@ -41,7 +48,7 @@ export default function LoginPage() {
     }
 
     navigate(redirectTarget, { replace: true })
-  }, [auth.isAuthenticated, auth.isLoading, navigate])
+  }, [allowAuthenticatedAccess, auth.isAuthenticated, auth.isLoading, navigate])
 
   const loginWithGoogle = () => {
     auth.signinRedirect({

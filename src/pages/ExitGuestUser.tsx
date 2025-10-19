@@ -12,6 +12,7 @@ import {
   GUEST_AVATAR_NAME_KEY,
   GUEST_POST_LOGIN_REDIRECT,
 } from '../config/authRedirect';
+import { logoutToHostedUi } from '../utils/authHelpers';
 
 export default function ExitGuestUser() {
   const auth = useAuth();
@@ -98,9 +99,20 @@ export default function ExitGuestUser() {
   const handleExit = useCallback(() => {
     // poruka + izlaz (po potrebi promijeni odredište)
     alert('Avatar saved. See you soon!\nExiting to PandoMoto...');
-    // npr. na početnu app-a – prilagodi po potrebi
-    window.location.href = '/';
-  }, []);
+
+    try {
+      const result = logoutToHostedUi(auth);
+      if (result && typeof result.catch === 'function') {
+        result.catch(err => {
+          console.error('Guest exit signout failed, fallback redirect', err);
+          window.location.href = '/';
+        });
+      }
+    } catch (err) {
+      console.error('Guest exit signout threw, fallback redirect', err);
+      window.location.href = '/';
+    }
+  }, [auth]);
 
   // Jednostavna detekcija "web" rasporeda (isti prag kao na loginu možeš promijeniti)
   const mode: 'mobile' | 'web' = useMemo(() => (window.matchMedia('(min-width: 1024px)').matches ? 'web' : 'mobile'), []);

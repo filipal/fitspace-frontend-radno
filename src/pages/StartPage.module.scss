@@ -63,7 +63,7 @@
 @media (min-width: 1024px) {
   .startPage {
     --start-gap-value: var(--start-gap-desktop);
-    --start-title-size: clamp(64px, 6vw, 100px);
+    --start-title-size: clamp(48px, 5vw, 70px);
 
     /* ŠIRINA već poništava scale: */
     --start-button-width: calc(var(--start-button-desktop) / var(--start-scale-safe));
@@ -89,7 +89,7 @@
     text-align: center;
 
     /* dodatno: ograniči “rastezanje” i spriječi odrezivanje */
-    max-inline-size: 100%; /* neka ne bude širi od roditelja */
+    max-inline-size: min(100%, 32ch); /* neka ne bude širi od roditelja */
   }
 }
 

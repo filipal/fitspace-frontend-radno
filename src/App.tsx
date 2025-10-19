@@ -21,6 +21,7 @@ import ExitGuestUser from './pages/ExitGuestUser.tsx'
 import PixelStreamingDemo from './pages/PixelStreamingDemo.tsx'
 import DebugOverlay from './components/DebugOverlay/DebugOverlay.tsx'
 import BeforeUnloadHandler from './components/BeforeUnloadHandler/BeforeUnloadHandler.tsx'
+import InactivityLogoutHandler from './components/InactivityLogoutHandler/InactivityLogoutHandler'
 import PrivateRoute from './components/PrivateRoute'
 import GuestAccessibleRoute from './components/GuestAccessibleRoute'
 import { PixelStreamingProvider } from './context/PixelStreamingContext'
@@ -66,6 +67,7 @@ export default function App() {
               <PixelStreamingProvider>
                 <ScrollToTop />
                 <BeforeUnloadHandler />
+                <InactivityLogoutHandler />
                 <Routes>
                   <Route path="/" element={<StartPage />} />
                   <Route path="/login" element={<LoginPage />} />
