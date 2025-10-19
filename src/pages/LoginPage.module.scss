@@ -1,10 +1,10 @@
 /* ——— PAGE REGIJA (omotač ResponsivePage) ——— */
-.page { block-size: 100%; overflow-y: clip; }    /* mobile: bez skrola */
-.body { align-items: center; overflow: clip; }
 
-/* ——— DESIGN VARS ZA LOGIN ——— */
-.loginPage {
-  /* skala iz root-a (mobile-first) */
+.page {
+  block-size: 100%;
+  overflow-y: clip; /* mobile: bez skrola */
+
+  /* dizajn varijable moraju biti dostupne i headeru */
   --login-scale: var(--fs-scale);
   --login-scale-safe: max(var(--login-scale), 0.0001);
   --login-density: 1;
@@ -12,7 +12,6 @@
   --login-top-scale: var(--login-density);
   --login-bg-scale: 1;
 
-  /* dizajn dimenzije */
   --design-w: 430px;
   --panel-w: 330px;   /* webPanel širina u mobile dizajnu */
   --panel-h: 733px;   /* webPanel visina u mobile dizajnu */
@@ -20,13 +19,16 @@
   --bg-h: 386px;      /* loginBg visina u mobile dizajnu */
   --btn-h: 50px;
 
-  /* logo/exit dizajn mjere */
   --logo-w: 156px;
   --logo-h: 82px;
   --logo-top: 60px;
   --exit-left: 35px;
-  --gap-below-logo: 17px;
+  --gap-below-logo: 18px;
+}
+.body { align-items: center; overflow: clip; }
 
+/* ——— DESIGN VARS ZA LOGIN ——— */
+.loginPage {
   inline-size: var(--fs-design-width);  /* 430 ili 1440 (ovisno o breakpointu u :root) */
   block-size: var(--fs-design-height);  /* 852/1024 – ali će se vizualno skalirat */
   position: relative;
@@ -47,7 +49,10 @@
 }
 
 /* ——— HEADER (fiksni elementi izvan skaliranja, ali mi ih ručno skaliramo) ——— */
-.chromeBar { position: relative; }
+.chromeBar {
+  position: relative;
+  inline-size: 100%;
+}
 
 /* Desktop: sadržaj centriran, skrol prema potrebi, dimenzije “u stvarnim px” (ne rastu preko dizajna) */
 @media (min-width: 1200px) {
@@ -204,8 +209,8 @@
     block-size:  calc(var(--logo-h) * var(--login-scale));
   }
 
-  /* 4) Spacer unutar skaliranog canvasa: GURA webPanel ispod loga
-        (60 + 82 + 17) * scale  = 159 dizajn px * scale  */
+  /* 4) Spacer unutar skaliranog canvasa: gura webPanel ispod loga
+        (60 + 82 + 18) = 160 dizajn px prije skaliranja */
   .canvas::before {
     content: "";
     display: block;

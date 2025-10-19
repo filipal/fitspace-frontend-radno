@@ -12,10 +12,14 @@ import { DEFAULT_POST_LOGIN_ROUTE, POST_LOGIN_REDIRECT_KEY } from '../config/aut
 
 const MOBILE_DESIGN_HEIGHT = 932
 const MOBILE_SAFE_VISIBLE_HEIGHT = 658
+// Sum of all “compressible” vertical segments (spacings, loginBg, etc.)
+const FLEXIBLE_DESIGN_HEIGHT = 719
+const STATIC_DESIGN_HEIGHT = MOBILE_DESIGN_HEIGHT - FLEXIBLE_DESIGN_HEIGHT
 const MIN_DENSITY_SCALE = 0.55
-const MIN_GAP_SCALE = 0.55
-const MIN_TOP_SCALE = 0.65
+const MIN_GAP_SCALE = 0.6
+const MIN_TOP_SCALE = 0.7
 const MIN_BG_SCALE = 0.6
+const BG_SCALE_BIAS = 0.05
 
 interface ViewportSize {
   width: number
@@ -64,6 +68,7 @@ export default function LoginPage() {
   //     window.location.href = '/logged-in'
   //   }
   // }, [auth.isAuthenticated])
+
   useEffect(() => {
     const handleResize = () => {
       setViewportSize(readViewportSize())
@@ -80,18 +85,25 @@ export default function LoginPage() {
   }, [])
 
   const layoutVars = useMemo<LoginPageCssVars>(() => {
-    const densityBase = viewportHeight / MOBILE_SAFE_VISIBLE_HEIGHT
-    const density = clamp(densityBase, MIN_DENSITY_SCALE, 1)
-    const gapScale = clamp(density, MIN_GAP_SCALE, 1)
-    const topScale = clamp(density + 0.08, MIN_TOP_SCALE, 1)
-    const bgScale = clamp(density + 0.1, MIN_BG_SCALE, 1)
+    const safeVisibilityRatio = clamp(
+      viewportHeight / MOBILE_SAFE_VISIBLE_HEIGHT,
+      MIN_DENSITY_SCALE,
+      1
+    )
 
-    const designSafeHeight = MOBILE_SAFE_VISIBLE_HEIGHT / density
+    const flexibleBudget = Math.max(viewportHeight - STATIC_DESIGN_HEIGHT, 0)
+    const flexibleRatioBase = flexibleBudget / FLEXIBLE_DESIGN_HEIGHT
+    const flexibleRatio = clamp(flexibleRatioBase, MIN_GAP_SCALE, 1)
+    const topScale = clamp(safeVisibilityRatio, MIN_TOP_SCALE, 1)
+    const gapScale = clamp(safeVisibilityRatio, MIN_GAP_SCALE, 1)
+    const bgScale = clamp(flexibleRatio + BG_SCALE_BIAS, MIN_BG_SCALE, 1)
+
+    const designSafeHeight = MOBILE_SAFE_VISIBLE_HEIGHT
 
     return {
       '--fs-design-height': `${MOBILE_DESIGN_HEIGHT}px`,
       '--fs-design-safe-height': `${designSafeHeight.toFixed(2)}px`,
-      '--login-density': density.toFixed(3),
+      '--login-density': safeVisibilityRatio.toFixed(3),
       '--login-gap-scale': gapScale.toFixed(3),
       '--login-top-scale': topScale.toFixed(3),
       '--login-bg-scale': bgScale.toFixed(3)

@@ -12,7 +12,7 @@ import {
   GUEST_AVATAR_NAME_KEY,
   GUEST_POST_LOGIN_REDIRECT,
 } from '../config/authRedirect';
-import { logoutToHostedUi } from '../utils/authHelpers';
+import { logoutToHostedUi, triggerHostedLogoutSilently } from '../utils/authHelpers';
 
 export default function ExitGuestUser() {
   const auth = useAuth();
@@ -100,17 +100,34 @@ export default function ExitGuestUser() {
     // poruka + izlaz (po potrebi promijeni odredište)
     alert('Avatar saved. See you soon!\nExiting to PandoMoto...');
 
+    const redirectToStart = () => {
+      window.location.replace('/');
+    };
+
+    const cleanupLocalSession = () => {
+      auth.removeUser().catch(err => {
+        console.error('Guest exit failed to clear local OIDC session', err);
+      });
+    };
+
+    cleanupLocalSession();
+
+    if (triggerHostedLogoutSilently()) {
+      redirectToStart();
+      return;
+    }
+
     try {
       const result = logoutToHostedUi(auth);
       if (result && typeof result.catch === 'function') {
         result.catch(err => {
           console.error('Guest exit signout failed, fallback redirect', err);
-          window.location.href = '/';
+          redirectToStart();
         });
       }
     } catch (err) {
       console.error('Guest exit signout threw, fallback redirect', err);
-      window.location.href = '/';
+      redirectToStart();
     }
   }, [auth]);
 

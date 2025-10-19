@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useAuth } from 'react-oidc-context'
-import { logoutToHostedUi } from '../../utils/authHelpers'
+import { logoutToHostedUi, triggerHostedLogoutSilently } from '../../utils/authHelpers'
 
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000 // 5 minuta
 
@@ -51,10 +51,29 @@ export default function InactivityLogoutHandler() {
         if (hasTriggeredLogoutRef.current) return
         hasTriggeredLogoutRef.current = true
 
+        const redirectToStart = () => {
+          window.location.replace('/')
+        }
+
+        const cleanupLocalSession = () => {
+          auth
+            .removeUser()
+            .catch(err => {
+              console.error('Greška pri čišćenju lokalne OIDC sesije', err)
+            })
+        }
+
         if (import.meta.env.DEV) {
           console.info(
             `[InactivityLogoutHandler] Pokrećem logout nakon ${parsedTimeout} ms neaktivnosti.`
           )
+        }
+
+        cleanupLocalSession()
+
+        if (triggerHostedLogoutSilently()) {
+          redirectToStart()
+          return
         }
 
         try {
@@ -62,12 +81,12 @@ export default function InactivityLogoutHandler() {
           if (result && typeof result.catch === 'function') {
             result.catch(err => {
               console.error('Neuspješan logoutRedirect nakon neaktivnosti', err)
-              window.location.href = '/'
+              redirectToStart()
             })
           }
         } catch (err) {
           console.error('Greška pri pokušaju logouta nakon neaktivnosti', err)
-          window.location.href = '/'
+          redirectToStart()
         }
       }, parsedTimeout)
     }
