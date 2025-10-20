@@ -193,9 +193,8 @@ export default function ExtrasAccordion() {
   const pushToUnreal = useCallback(() => {
     // pošalji aktivni item; UE neka odluči kako mijenja ostale
     sendQueued(
-      'configureAvatar',
+      'updateExtras',
       {
-        action: 'setExtra',
         type: activeType.toLowerCase(), // 'glasses' | 'earrings' | 'hats'
         styleIndex,
         colorIndex,
