@@ -97,7 +97,7 @@ export interface FittingRoomCommandPayloads {
     /** Glavna kategorija (npr. 'top', 'bottom'). */
     category: string;
     /** Potkategorija artikla (npr. 'jacket', 'jeans'). */
-    subCategory?: string;
+    subCategory: string;
     /** Identifikator artikla kao broj. */
     itemId: number;
   };

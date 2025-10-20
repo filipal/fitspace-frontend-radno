@@ -36,6 +36,11 @@ import TopBotButton from '../assets/top-bot-button.svg'
 import AnimationButton from '../assets/animation-button.svg'
 import HeatMapButton from '../assets/heat-map-button.svg'
 import TensionMapButton from '../assets/tension-map-button.svg'
+import {
+  type ClothingCategory,
+  getClothingIdentifierForIndex,
+  getClothingSubCategoryList,
+} from '../constants/clothing'
 import ArrowUp from '../assets/arrow-up.svg'
 import ArrowDown from '../assets/arrow-down.svg'
 import HoodieImg from '../assets/hoodie.png'
@@ -120,15 +125,17 @@ export default function VirtualTryOn() {
   }, [isDesktop])
   const shouldShrinkCategoryText = (text: string) => text.trim().length >= 10
   const sendClothingSelection = useCallback(
-    (category: 'top' | 'bottom', itemIndex: number, subCategory = 'default') => {
-      const normalizedItemId = Number(itemIndex)
+    (category: ClothingCategory, itemIndex: number, overrideSubCategory?: string) => {
+      const { itemId, subCategory } = getClothingIdentifierForIndex(category, itemIndex)
+      const effectiveSubCategory = overrideSubCategory ?? subCategory
+
       sendFitSpaceCommand('selectClothing', {
         category,
-        subCategory,
-        itemId: normalizedItemId,
+        subCategory: effectiveSubCategory,
+        itemId,
       })
       console.log(
-        `Sent selectClothing command: itemId=${normalizedItemId}, category=${category}`,
+        `Sent selectClothing command: itemId=${itemId}, category=${category}, subCategory=${effectiveSubCategory}`,
       )
     },
     [sendFitSpaceCommand]
@@ -136,10 +143,8 @@ export default function VirtualTryOn() {
   const cycleTopPrev = () => {
     setTopOptionIndex((i) => {
       const newIndex = (i + 5 - 1) % 5
-      // Send selectClothing command for tops (map to 0-2 range)
       if (connectionState === 'connected') {
-        const itemId = newIndex % 5
-        sendClothingSelection('top', itemId)
+        sendClothingSelection('top', newIndex)
       }
       return newIndex
     })
@@ -147,10 +152,8 @@ export default function VirtualTryOn() {
   const cycleTopNext = () => {
     setTopOptionIndex((i) => {
       const newIndex = (i + 1) % 5
-      // Send selectClothing command for tops (map to 0-2 range)
       if (connectionState === 'connected') {
-        const itemId = newIndex % 5
-        sendClothingSelection('top', itemId)
+        sendClothingSelection('top', newIndex)
       }
       return newIndex
     })
@@ -159,7 +162,7 @@ export default function VirtualTryOn() {
     setBottomOptionIndex((i) => {
       const newIndex = (i + bottomOptions.length - 1) % bottomOptions.length
       if (connectionState === 'connected') {
-        sendClothingSelection('bottom', newIndex % bottomOptions.length)
+        sendClothingSelection('bottom', newIndex)
       }
       return newIndex
     })
@@ -168,7 +171,7 @@ export default function VirtualTryOn() {
     setBottomOptionIndex((i) => {
       const newIndex = (i + 1) % bottomOptions.length
       if (connectionState === 'connected') {
-        sendClothingSelection('bottom', newIndex % bottomOptions.length)
+        sendClothingSelection('bottom', newIndex)
       }
       return newIndex
     })
@@ -183,16 +186,16 @@ export default function VirtualTryOn() {
   const [activeShadeIndex, setActiveShadeIndex] = useState(1) // center default
 
   // Category selector groups (upper & lower) with cyclic scrolling via arrows
-  const upperCategories = ['T-Shirts', 'Jackets', 'Base Layer']
-  const lowerCategories = ['Shorts', 'Jeans', 'Base Layer']
+  const upperCategories = getClothingSubCategoryList('top')
+  const lowerCategories = getClothingSubCategoryList('bottom')
   const [upperCenterIdx, setUpperCenterIdx] = useState(1) // 'Jackets'
   const [lowerCenterIdx, setLowerCenterIdx] = useState(1) // 'Jeans'
   const cycleUpper = (dir: 1 | -1) => {
     setUpperCenterIdx((i) => {
       const newIndex = (i + dir + upperCategories.length) % upperCategories.length
-      // Send selectClothing command for tops (use index directly as it's already 0-2)
+      // Pošalji selectClothing prema odabranoj potkategoriji gornjeg dijela
       if (connectionState === 'connected') {
-        sendClothingSelection('top', newIndex, upperCategories[newIndex].toLowerCase())
+        sendClothingSelection('top', newIndex, upperCategories[newIndex])
       }
       return newIndex
     })
@@ -200,9 +203,9 @@ export default function VirtualTryOn() {
   const cycleLower = (dir: 1 | -1) => {
     setLowerCenterIdx((i) => {
       const newIndex = (i + dir + lowerCategories.length) % lowerCategories.length
-      // Send selectClothing command for bottoms (use index directly as it's already 0-2)
+      // Pošalji selectClothing prema odabranoj potkategoriji donjeg dijela
       if (connectionState === 'connected') {
-        sendClothingSelection('bottom', newIndex, lowerCategories[newIndex].toLowerCase())
+        sendClothingSelection('bottom', newIndex, lowerCategories[newIndex])
       }
       return newIndex
     })
@@ -261,9 +264,9 @@ export default function VirtualTryOn() {
   const cycleJackets = (dir: 1 | -1) => {
     setJacketIndex((i) => {
       const newIndex = (i + dir + jacketImages.length) % jacketImages.length
-      // Send selectClothing command for tops (map to 0-2 range)
+      // Pošalji selectClothing uz centralizirane identifikatore za gornji dio
       if (connectionState === 'connected') {
-        sendClothingSelection('top', newIndex, 'jacket')
+        sendClothingSelection('top', newIndex)
       }
       return newIndex
     })
@@ -271,9 +274,9 @@ export default function VirtualTryOn() {
   const cyclePants = (dir: 1 | -1) => {
     setPantsIndex((i) => {
       const newIndex = (i + dir + pantsImages.length) % pantsImages.length
-      // Send selectClothing command for bottoms (map to 0-2 range)
+      // Pošalji selectClothing uz centralizirane identifikatore za donji dio
       if (connectionState === 'connected') {
-        sendClothingSelection('bottom', newIndex, 'pants')
+        sendClothingSelection('bottom', newIndex)
       }
       return newIndex
     })

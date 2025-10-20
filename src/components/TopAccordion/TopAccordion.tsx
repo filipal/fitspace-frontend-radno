@@ -5,14 +5,13 @@ import ArrowLeft from '../../assets/arrow-left.svg'
 import ArrowRight from '../../assets/arrow-right.svg'
 import ArrowUp from '../../assets/arrow-up.svg'
 import ArrowDown from '../../assets/arrow-down.svg'
-import ShellIcon from '../../assets/shell-uh03.svg'
-import FalconIcon from '../../assets/falcon-icon.svg'
-import MilitaryJacket from '../../assets/military-jacket.png'
-import Hoodie from '../../assets/hoodie.png'
+import {
+  getClothingCatalog,
+  getClothingIdentifierForIndex,
+} from '../../constants/clothing'
 
-// Four distinct items rotate; supports png + svg mixed
-const carouselItems: string[] = [FalconIcon, ShellIcon, MilitaryJacket, Hoodie]
-const topSubCategories = ['falcon', 'shell', 'jacket', 'hoodie'] as const
+// Čuvamo lokalni popis asseta preko centralizirane konfiguracije
+const carouselItems = getClothingCatalog().top.map((item) => item.asset)
 
 interface TopAccordionProps {
   variant?: 'mobile' | 'desktop'
@@ -21,22 +20,26 @@ interface TopAccordionProps {
 export default function TopAccordion({ variant = 'mobile' }: TopAccordionProps) {
   const { sendFitSpaceCommand, connectionState } = usePixelStreaming()
   const [index, setIndex] = useState(0)
-  const sendClothingSelection = (category: 'top', itemIndex: number, subCategory = 'default') => {
+  const sendClothingSelection = (itemIndex: number) => {
+    const identifier = getClothingIdentifierForIndex('top', itemIndex)
+
     sendFitSpaceCommand('selectClothing', {
-      category,
-      subCategory,
-      itemId: itemIndex,
+      category: 'top',
+      subCategory: identifier.subCategory,
+      itemId: identifier.itemId,
     })
+
+    return identifier
   }
   const prev = () => {
     setIndex(i => {
       const newIndex = (i + carouselItems.length - 1) % carouselItems.length
-      // Send selectClothing command for tops (map to 0-2 range)
+      // Pošalji selectClothing uz centralizirane identifikatore za gornji dio
       if (connectionState === 'connected') {
-        const itemId = newIndex % carouselItems.length
-        const subCategory = topSubCategories[itemId] ?? 'default'
-        sendClothingSelection('top', itemId, subCategory)
-        console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
+        const { itemId, subCategory } = sendClothingSelection(newIndex)
+        console.log(
+          `Sent selectClothing command: itemId=${itemId}, category=top, subCategory=${subCategory}`,
+        )
       }
       return newIndex
     })
@@ -44,12 +47,12 @@ export default function TopAccordion({ variant = 'mobile' }: TopAccordionProps) 
   const next = () => {
     setIndex(i => {
       const newIndex = (i + 1) % carouselItems.length
-      // Send selectClothing command for tops (map to 0-2 range)
+      // Pošalji selectClothing uz centralizirane identifikatore za gornji dio
       if (connectionState === 'connected') {
-        const itemId = newIndex % carouselItems.length
-        const subCategory = topSubCategories[itemId] ?? 'default'
-        sendClothingSelection('top', itemId, subCategory)
-        console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
+        const { itemId, subCategory } = sendClothingSelection(newIndex)
+        console.log(
+          `Sent selectClothing command: itemId=${itemId}, category=top, subCategory=${subCategory}`,
+        )
       }
       return newIndex
     })

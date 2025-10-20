@@ -5,15 +5,12 @@ import ArrowLeft from '../../assets/arrow-left.svg'
 import ArrowRight from '../../assets/arrow-right.svg'
 import ArrowUp from '../../assets/arrow-up.svg'
 import ArrowDown from '../../assets/arrow-down.svg'
-import BossDyn01 from '../../assets/boss-dyn01.png'
-import Pants1 from '../../assets/pants-1.png'
-import Pants2 from '../../assets/pants-2.png'
-import Pants3 from '../../assets/pants-3.png'
-import Pants4 from '../../assets/pants-4.png'
-import Pants5 from '../../assets/pants-5.png'
+import {
+  getClothingCatalog,
+  getClothingIdentifierForIndex,
+} from '../../constants/clothing'
 
-const carouselItems: string[] = [BossDyn01, Pants1, Pants2, Pants3, Pants4, Pants5]
-const bottomSubCategories = ['leather', 'classic', 'slim', 'relaxed', 'cargo', 'commuter'] as const
+const carouselItems = getClothingCatalog().bottom.map((item) => item.asset)
 
 interface BottomAccordionProps {
   variant?: 'mobile' | 'desktop'
@@ -22,22 +19,26 @@ interface BottomAccordionProps {
 export default function BottomAccordion({ variant = 'mobile' }: BottomAccordionProps) {
   const { sendFitSpaceCommand, connectionState } = usePixelStreaming()
   const [index, setIndex] = useState(0)
-  const sendClothingSelection = (category: 'bottom', itemIndex: number, subCategory = 'default') => {
+  const sendClothingSelection = (itemIndex: number) => {
+    const identifier = getClothingIdentifierForIndex('bottom', itemIndex)
+
     sendFitSpaceCommand('selectClothing', {
-      category,
-      subCategory,
-      itemId: itemIndex,
+      category: 'bottom',
+      subCategory: identifier.subCategory,
+      itemId: identifier.itemId,
     })
+
+    return identifier
   }
   const prev = () => {
     setIndex(i => {
       const newIndex = (i + carouselItems.length - 1) % carouselItems.length
-      // Send selectClothing command for bottoms (map to 0-2 range)
+      // Pošalji selectClothing uz centralizirane identifikatore za donji dio
       if (connectionState === 'connected') {
-        const itemId = newIndex % carouselItems.length
-        const subCategory = bottomSubCategories[itemId] ?? 'default'
-        sendClothingSelection('bottom', itemId, subCategory)
-        console.log(`Sent selectClothing command: itemId=${itemId}, category=bottom`)
+        const { itemId, subCategory } = sendClothingSelection(newIndex)
+        console.log(
+          `Sent selectClothing command: itemId=${itemId}, category=bottom, subCategory=${subCategory}`,
+        )
       }
       return newIndex
     })
@@ -45,12 +46,12 @@ export default function BottomAccordion({ variant = 'mobile' }: BottomAccordionP
   const next = () => {
     setIndex(i => {
       const newIndex = (i + 1) % carouselItems.length
-      // Send selectClothing command for bottoms (map to 0-2 range)
+      // Pošalji selectClothing uz centralizirane identifikatore za donji dio
       if (connectionState === 'connected') {
-        const itemId = newIndex % carouselItems.length
-        const subCategory = bottomSubCategories[itemId] ?? 'default'
-        sendClothingSelection('bottom', itemId, subCategory)
-        console.log(`Sent selectClothing command: itemId=${itemId}, category=bottom`)
+        const { itemId, subCategory } = sendClothingSelection(newIndex)
+        console.log(
+          `Sent selectClothing command: itemId=${itemId}, category=bottom, subCategory=${subCategory}`,
+        )
       }
       return newIndex
     })

@@ -3,6 +3,10 @@ import { usePixelStreaming } from '../hooks/usePixelStreamingSettings';
 import { AppPixelStreamingWrapper } from '../components/AppPixelStreamingWrapper/AppPixelStreamingWrapper';
 import Header from '../components/Header/Header';
 import { useNavigate } from 'react-router-dom';
+import {
+  type ClothingCategory,
+  getClothingIdentifierBySubCategory,
+} from '../constants/clothing';
 
 export default function PixelStreamingDemo() {
   const navigate = useNavigate();
@@ -18,17 +22,16 @@ export default function PixelStreamingDemo() {
   const [cameraRotation, setCameraRotation] = useState(0);
   const [cameraZoom, setCameraZoom] = useState(1);
 
-  const handleClothingSelect = (category: string, itemId: string) => {
-    setSelectedClothing(`${category}-${itemId}`);
-    const normalizedCategory =
-      category === 'tops' ? 'top' : category === 'bottoms' ? 'bottom' : category;
-    const [subCategory] = itemId.split('-');
-    const numericId = Number(itemId.replace(/\D/g, '')) || 0;
+  const handleClothingSelect = (category: ClothingCategory, subCategory: string) => {
+    const { itemId, subCategory: normalizedSubCategory } =
+      getClothingIdentifierBySubCategory(category, subCategory);
+
+    setSelectedClothing(`${category}-${normalizedSubCategory}`);
 
     sendFitSpaceCommand('selectClothing', {
-      category: normalizedCategory,
-      subCategory: subCategory || 'default',
-      itemId: numericId
+      category,
+      subCategory: normalizedSubCategory,
+      itemId
     });
   };
 
@@ -101,16 +104,16 @@ export default function PixelStreamingDemo() {
           <h3>Clothing Selection</h3>
           <p>Selected: {selectedClothing || 'None'}</p>
           <div style={{ marginBottom: '20px' }}>
-            <button onClick={() => handleClothingSelect('tops', 'jacket-001')}>
+            <button onClick={() => handleClothingSelect('top', 'Jackets')}>
               Select Jacket
             </button>
-            <button onClick={() => handleClothingSelect('tops', 'shirt-001')}>
+            <button onClick={() => handleClothingSelect('top', 'T-Shirts')}>
               Select Shirt
             </button>
-            <button onClick={() => handleClothingSelect('bottoms', 'pants-001')}>
+            <button onClick={() => handleClothingSelect('bottom', 'Jeans')}>
               Select Pants
             </button>
-            <button onClick={() => handleClothingSelect('bottoms', 'shorts-001')}>
+            <button onClick={() => handleClothingSelect('bottom', 'Shorts')}>
               Select Shorts
             </button>
           </div>

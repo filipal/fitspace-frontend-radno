@@ -7,6 +7,10 @@ import type {
   FittingRoomCommandType,
 } from '../../context/PixelStreamingContext';
 import type { AllSettings } from '@epicgames-ps/lib-pixelstreamingfrontend-ue5.6/dist/types/Config/Config';
+import {
+  getClothingIdentifierBySubCategory,
+  getDefaultClothingSelection,
+} from '../../constants/clothing';
 
 export interface PixelStreamingWrapperProps {
   initialDebugSettings?: Partial<AllSettings>;
@@ -203,8 +207,7 @@ export const PixelStreamingWrapper = ({
       (payloadType === 'selectClothing'
         ? ({
             category: 'top',
-            subCategory: 'debug',
-            itemId: 0,
+            ...getDefaultClothingSelection('top'),
           } as FitSpaceCommandData<typeof payloadType>)
         : undefined);
 
@@ -483,13 +486,14 @@ export const PixelStreamingWrapper = ({
                 Reset Avatar
               </button>
               <button
-                onClick={() =>
+                onClick={() => {
+                  const { itemId, subCategory } = getClothingIdentifierBySubCategory('top', 'Jackets');
                   handleSendFittingRoomCommand('selectClothing', {
                     category: 'top',
-                    subCategory: 'debug',
-                    itemId: 1,
-                  })
-                }
+                    subCategory,
+                    itemId,
+                  });
+                }}
                 disabled={connectionState !== 'connected'}
                 style={{ padding: '6px 8px', fontSize: '10px', borderRadius: '3px' }}
               >
