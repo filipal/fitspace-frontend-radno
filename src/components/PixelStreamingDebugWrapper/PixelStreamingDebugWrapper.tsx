@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { usePixelStreaming } from '../../context/PixelStreamingContext';
 import type {
   FitSpaceCommandData,
-  FittingRoomCommand,
   FittingRoomCommandType,
 } from '../../context/PixelStreamingContext';
 import type { AllSettings } from '@epicgames-ps/lib-pixelstreamingfrontend-ue5.6/dist/types/Config/Config';
@@ -178,22 +177,48 @@ export const PixelStreamingWrapper = ({
     }
   };
 
-  const handleSendFittingRoomCommand = <T extends FittingRoomCommandType>(
+  type PayloadCommand = Exclude<FittingRoomCommandType, 'resetAvatar'>;
+
+  function handleSendFittingRoomCommand(type: 'resetAvatar'): void;
+  function handleSendFittingRoomCommand<T extends PayloadCommand>(
     type: T,
     customData?: FitSpaceCommandData<T>
-  ) => {
-    const fallbackData =
-      customData ??
-      (type === 'selectClothing'
-        ? ({ category: 'top', subCategory: 'debug', itemId: 0 } as FitSpaceCommandData<T>)
-        : (undefined as FitSpaceCommandData<T>));
-    if (fallbackData === undefined) {
-      sendFitSpaceCommand(type);
-    } else {
-      sendFitSpaceCommand(type, fallbackData);
+  ): void;
+  function handleSendFittingRoomCommand(
+    type: FittingRoomCommandType,
+    customData?: FitSpaceCommandData<FittingRoomCommandType>
+  ): void {
+    if (type === 'resetAvatar') {
+      sendFitSpaceCommand('resetAvatar');
+      console.log('Sent fitting room command via main context:', {
+        type: 'resetAvatar',
+        data: undefined,
+      });
+      return;
     }
-    console.log('Sent fitting room command via main context:', { type, data: fallbackData });
-  };
+
+    const payloadType = type as PayloadCommand;
+    const fallbackData =
+      (customData as FitSpaceCommandData<typeof payloadType> | undefined) ??
+      (payloadType === 'selectClothing'
+        ? ({
+            category: 'top',
+            subCategory: 'debug',
+            itemId: 0,
+          } as FitSpaceCommandData<typeof payloadType>)
+        : undefined);
+
+    if (fallbackData === undefined) {
+      console.warn('Missing payload for fitting room command', { type: payloadType });
+      return;
+    }
+
+    sendFitSpaceCommand(payloadType, fallbackData);
+    console.log('Sent fitting room command via main context:', {
+      type: payloadType,
+      data: fallbackData,
+    });
+  }
 
   return (
     <div style={{ 
