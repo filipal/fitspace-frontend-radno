@@ -20,9 +20,15 @@ export default function PixelStreamingDemo() {
 
   const handleClothingSelect = (category: string, itemId: string) => {
     setSelectedClothing(`${category}-${itemId}`);
+    const normalizedCategory =
+      category === 'tops' ? 'top' : category === 'bottoms' ? 'bottom' : category;
+    const [subCategory] = itemId.split('-');
+    const numericId = Number(itemId.replace(/\D/g, '')) || 0;
+
     sendFitSpaceCommand('selectClothing', {
-      category,
-      itemId
+      category: normalizedCategory,
+      subCategory: subCategory || 'default',
+      itemId: numericId
     });
   };
 

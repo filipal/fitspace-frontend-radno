@@ -118,14 +118,24 @@ export default function VirtualTryOn() {
     }
   }, [isDesktop])
   const shouldShrinkCategoryText = (text: string) => text.trim().length >= 10
+  const sendClothingSelection = useCallback(
+    (category: 'top' | 'bottom', itemIndex: number, subCategory = 'default') => {
+      sendFitSpaceCommand('selectClothing', {
+        category,
+        subCategory,
+        itemId: itemIndex,
+      })
+      console.log(`Sent selectClothing command: itemId=${itemIndex}, category=${category}`)
+    },
+    [sendFitSpaceCommand]
+  )
   const cycleTopPrev = () => {
     setTopOptionIndex((i) => {
       const newIndex = (i + 5 - 1) % 5
       // Send selectClothing command for tops (map to 0-2 range)
       if (connectionState === 'connected') {
-        const itemId = (newIndex % 2).toString()
-        sendFitSpaceCommand('selectClothing', { itemId, category: 'top' })
-        console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
+        const itemId = newIndex % 5
+        sendClothingSelection('top', itemId)
       }
       return newIndex
     })
@@ -135,9 +145,8 @@ export default function VirtualTryOn() {
       const newIndex = (i + 1) % 5
       // Send selectClothing command for tops (map to 0-2 range)
       if (connectionState === 'connected') {
-        const itemId = (newIndex % 2).toString()
-        sendFitSpaceCommand('selectClothing', { itemId, category: 'top' })
-        console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
+        const itemId = newIndex % 5
+        sendClothingSelection('top', itemId)
       }
       return newIndex
     })
@@ -146,9 +155,7 @@ export default function VirtualTryOn() {
     setBottomOptionIndex((i) => {
       const newIndex = (i + bottomOptions.length - 1) % bottomOptions.length
       if (connectionState === 'connected') {
-        const itemId = (newIndex % 2).toString()
-        sendFitSpaceCommand('selectClothing', { itemId, category: 'bottom' })
-        console.log(`Sent selectClothing command: itemId=${itemId}, category=bottom`)
+        sendClothingSelection('bottom', newIndex % bottomOptions.length)
       }
       return newIndex
     })
@@ -159,7 +166,7 @@ export default function VirtualTryOn() {
       if (connectionState === 'connected') {
         const itemId = (newIndex % 2).toString()
         sendFitSpaceCommand('selectClothing', { itemId, category: 'bottom' })
-        console.log(`Sent selectClothing command: itemId=${itemId}, category=bottom`)
+        sendClothingSelection('bottom', newIndex % bottomOptions.length)
       }
       return newIndex
     })
@@ -183,9 +190,7 @@ export default function VirtualTryOn() {
       const newIndex = (i + dir + upperCategories.length) % upperCategories.length
       // Send selectClothing command for tops (use index directly as it's already 0-2)
       if (connectionState === 'connected') {
-        const itemId = newIndex.toString()
-        sendFitSpaceCommand('selectClothing', { itemId, category: 'top' })
-        console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
+        sendClothingSelection('top', newIndex, upperCategories[newIndex].toLowerCase())
       }
       return newIndex
     })
@@ -195,9 +200,7 @@ export default function VirtualTryOn() {
       const newIndex = (i + dir + lowerCategories.length) % lowerCategories.length
       // Send selectClothing command for bottoms (use index directly as it's already 0-2)
       if (connectionState === 'connected') {
-        const itemId = newIndex.toString()
-        sendFitSpaceCommand('selectClothing', { itemId, category: 'bottom' })
-        console.log(`Sent selectClothing command: itemId=${itemId}, category=bottom`)
+        sendClothingSelection('bottom', newIndex, lowerCategories[newIndex].toLowerCase())
       }
       return newIndex
     })
@@ -258,9 +261,7 @@ export default function VirtualTryOn() {
       const newIndex = (i + dir + jacketImages.length) % jacketImages.length
       // Send selectClothing command for tops (map to 0-2 range)
       if (connectionState === 'connected') {
-        const itemId = (newIndex % 2).toString()
-        sendFitSpaceCommand('selectClothing', { itemId, category: 'top' })
-        console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
+        sendClothingSelection('top', newIndex, 'jacket')
       }
       return newIndex
     })
@@ -270,9 +271,7 @@ export default function VirtualTryOn() {
       const newIndex = (i + dir + pantsImages.length) % pantsImages.length
       // Send selectClothing command for bottoms (map to 0-2 range)
       if (connectionState === 'connected') {
-        const itemId = (newIndex % 2).toString()
-        sendFitSpaceCommand('selectClothing', { itemId, category: 'bottom' })
-        console.log(`Sent selectClothing command: itemId=${itemId}, category=bottom`)
+        sendClothingSelection('bottom', newIndex, 'pants')
       }
       return newIndex
     })

@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { usePixelStreaming } from '../../context/PixelStreamingContext';
-import type { FittingRoomCommand } from '../../context/PixelStreamingContext';
+import type {
+  FitSpaceCommandData,
+  FittingRoomCommand,
+  FittingRoomCommandType,
+} from '../../context/PixelStreamingContext';
 import type { AllSettings } from '@epicgames-ps/lib-pixelstreamingfrontend-ue5.6/dist/types/Config/Config';
 
 export interface PixelStreamingWrapperProps {
@@ -174,13 +178,21 @@ export const PixelStreamingWrapper = ({
     }
   };
 
-  const handleSendFittingRoomCommand = (
-    type: FittingRoomCommand['type'],
-    customData?: Record<string, unknown>
+  const handleSendFittingRoomCommand = <T extends FittingRoomCommandType>(
+    type: T,
+    customData?: FitSpaceCommandData<T>
   ) => {
-    const data = customData || { timestamp: Date.now() };
-    sendFitSpaceCommand(type, data);
-    console.log('Sent fitting room command via main context:', { type, data });
+    const fallbackData =
+      customData ??
+      (type === 'selectClothing'
+        ? ({ category: 'top', subCategory: 'debug', itemId: 0 } as FitSpaceCommandData<T>)
+        : (undefined as FitSpaceCommandData<T>));
+    if (fallbackData === undefined) {
+      sendFitSpaceCommand(type);
+    } else {
+      sendFitSpaceCommand(type, fallbackData);
+    }
+    console.log('Sent fitting room command via main context:', { type, data: fallbackData });
   };
 
   return (
@@ -445,8 +457,14 @@ export const PixelStreamingWrapper = ({
               >
                 Reset Avatar
               </button>
-              <button 
-                onClick={() => handleSendFittingRoomCommand('selectClothing', { itemId: 'test_jacket_01', category: 'tops' })}
+              <button
+                onClick={() =>
+                  handleSendFittingRoomCommand('selectClothing', {
+                    category: 'top',
+                    subCategory: 'debug',
+                    itemId: 1,
+                  })
+                }
                 disabled={connectionState !== 'connected'}
                 style={{ padding: '6px 8px', fontSize: '10px', borderRadius: '3px' }}
               >

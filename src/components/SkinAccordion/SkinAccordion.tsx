@@ -172,13 +172,12 @@ const sendQueued = useQueuedUnreal(sendFitSpaceCommand, simpleState /*, 50 */)
   }, [flushSave])
 
   const pushToUnreal = useCallback(() => {
-    // pretpostavljam da već imaš toneHex; ako nemaš, postavi ga iz base/tonePct
+    const variantIndex = focusedIndex ?? 1
     sendQueued(
-      'configureAvatar',
+      'updateSkin',
       {
-        action: 'setSkin',
         baseIndex,
-        variantIndex: focusedIndex ?? 1,
+        variantIndex,
         tonePercent: tonePct,
         color: toneHex,
       },
@@ -189,13 +188,14 @@ const sendQueued = useQueuedUnreal(sendFitSpaceCommand, simpleState /*, 50 */)
   // Svaka promjena statea šalje u UE + sprema u backend (debounce)
   useEffect(() => {
     pushToUnreal()
+    sendFitSpaceCommand('updateSkinBrightness', { tonePercent: tonePct })
     // ne spremamo variant kad je null; bazu/tone spremamo uvijek
     scheduleSave({
       [SKIN_KEYS.baseIndex]: baseIndex,
       [SKIN_KEYS.tonePercent]: tonePct,
       ...(focusedIndex !== null ? { [SKIN_KEYS.variantIndex]: focusedIndex } : {}),
     })
-  }, [baseIndex, tonePct, focusedIndex, pushToUnreal, scheduleSave])
+  }, [baseIndex, tonePct, focusedIndex, pushToUnreal, scheduleSave, sendFitSpaceCommand])
 
   // --- Handleri za promjene UI-a + spremanje ---
   const handlePrev = () => {

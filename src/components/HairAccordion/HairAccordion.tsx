@@ -121,9 +121,8 @@ export default function HairAccordion() {
   const pushToUnreal = useCallback(() => {
     const colorHex = base
     sendQueued(
-      'configureAvatar',
+      'updateHair',
       {
-        action: 'setHair',
         styleIndex,
         stylePreset: HAIR_STYLE_PRESETS[styleIndex], // ako UE želi konkretan ID
         colorIndex,

@@ -12,6 +12,7 @@ import Hoodie from '../../assets/hoodie.png'
 
 // Four distinct items rotate; supports png + svg mixed
 const carouselItems: string[] = [FalconIcon, ShellIcon, MilitaryJacket, Hoodie]
+const topSubCategories = ['falcon', 'shell', 'jacket', 'hoodie'] as const
 
 interface TopAccordionProps {
   variant?: 'mobile' | 'desktop'
@@ -20,13 +21,21 @@ interface TopAccordionProps {
 export default function TopAccordion({ variant = 'mobile' }: TopAccordionProps) {
   const { sendFitSpaceCommand, connectionState } = usePixelStreaming()
   const [index, setIndex] = useState(0)
+  const sendClothingSelection = (category: 'top', itemIndex: number, subCategory = 'default') => {
+    sendFitSpaceCommand('selectClothing', {
+      category,
+      subCategory,
+      itemId: itemIndex,
+    })
+  }
   const prev = () => {
     setIndex(i => {
       const newIndex = (i + carouselItems.length - 1) % carouselItems.length
       // Send selectClothing command for tops (map to 0-2 range)
       if (connectionState === 'connected') {
-        const itemId = (newIndex % 2).toString()
-        sendFitSpaceCommand('selectClothing', { itemId, category: 'top' })
+        const itemId = newIndex % carouselItems.length
+        const subCategory = topSubCategories[itemId] ?? 'default'
+        sendClothingSelection('top', itemId, subCategory)
         console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
       }
       return newIndex
@@ -37,8 +46,9 @@ export default function TopAccordion({ variant = 'mobile' }: TopAccordionProps) 
       const newIndex = (i + 1) % carouselItems.length
       // Send selectClothing command for tops (map to 0-2 range)
       if (connectionState === 'connected') {
-        const itemId = (newIndex % 2).toString()
-        sendFitSpaceCommand('selectClothing', { itemId, category: 'top' })
+        const itemId = newIndex % carouselItems.length
+        const subCategory = topSubCategories[itemId] ?? 'default'
+        sendClothingSelection('top', itemId, subCategory)
         console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
       }
       return newIndex

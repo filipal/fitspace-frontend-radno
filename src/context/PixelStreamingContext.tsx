@@ -76,20 +76,126 @@ const defaultSettings: Partial<AllSettings> = {
 };
 
 // Fitting room specific command types
-export interface FittingRoomCommand {
-  type:
-    | 'selectClothing'
-    | 'rotateCamera'
-    | 'zoomCamera'
-    | 'moveCamera'
-    | 'resetAvatar'
-    | 'saveLook'
-    | 'morphAdjustment'
-    | 'configureAvatar'
-    | 'updateMorph'
-    | 'updateMorphs';
-  data?: Record<string, unknown>;
+export type FittingRoomCommandType =
+  | 'selectClothing'
+  | 'rotateCamera'
+  | 'zoomCamera'
+  | 'moveCamera'
+  | 'resetAvatar'
+  | 'saveLook'
+  | 'morphAdjustment'
+  | 'configureAvatar'
+  | 'updateMorph'
+  | 'updateMorphs'
+  | 'updateSkin'
+  | 'updateSkinBrightness'
+  | 'updateHair'
+  | 'updateExtras';
+
+export interface FittingRoomCommandPayloads {
+  selectClothing: {
+    /** Glavna kategorija (npr. 'top', 'bottom'). */
+    category: string;
+    /** Potkategorija artikla (npr. 'jacket', 'jeans'). */
+    subCategory?: string;
+    /** Identifikator artikla kao broj. */
+    itemId: number;
+  };
+  rotateCamera: {
+    /** Smjer rotacije kamere. */
+    direction: 'left' | 'right' | 'up' | 'down' | string;
+    /** Opcionalna brzina rotacije. */
+    speed?: number;
+    /** Veličina koraka u stupnjevima. */
+    degrees?: number;
+    /** Akumulirana rotacija nakon primjene naredbe. */
+    totalRotation?: number;
+  } & Record<string, unknown>;
+  zoomCamera: {
+    /** Smjer zuma. */
+    direction?: 'in' | 'out' | string;
+    /** Količina pomaka zuma. */
+    amount?: number;
+    /** Ciljana razina zuma. */
+    level?: number;
+    /** Promjena zuma u odnosu na prethodno stanje. */
+    delta?: number;
+  } & Record<string, unknown>;
+  moveCamera: {
+    /** Smjer pomaka kamere. */
+    direction: 'up' | 'down' | 'left' | 'right' | 'forward' | 'backward' | string;
+    /** Količina pomaka. */
+    amount?: number;
+  } & Record<string, unknown>;
+  resetAvatar: undefined;
+  saveLook: Record<string, unknown> & {
+    timestamp?: number;
+    lookName?: string;
+  };
+  morphAdjustment: {
+    morphName?: string;
+    bodyPart?: string;
+    value?: number;
+    adjustment?: number;
+    timestamp?: number;
+  } & Record<string, unknown>;
+  configureAvatar: {
+    avatarId: string;
+    gender: 'male' | 'female';
+    baseMorphs: Record<string, number>;
+    morphValues: Record<string, number>;
+  };
+  updateMorph: {
+    morphId: string;
+    value: number;
+  };
+  updateMorphs: {
+    avatarId: string;
+    morphValues: Record<string, number>;
+  };
+  updateSkin: {
+    baseIndex: number;
+    variantIndex?: number | null;
+    tonePercent: number;
+    color: string;
+  };
+  updateSkinBrightness: {
+    tonePercent: number;
+  };
+  updateHair: {
+    styleIndex: number;
+    stylePreset?: string;
+    colorIndex: number;
+    color: string;
+  };
+  updateExtras: {
+    type: string;
+    styleIndex: number;
+    colorIndex: number;
+    color: string;
+    colorPacked?: number;
+  };
 }
+
+export type FitSpaceCommandData<T extends FittingRoomCommandType> =
+  T extends keyof FittingRoomCommandPayloads
+    ? FittingRoomCommandPayloads[T]
+    : never;
+
+export type FittingRoomCommand = {
+  [K in FittingRoomCommandType]: {
+    type: K;
+  } & (FitSpaceCommandData<K> extends undefined
+    ? { data?: undefined }
+    : { data: FitSpaceCommandData<K> })
+}[FittingRoomCommandType];
+
+export type SendFitSpaceCommand = <T extends FittingRoomCommandType>(
+  type: T,
+  ...args: FitSpaceCommandData<T> extends undefined
+    ? []
+    : [data: FitSpaceCommandData<T>]
+) => void;
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error';
 
@@ -128,7 +234,7 @@ interface PixelStreamingContextType {
   reconnect: () => Promise<void>;
   
   // Fitting room specific commands
-  sendFitSpaceCommand: (type: FittingRoomCommand['type'], data?: Record<string, unknown>) => void;
+  sendFitSpaceCommand: SendFitSpaceCommand;
   
   // Generic command sending (for advanced use)
   sendCommand: (command: string, data?: unknown) => void;
@@ -894,17 +1000,18 @@ const connect = useCallback(async (overrideUrl?: string) => {
     await connect();
   }, [disconnect, connect]);
 
-  const sendFitSpaceCommand = useCallback((
-    type: FittingRoomCommand['type'],
-    data?: Record<string, unknown>
-  ) => {
+  const sendFitSpaceCommand = useCallback<SendFitSpaceCommand>((type, ...args) => {
     if (!stream || connectionState !== 'connected') {
       console.warn('Cannot send command: not connected to pixel streaming');
       return;
     }
 
-    const command: FittingRoomCommand = { type, data };
-    
+    const [data] = args;
+    const command = (data === undefined
+      ? { type }
+      : { type, data }
+    ) as FittingRoomCommand;
+
     try {
       // Send as UI interaction to Unreal Engine - send object directly
       stream.emitUIInteraction(command);

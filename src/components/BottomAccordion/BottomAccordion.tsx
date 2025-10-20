@@ -13,6 +13,7 @@ import Pants4 from '../../assets/pants-4.png'
 import Pants5 from '../../assets/pants-5.png'
 
 const carouselItems: string[] = [BossDyn01, Pants1, Pants2, Pants3, Pants4, Pants5]
+const bottomSubCategories = ['leather', 'classic', 'slim', 'relaxed', 'cargo', 'commuter'] as const
 
 interface BottomAccordionProps {
   variant?: 'mobile' | 'desktop'
@@ -21,13 +22,21 @@ interface BottomAccordionProps {
 export default function BottomAccordion({ variant = 'mobile' }: BottomAccordionProps) {
   const { sendFitSpaceCommand, connectionState } = usePixelStreaming()
   const [index, setIndex] = useState(0)
+  const sendClothingSelection = (category: 'bottom', itemIndex: number, subCategory = 'default') => {
+    sendFitSpaceCommand('selectClothing', {
+      category,
+      subCategory,
+      itemId: itemIndex,
+    })
+  }
   const prev = () => {
     setIndex(i => {
       const newIndex = (i + carouselItems.length - 1) % carouselItems.length
       // Send selectClothing command for bottoms (map to 0-2 range)
       if (connectionState === 'connected') {
-        const itemId = (newIndex % 2).toString()
-        sendFitSpaceCommand('selectClothing', { itemId, category: 'bottom' })
+        const itemId = newIndex % carouselItems.length
+        const subCategory = bottomSubCategories[itemId] ?? 'default'
+        sendClothingSelection('bottom', itemId, subCategory)
         console.log(`Sent selectClothing command: itemId=${itemId}, category=bottom`)
       }
       return newIndex
@@ -36,10 +45,11 @@ export default function BottomAccordion({ variant = 'mobile' }: BottomAccordionP
   const next = () => {
     setIndex(i => {
       const newIndex = (i + 1) % carouselItems.length
-      // Send selectClothing command for bottoms (map to 0-2 range)  
+      // Send selectClothing command for bottoms (map to 0-2 range)
       if (connectionState === 'connected') {
-        const itemId = (newIndex % 2).toString()
-        sendFitSpaceCommand('selectClothing', { itemId, category: 'bottom' })
+        const itemId = newIndex % carouselItems.length
+        const subCategory = bottomSubCategories[itemId] ?? 'default'
+        sendClothingSelection('bottom', itemId, subCategory)
         console.log(`Sent selectClothing command: itemId=${itemId}, category=bottom`)
       }
       return newIndex
