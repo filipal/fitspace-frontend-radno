@@ -175,6 +175,12 @@
   }
 }
 
+@media (min-width: 768px) and (max-width: 1023.99px) {
+  .loginBg {
+    inline-size: calc(422px / var(--login-scale-safe));
+  }
+}
+
 /* ——— WEB PANEL I SADRŽAJ ——— */
 
 /* Mobile: sve “u dizajn px” + skala drži istočni prikaz */
