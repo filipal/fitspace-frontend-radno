@@ -179,6 +179,12 @@ type LoginPageCssVars = CSSProperties & {
   '--fs-design-height'?: string
   '--fs-design-safe-height'?: string
   '--fs-viewport-height'?: string
+  '--fs-scale-width'?: string
+  '--fs-scale-height'?: string
+  '--fs-scale'?: string
+  '--fs-canvas-width'?: string
+  '--fs-canvas-height'?: string
+  '--fs-page-max-height'?: string
   '--login-density'?: string
   '--login-gap-scale'?: string
   '--login-top-scale'?: string
@@ -231,7 +237,7 @@ export default function LoginPage() {
     }
   }, [])
 
-  const { cssVars: layoutVars, designHeight } = useMemo(() => {
+  const { cssVars: layoutVars, canvasHeight } = useMemo(() => {
     const { topScale, gapScale, bgScale, designHeight } = computeLayoutMetrics(
       viewportHeight
     )
@@ -242,32 +248,41 @@ export default function LoginPage() {
       1
     )
 
+    const scaleWidth = clamp(
+      viewportWidth / MOBILE_DESIGN_WIDTH,
+      0,
+      Number.POSITIVE_INFINITY
+    )
+
+    const scaleHeight = designHeight > 0
+      ? clamp(viewportHeight / designHeight, 0, Number.POSITIVE_INFINITY)
+      : 1
+
+    const viewportScale = Math.min(scaleWidth, scaleHeight, 1)
+    const canvasWidth = MOBILE_DESIGN_WIDTH * viewportScale
+    const canvasHeight = designHeight * viewportScale
+    const pageMaxHeight = Math.min(canvasHeight, viewportHeight)
+  
     const cssVars: LoginPageCssVars = {
       '--fs-design-height': `${designHeight.toFixed(3)}px`,
       '--fs-design-safe-height': `${designHeight.toFixed(3)}px`,
       '--fs-viewport-height': `${viewportHeight.toFixed(3)}px`,
+      '--fs-scale-width': scaleWidth.toFixed(5),
+      '--fs-scale-height': scaleHeight.toFixed(5),
+      '--fs-scale': viewportScale.toFixed(5),
+      '--fs-canvas-width': `${canvasWidth.toFixed(3)}px`,
+      '--fs-canvas-height': `${canvasHeight.toFixed(3)}px`,
+      '--fs-page-max-height': `${pageMaxHeight.toFixed(3)}px`,
       '--login-density': density.toFixed(3),
       '--login-gap-scale': gapScale.toFixed(3),
       '--login-top-scale': topScale.toFixed(3),
       '--login-bg-scale': bgScale.toFixed(3)
     }
 
-    return { cssVars, designHeight }
-  }, [viewportHeight])
+    return { cssVars, canvasHeight }
+  }, [viewportHeight, viewportWidth])
 
-  const viewportScaleWidth = clamp(
-    viewportWidth / MOBILE_DESIGN_WIDTH,
-    0,
-    Number.POSITIVE_INFINITY
-  )
-  const viewportScaleHeight = clamp(
-    viewportHeight / designHeight,
-    0,
-    Number.POSITIVE_INFINITY
-  )
-  const viewportScale = Math.min(viewportScaleWidth, viewportScaleHeight, 1)
-  const scaledCanvasHeight = designHeight * viewportScale
-  const needsScroll = scaledCanvasHeight > viewportHeight + 0.5
+  const needsScroll = canvasHeight > viewportHeight + 0.5
   const pageClassName = needsScroll
     ? `${styles.page} ${styles.pageScrollable}`
     : styles.page
