@@ -10,6 +10,7 @@ import ResponsivePage from '../components/ResponsivePage/ResponsivePage'
 import styles from './LoginPage.module.scss'
 import { DEFAULT_POST_LOGIN_ROUTE, POST_LOGIN_REDIRECT_KEY } from '../config/authRedirect'
 
+const MOBILE_DESIGN_WIDTH = 430
 const MOBILE_DESIGN_HEIGHT = 932
 const MOBILE_SAFE_VISIBLE_HEIGHT = 658
 // Sum of all “compressible” vertical segments (spacings, loginBg, etc.)
@@ -51,9 +52,8 @@ function readViewportSize(): ViewportSize {
 }
 
 export default function LoginPage() {
-  const [{ height: viewportHeight }, setViewportSize] = useState<ViewportSize>(
-    () => readViewportSize()
-  )
+  const [viewportSize, setViewportSize] = useState<ViewportSize>(() => readViewportSize())
+  const { width: viewportWidth, height: viewportHeight } = viewportSize
   const auth = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -110,6 +110,23 @@ export default function LoginPage() {
     }
   }, [viewportHeight])
 
+  const viewportScaleWidth = clamp(
+    viewportWidth / MOBILE_DESIGN_WIDTH,
+    0,
+    Number.POSITIVE_INFINITY
+  )
+  const viewportScaleHeight = clamp(
+    viewportHeight / MOBILE_SAFE_VISIBLE_HEIGHT,
+    0,
+    Number.POSITIVE_INFINITY
+  )
+  const viewportScale = Math.min(viewportScaleWidth, viewportScaleHeight, 1)
+  const scaledCanvasHeight = MOBILE_DESIGN_HEIGHT * viewportScale
+  const needsScroll = scaledCanvasHeight > viewportHeight + 0.5
+  const pageClassName = needsScroll
+    ? `${styles.page} ${styles.pageScrollable}`
+    : styles.page
+  
   useEffect(() => {
     if (allowAuthenticatedAccess) {
       return
@@ -167,7 +184,7 @@ export default function LoginPage() {
   return (
     <ResponsivePage
       style={layoutVars}
-      className={styles.page}
+      className={pageClassName}
       bodyClassName={styles.body}
       contentClassName={styles.loginPage}
       header={

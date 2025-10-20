@@ -25,6 +25,18 @@
   --exit-left: 35px;
   --gap-below-logo: 18px;
 }
+
+.pageScrollable {
+  block-size: auto;
+  min-block-size: 100%;
+  overflow-y: auto;
+}
+
+.pageScrollable .body,
+.pageScrollable .canvas {
+  overflow: visible;
+}
+
 .body { align-items: center; overflow: clip; }
 
 /* ——— DESIGN VARS ZA LOGIN ——— */
