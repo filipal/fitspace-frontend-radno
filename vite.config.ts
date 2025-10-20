@@ -9,13 +9,26 @@ const DEV_HOST = process.env.VITE_DEV_HOST
 export default defineConfig({
   plugins: [react(), svgr()],
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
-  css: { /* ...tvoj postojeći css blok... */ },
+
+  // ⬅︎ OVDJE ostavi svoj postojeći css blok ako ga koristiš
+  // css: { ... },
+
   server: {
     host: true,
     port: 5177,
     strictPort: true,
-    allowedHosts: true,                 // ⬅︎ dopušta quick-tunnel host bez editiranja env-a
+    allowedHosts: true, // dopušta bilo koji quick-tunnel host u devu
     hmr: DEV_HOST ? { host: DEV_HOST, protocol: 'ws', port: 5177 } : undefined,
+
+    // Proxy: front → https://<tunnel>/api → http://localhost:8080/api
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
+
   preview: { host: true, port: 5177, strictPort: true },
 })
