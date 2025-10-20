@@ -22,6 +22,32 @@ const SKIN_KEYS = {
   variantIndex: 'skinVariant',
 } as const
 
+// Mapping helpers -----------------------------------------------------------
+// Skin tone values in Unreal are expressed as a discrete range [0, 12].
+// We map our palette selection (baseIndex) and variant focus (focusedIndex)
+// onto that range by treating each base as a "bucket" of three tones:
+//   baseIndex * 2 gives us the bucket start, and the variant shifts us within it
+//   (light:0, mid:1, dark:2). When no variant is focused we default to the mid tone.
+// This keeps the mapping easy to reason about and guarantees the final value
+// stays inside the supported 0–12 range while preserving a monotonic ordering.
+const mapToSkinTone = (baseIndex: number, variantIndex: number | null) => {
+  const normalizedVariant = Number.isFinite(variantIndex ?? NaN)
+    ? Math.min(Math.max(variantIndex as number, 0), 2)
+    : 1
+  const bucketed = baseIndex * 2 + normalizedVariant
+  return Math.min(Math.max(bucketed, 0), 12)
+}
+
+// Unreal expects brightness in the range [0.25, 1.75]. Our UI slider stores
+// percentages (0–100), so we apply a simple linear transformation between the
+// two domains for easier maintenance and reuse in tests.
+const mapToBrightness = (tonePercent: number) => {
+  const clamped = Math.min(Math.max(tonePercent, 0), 100)
+  const min = 0.25
+  const max = 1.75
+  return min + (clamped / 100) * (max - min)
+}
+
 // Pomoćne funkcije za miješanje boja
 function hexToRgb(hex: string) {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
@@ -53,7 +79,7 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
         : 'disconnected';
   }, [connectionState])
 
-const sendQueued = useQueuedUnreal(sendFitSpaceCommand, simpleState /*, 50 */)
+  const sendQueued = useQueuedUnreal(sendFitSpaceCommand, simpleState /*, 50 */)
 
 
   // Paleta baza (svjetlije ←→ tamnije)
@@ -171,7 +197,11 @@ const sendQueued = useQueuedUnreal(sendFitSpaceCommand, simpleState /*, 50 */)
     saveTimerRef.current = window.setTimeout(flushSave, 500)
   }, [flushSave])
 
-  const pushToUnreal = useCallback(() => {
+  const skinTone = useMemo(() => mapToSkinTone(baseIndex, focusedIndex), [baseIndex, focusedIndex])
+  const brightness = useMemo(() => mapToBrightness(tonePct), [tonePct])
+
+  // Svaka promjena statea šalje u UE + sprema u backend (debounce)
+  useEffect(() => {
     const variantIndex = focusedIndex ?? 1
     sendQueued(
       'updateSkin',
@@ -180,22 +210,34 @@ const sendQueued = useQueuedUnreal(sendFitSpaceCommand, simpleState /*, 50 */)
         variantIndex,
         tonePercent: tonePct,
         color: toneHex,
+        skinTone,
       },
       'skin update'
     )
-  }, [baseIndex, focusedIndex, tonePct, toneHex, sendQueued])
-
-  // Svaka promjena statea šalje u UE + sprema u backend (debounce)
-  useEffect(() => {
-    pushToUnreal()
-    sendFitSpaceCommand('updateSkinBrightness', { tonePercent: tonePct })
+    sendQueued(
+      'updateSkinBrightness',
+      {
+        tonePercent: tonePct,
+        brightness,
+      },
+      'skin brightness'
+    )
     // ne spremamo variant kad je null; bazu/tone spremamo uvijek
     scheduleSave({
       [SKIN_KEYS.baseIndex]: baseIndex,
       [SKIN_KEYS.tonePercent]: tonePct,
       ...(focusedIndex !== null ? { [SKIN_KEYS.variantIndex]: focusedIndex } : {}),
     })
-  }, [baseIndex, tonePct, focusedIndex, pushToUnreal, scheduleSave, sendFitSpaceCommand])
+  }, [
+    baseIndex,
+    tonePct,
+    focusedIndex,
+    sendQueued,
+    scheduleSave,
+    toneHex,
+    skinTone,
+    brightness,
+  ])
 
   // --- Handleri za promjene UI-a + spremanje ---
   const handlePrev = () => {

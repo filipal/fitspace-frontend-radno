@@ -156,11 +156,13 @@ export interface FittingRoomCommandPayloads {
   updateSkin: {
     baseIndex: number;
     variantIndex?: number | null;
-    tonePercent: number;
-    color: string;
+    tonePercent?: number;
+    color?: string;
+    skinTone: number;
   };
   updateSkinBrightness: {
-    tonePercent: number;
+    tonePercent?: number;
+    brightness: number;
   };
   updateHair: {
     styleIndex: number;
