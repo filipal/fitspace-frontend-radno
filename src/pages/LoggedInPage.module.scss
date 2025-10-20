@@ -1,108 +1,151 @@
-@use '../styles' as s;
+.page {
+  block-size: 100%;
+  color: #000;
+  overflow-y: clip;
+}
 
-.loadAvatarRow {
-  width: 100%;
-  max-width: 320px;
-  height: 50px;
-  margin: 0 auto 10px auto;
-  display: flex;
+.pageScrollable {
+  block-size: auto;
+  min-block-size: 100%;
+  overflow-y: auto;
+}
+
+.pageScrollable .body,
+.pageScrollable .canvasInner {
+  overflow: visible;
+}
+
+.body {
   align-items: center;
-  justify-content: center;
+  overflow: clip;
 }
-.deleteConfirmOverlay {
-  position: fixed;
-  left: 0;
-  width: 100%;
-  max-width: var(--page-max-width);
-  z-index: 100;
-  display: flex;
-  justify-content: center;
-  pointer-events: none;
-}
-.deleteConfirmRow {
-  background: #D44B3E;
-  max-width: var(--page-max-width);
-  margin: 0 auto;
-  color: #fff;
-  font-size: 20px;
-  display: flex;
-  text-align: center;
-  align-items: center;    /* centriranje okomito   */
-  justify-content: center;/* centriranje vodoravno */
-  width: 100%;
-  height: 100%;
-  text-align: center;
-  pointer-events: auto;
-}
-.iconButton img {
-  width: 14px;
-  height: 14px;
-  display: block;
-  object-fit: contain;
-}
-.loggedInPage {
-  width: var(--page-width);
-  min-height: 100svh;
-  margin: 0 auto;
-  background: rgb(236, 236, 236);
+
+.canvasInner {
+  inline-size: var(--fs-design-width);
+  block-size: var(--fs-design-height);
   display: flex;
   flex-direction: column;
-}
-
-.count {
-  font-family: "Outfit", sans-serif;
-  font-size: 23px;
-  font-weight: 400;
-  color: #000;
-}
-
-.iconButton {
-  background: none;
-  width: 40px;
-  height: 40px;
-  border: none;
-  line-height: 1;
-  display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #000;
-  left: 426px;
-  outline: none;
-  transition: none
+  justify-content: flex-start;
+  padding-block: var(--loggedin-top-gap) var(--loggedin-bottom-gap);
+  color: inherit;
+  container-type: inline-size;
+}
+
+.content {
+  inline-size: min(100%, var(--loggedin-content-width));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1 1 auto;
+}
+
+.listArea {
+  inline-size: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--loggedin-section-gap);
+  flex: 0 0 auto;
+  margin-block-end: auto;
 }
 
 .avatarList {
   list-style: none;
-  padding: 24px 0;
-  margin-left: 55px;
-  flex: 1;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: var(--loggedin-list-gap);
+  max-block-size: var(--loggedin-list-max-height);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .avatarItem {
-  width: 100%;
-  height: 40px;
+  inline-size: 100%;
+  min-block-size: var(--loggedin-list-item-height);
   display: flex;
   align-items: center;
-  gap: calc(15px - (40px - 14px) / 2);
-  margin-bottom: 24px;
-  margin-inline: auto;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.loaderBanner {
-  margin: 0 auto 16px;
-  padding: 8px 12px;
-  max-width: 320px;
+.avatarName {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  inline-size: 100%;
+  block-size: var(--loggedin-list-item-height);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #000;
+  background: #fff;
+  color: #000;
+  font-family: 'Outfit', sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.selected {
+  background: #000;
+  color: #fff;
+}
+
+.iconButton {
+  inline-size: var(--loggedin-icon-size);
+  block-size: var(--loggedin-icon-size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+}
+
+.iconButton:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.iconButton img {
+  inline-size: clamp(18px, calc(var(--loggedin-icon-size) * 0.44), 20px);
+  block-size: clamp(18px, calc(var(--loggedin-icon-size) * 0.44), 20px);
+  object-fit: contain;
+  display: block;
+}
+
+.count {
+  font-family: 'Outfit', sans-serif;
+  font-size: 23px;
+  font-weight: 400;
+  color: inherit;
+}
+
+.loaderBanner,
+.errorBanner {
+  inline-size: 100%;
+  min-block-size: 48px;
+  margin: 0;
+  padding: 10px 16px;
+  border-radius: 12px;
   text-align: center;
   font-family: 'Outfit', sans-serif;
   font-size: 16px;
-  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loaderBanner {
   background: rgba(255, 255, 255, 0.8);
+  color: #000;
   border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
 }
 
 .loaderProgress {
@@ -110,184 +153,58 @@
 }
 
 .errorBanner {
-  margin: 0 auto 16px;
-  padding: 10px 14px;
-  max-width: 320px;
-  text-align: center;
-  font-family: 'Outfit', sans-serif;
-  font-size: 16px;
-  color: #fff;
   background: #d44b3e;
-  border-radius: 8px;
-}
-
-.avatar-name {
-  flex: 1 1 320px;
-  min-width: 0;
-  width: min(100%, 320px);
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid #000;
-  background: #fff;
-  color: #000;
-  font-family: "Outfit", sans-serif;
-  font-size: 18px;
-  font-weight: 400;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-}
-
-.avatarItem .iconButton {
-  flex: 0 0 auto;
-}
-.avatar-name.selected {
-  background: #000;
   color: #fff;
 }
 
-
-.button-load {
-  width: 100%;
-  max-width: 320px;
-  height: 50px;
-  background: linear-gradient(to right, #2b214d, #13536c);
-  color: #fff;
-  font-family: "Inter", sans-serif;
-  font-size: 18px;
-  font-weight: 400;
-  border: none;
+.footer {
+  inline-size: 100%;
 }
 
-.button-load.disabled,
-.button-load:disabled {
-  opacity: 0.4;
+.deleteConfirmOverlay {
+  position: fixed;
+  z-index: 100;
   pointer-events: none;
-  background: linear-gradient(to right, #372C53, #1F5167);
-  color: #fff;
+  display: flex;
+  justify-content: center;
 }
 
-.delete-confirm {
-  width: 100%;
-  height: 50px;
-  background: #D44B3E;
+.deleteConfirmRow {
+  inline-size: 100%;
+  block-size: 100%;
+  background: #d44b3e;
   color: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-size: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  font-family: 'Inter', sans-serif;
-  margin-bottom: 16px;
+  pointer-events: auto;
 }
 
-.footer-actions {
-  display: flex;
-  gap: 16px;
-  margin-inline: auto;
+@supports (container-type: inline-size) and (width: 1cqw) {
+  .avatarName {
+    font-size: clamp(16px, 4.186cqw, 18px);
+  }
+
+  .count {
+    font-size: clamp(18px, 5.3488cqw, 23px);
+  }
 }
 
-.button-back {
-  width: 100%;
-  max-width: 320px;
-  height: 50px;
-  background: #fff;
-  border: 2px solid #000;
-  color: #000;
-  font-family: "Inter", sans-serif;
-  font-size: 18px;
-  font-weight: 400;
-}
+@media (min-width: 768px) {
+  .canvasInner {
+    block-size: auto;
+    min-block-size: var(--fs-design-height);
+  }
 
-.button-create {
-  width: 100%;
-  max-width: 320px;
-  height: 50px;
-  background: #000;
-  color: #fff;
-  font-family: "Inter", sans-serif;
-  font-size: 18px;
-  font-weight: 400;
-  border: none;
-}
-
-@media (min-width: 744px) {
-  .deleteConfirmOverlay { left: 0; right: 0; width: auto; max-width: none; }
-  .deleteConfirmRow { width: 100%; max-width: none; margin: 0; border-radius: 0; }
-}
-
-@include s.respond(tablet) {
   .avatarItem {
-    width: 100%;
-    max-width: 422px;
-    position: relative;
-    padding-right: calc(15px + 40px);
-    box-sizing: border-box;
-  }
-
-  .avatar-name {
-    flex: 0 0 100%;
-    width: 100%;
-  }
-
-  .iconButton {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
+    gap: 18px;
   }
 }
 
-
-@include s.respond(xxl) {
-  .appHeader {
-    height: 70px;
-    padding-top: 0;
+/* @media (min-width: 1280px) {
+  .content {
+    inline-size: min(100%, 480px);
   }
-  .loggedInPage {
-    width: var(--page-width);
-  }
-  .avatarList {
-    padding: 24px 16px;
-  }
-  .iconButton img {
-    width: 17px;
-    height: 17px;
-  }
-  .avatarItem {
-    width: 100%;
-    max-width: 422px;
-    position: relative;
-    padding-right: calc(15px + 40px);
-    box-sizing: border-box;
-  }
-  .avatar-name {
-    flex: 0 0 100%;
-    width: 100%;
-    max-width: none;
-  }
-  .iconButton {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 40px;
-    height: 40px;
-  }
-}
-
-
-@include s.respond(xl) {
-  .appHeader {
-    width: var(--page-width);
-    height: 70px;
-    padding-inline: 24px;
-    grid-template-columns: auto 1fr auto;
-    align-items: center;
-    padding-top: 0;
-  }
-  .loggedInPage {
-    width: var(--page-width);
-  }
-}
-
+} */
