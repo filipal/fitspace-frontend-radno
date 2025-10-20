@@ -124,7 +124,7 @@ export default function HairAccordion() {
       'updateHair',
       {
         styleIndex,
-        stylePreset: HAIR_STYLE_PRESETS[styleIndex], // ako UE želi konkretan ID
+        stylePreset: String(HAIR_STYLE_PRESETS[styleIndex]), // ako UE želi konkretan ID
         colorIndex,
         color: colorHex, // hex samo za UE (ne spremamo u backend)
       },

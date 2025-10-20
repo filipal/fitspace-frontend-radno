@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useState,
   type ComponentType,
@@ -120,12 +121,15 @@ export default function VirtualTryOn() {
   const shouldShrinkCategoryText = (text: string) => text.trim().length >= 10
   const sendClothingSelection = useCallback(
     (category: 'top' | 'bottom', itemIndex: number, subCategory = 'default') => {
+      const normalizedItemId = Number(itemIndex)
       sendFitSpaceCommand('selectClothing', {
         category,
         subCategory,
-        itemId: itemIndex,
+        itemId: normalizedItemId,
       })
-      console.log(`Sent selectClothing command: itemId=${itemIndex}, category=${category}`)
+      console.log(
+        `Sent selectClothing command: itemId=${normalizedItemId}, category=${category}`,
+      )
     },
     [sendFitSpaceCommand]
   )
@@ -164,8 +168,6 @@ export default function VirtualTryOn() {
     setBottomOptionIndex((i) => {
       const newIndex = (i + 1) % bottomOptions.length
       if (connectionState === 'connected') {
-        const itemId = (newIndex % 2).toString()
-        sendFitSpaceCommand('selectClothing', { itemId, category: 'bottom' })
         sendClothingSelection('bottom', newIndex % bottomOptions.length)
       }
       return newIndex
