@@ -14,7 +14,7 @@ const MOBILE_DESIGN_WIDTH = 430
 const MOBILE_DESIGN_HEIGHT = 932
 const DESKTOP_DESIGN_WIDTH = 1440
 const DESKTOP_DESIGN_HEIGHT = 1024
-const DESKTOP_BREAKPOINT = 1024
+const DESKTOP_BREAKPOINT = 768
 const TOP_SPACER_HEIGHT = 60
 const GAP_SEGMENTS_HEIGHT = 18 + 35 + 28 + 15 + 15 + 142 + 21
 const BACKGROUND_SEGMENT_HEIGHT = 386
@@ -243,31 +243,32 @@ export default function LoginPage() {
 
   const { cssVars: layoutVars, canvasHeight } = useMemo(() => {
     if (viewportWidth >= DESKTOP_BREAKPOINT) {
+      const designWidth = Math.min(DESKTOP_DESIGN_WIDTH, viewportWidth)
+      const designHeight = DESKTOP_DESIGN_HEIGHT
       const scaleWidth = clamp(
-        viewportWidth / DESKTOP_DESIGN_WIDTH,
+        viewportWidth / (designWidth || 1),
         0,
         Number.POSITIVE_INFINITY
       )
 
       const scaleHeight = clamp(
-        viewportHeight / DESKTOP_DESIGN_HEIGHT,
+        viewportHeight / (designHeight || 1),
         0,
         Number.POSITIVE_INFINITY
       )
 
-      const viewportScale = Math.min(scaleWidth, scaleHeight, 1)
-      const canvasWidth = DESKTOP_DESIGN_WIDTH * viewportScale
-      const canvasHeight = DESKTOP_DESIGN_HEIGHT * viewportScale
-      const pageMaxHeight = Math.min(canvasHeight, viewportHeight)
+      const canvasWidth = designWidth
+      const canvasHeight = designHeight
+      const pageMaxHeight = Math.max(canvasHeight, viewportHeight)
 
       const cssVars: LoginPageCssVars = {
-        '--fs-design-width': `${DESKTOP_DESIGN_WIDTH}px`,
-        '--fs-design-height': `${DESKTOP_DESIGN_HEIGHT}px`,
-        '--fs-design-safe-height': `${DESKTOP_DESIGN_HEIGHT}px`,
+        '--fs-design-width': `${designWidth}px`,
+        '--fs-design-height': `${designHeight}px`,
+        '--fs-design-safe-height': `${designHeight}px`,
         '--fs-viewport-height': `${viewportHeight.toFixed(3)}px`,
         '--fs-scale-width': scaleWidth.toFixed(5),
         '--fs-scale-height': scaleHeight.toFixed(5),
-        '--fs-scale': viewportScale.toFixed(5),
+        '--fs-scale': '1',
         '--fs-canvas-width': `${canvasWidth.toFixed(3)}px`,
         '--fs-canvas-height': `${canvasHeight.toFixed(3)}px`,
         '--fs-page-max-height': `${pageMaxHeight.toFixed(3)}px`,

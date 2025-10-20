@@ -75,7 +75,7 @@
   position: relative;
 }
 
-@media (min-width: 1024px) and (max-height: 600px) {
+@media (min-width: 768px) and (max-height: 600px) {
   .page {
     /* dopusti da stranica bude viša od viewporta i da se skrola */
     block-size: auto;
