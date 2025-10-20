@@ -12,15 +12,22 @@ import { DEFAULT_POST_LOGIN_ROUTE, POST_LOGIN_REDIRECT_KEY } from '../config/aut
 
 const MOBILE_DESIGN_WIDTH = 430
 const MOBILE_DESIGN_HEIGHT = 932
-const MOBILE_SAFE_VISIBLE_HEIGHT = 658
+const TOP_SPACER_HEIGHT = 60
+const GAP_SEGMENTS_HEIGHT = 18 + 35 + 28 + 15 + 15 + 142 + 21
+const BACKGROUND_SEGMENT_HEIGHT = 386
 // Sum of all “compressible” vertical segments (spacings, loginBg, etc.)
-const FLEXIBLE_DESIGN_HEIGHT = 719
+const FLEXIBLE_DESIGN_HEIGHT =
+  TOP_SPACER_HEIGHT + GAP_SEGMENTS_HEIGHT + BACKGROUND_SEGMENT_HEIGHT
 const STATIC_DESIGN_HEIGHT = MOBILE_DESIGN_HEIGHT - FLEXIBLE_DESIGN_HEIGHT
 const MIN_DENSITY_SCALE = 0.55
 const MIN_GAP_SCALE = 0.6
 const MIN_TOP_SCALE = 0.7
 const MIN_BG_SCALE = 0.6
-const BG_SCALE_BIAS = 0.05
+const MOBILE_SAFE_VISIBLE_HEIGHT =
+  STATIC_DESIGN_HEIGHT +
+  TOP_SPACER_HEIGHT * MIN_TOP_SCALE +
+  GAP_SEGMENTS_HEIGHT * MIN_GAP_SCALE +
+  BACKGROUND_SEGMENT_HEIGHT * MIN_BG_SCALE
 
 interface ViewportSize {
   width: number
@@ -29,9 +36,149 @@ interface ViewportSize {
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
 
+type SegmentKey = 'top' | 'gap' | 'bg'
+
+interface SegmentDefinition {
+  key: SegmentKey
+  base: number
+  minScale: number
+  shrinkWeight: number
+}
+
+interface SegmentState extends SegmentDefinition {
+  scale: number
+}
+
+interface LayoutMetrics {
+  topScale: number
+  gapScale: number
+  bgScale: number
+  designHeight: number
+}
+
+const FLEXIBLE_SEGMENTS: readonly SegmentDefinition[] = [
+  { key: 'top', base: TOP_SPACER_HEIGHT, minScale: MIN_TOP_SCALE, shrinkWeight: 0.9 },
+  { key: 'gap', base: GAP_SEGMENTS_HEIGHT, minScale: MIN_GAP_SCALE, shrinkWeight: 1 },
+  {
+    key: 'bg',
+    base: BACKGROUND_SEGMENT_HEIGHT,
+    minScale: MIN_BG_SCALE,
+    shrinkWeight: 1.2
+  }
+]
+
+const FULL_FLEXIBLE_HEIGHT = FLEXIBLE_SEGMENTS.reduce(
+  (sum, segment) => sum + segment.base,
+  0
+)
+
+const MIN_FLEXIBLE_HEIGHT = FLEXIBLE_SEGMENTS.reduce(
+  (sum, segment) => sum + segment.base * segment.minScale,
+  0
+)
+
+function computeLayoutMetrics(viewportHeight: number): LayoutMetrics {
+  const targetFlexibleHeight = clamp(
+    viewportHeight - STATIC_DESIGN_HEIGHT,
+    MIN_FLEXIBLE_HEIGHT,
+    FULL_FLEXIBLE_HEIGHT
+  )
+
+  const workingSegments: SegmentState[] = FLEXIBLE_SEGMENTS.map((segment) => ({
+    ...segment,
+    scale: 1
+  }))
+
+  let currentFlexibleHeight = FULL_FLEXIBLE_HEIGHT
+
+  for (let iteration = 0; iteration < 8; iteration += 1) {
+    if (currentFlexibleHeight <= targetFlexibleHeight + 0.01) {
+      break
+    }
+
+    const shrinkable = workingSegments.filter(
+      (segment) => segment.scale > segment.minScale + 0.0001
+    )
+
+    if (shrinkable.length === 0) {
+      break
+    }
+
+    const totalWeightedCapacity = shrinkable.reduce((sum, segment) => {
+      const capacity = (segment.scale - segment.minScale) * segment.base
+      return sum + capacity * segment.shrinkWeight
+    }, 0)
+
+    if (totalWeightedCapacity <= 0) {
+      break
+    }
+
+    const excess = currentFlexibleHeight - targetFlexibleHeight
+    let consumedHeight = 0
+
+    shrinkable.forEach((segment) => {
+      const capacity = (segment.scale - segment.minScale) * segment.base
+      if (capacity <= 0) {
+        return
+      }
+
+      const weightedCapacity = capacity * segment.shrinkWeight
+      const shrinkHeight = Math.min(
+        capacity,
+        (excess * weightedCapacity) / totalWeightedCapacity
+      )
+
+      if (shrinkHeight <= 0) {
+        return
+      }
+
+      segment.scale -= shrinkHeight / segment.base
+      consumedHeight += shrinkHeight
+    })
+
+    if (consumedHeight <= 0.001) {
+      break
+    }
+
+    currentFlexibleHeight -= consumedHeight
+  }
+
+  let flexibleHeight = 0
+  let topScale = MIN_TOP_SCALE
+  let gapScale = MIN_GAP_SCALE
+  let bgScale = MIN_BG_SCALE
+
+  workingSegments.forEach((segment) => {
+    const finalScale = clamp(segment.scale, segment.minScale, 1)
+    flexibleHeight += segment.base * finalScale
+
+    switch (segment.key) {
+      case 'top':
+        topScale = finalScale
+        break
+      case 'gap':
+        gapScale = finalScale
+        break
+      case 'bg':
+        bgScale = finalScale
+        break
+    }
+  })
+
+  const designHeight = STATIC_DESIGN_HEIGHT + flexibleHeight
+
+  return {
+    topScale,
+    gapScale,
+    bgScale,
+    designHeight
+  }
+}
+
 type LoginPageCssVars = CSSProperties & {
   '--fs-design-height'?: string
   '--fs-design-safe-height'?: string
+  '--fs-viewport-height'?: string
   '--login-density'?: string
   '--login-gap-scale'?: string
   '--login-top-scale'?: string
@@ -84,30 +231,28 @@ export default function LoginPage() {
     }
   }, [])
 
-  const layoutVars = useMemo<LoginPageCssVars>(() => {
-    const safeVisibilityRatio = clamp(
+  const { cssVars: layoutVars, designHeight } = useMemo(() => {
+    const { topScale, gapScale, bgScale, designHeight } = computeLayoutMetrics(
+      viewportHeight
+    )
+
+    const density = clamp(
       viewportHeight / MOBILE_SAFE_VISIBLE_HEIGHT,
       MIN_DENSITY_SCALE,
       1
     )
 
-    const flexibleBudget = Math.max(viewportHeight - STATIC_DESIGN_HEIGHT, 0)
-    const flexibleRatioBase = flexibleBudget / FLEXIBLE_DESIGN_HEIGHT
-    const flexibleRatio = clamp(flexibleRatioBase, MIN_GAP_SCALE, 1)
-    const topScale = clamp(safeVisibilityRatio, MIN_TOP_SCALE, 1)
-    const gapScale = clamp(safeVisibilityRatio, MIN_GAP_SCALE, 1)
-    const bgScale = clamp(flexibleRatio + BG_SCALE_BIAS, MIN_BG_SCALE, 1)
-
-    const designSafeHeight = MOBILE_SAFE_VISIBLE_HEIGHT
-
-    return {
-      '--fs-design-height': `${MOBILE_DESIGN_HEIGHT}px`,
-      '--fs-design-safe-height': `${designSafeHeight.toFixed(2)}px`,
-      '--login-density': safeVisibilityRatio.toFixed(3),
+    const cssVars: LoginPageCssVars = {
+      '--fs-design-height': `${designHeight.toFixed(3)}px`,
+      '--fs-design-safe-height': `${designHeight.toFixed(3)}px`,
+      '--fs-viewport-height': `${viewportHeight.toFixed(3)}px`,
+      '--login-density': density.toFixed(3),
       '--login-gap-scale': gapScale.toFixed(3),
       '--login-top-scale': topScale.toFixed(3),
       '--login-bg-scale': bgScale.toFixed(3)
     }
+
+    return { cssVars, designHeight }
   }, [viewportHeight])
 
   const viewportScaleWidth = clamp(
@@ -116,12 +261,12 @@ export default function LoginPage() {
     Number.POSITIVE_INFINITY
   )
   const viewportScaleHeight = clamp(
-    viewportHeight / MOBILE_SAFE_VISIBLE_HEIGHT,
+    viewportHeight / designHeight,
     0,
     Number.POSITIVE_INFINITY
   )
   const viewportScale = Math.min(viewportScaleWidth, viewportScaleHeight, 1)
-  const scaledCanvasHeight = MOBILE_DESIGN_HEIGHT * viewportScale
+  const scaledCanvasHeight = designHeight * viewportScale
   const needsScroll = scaledCanvasHeight > viewportHeight + 0.5
   const pageClassName = needsScroll
     ? `${styles.page} ${styles.pageScrollable}`

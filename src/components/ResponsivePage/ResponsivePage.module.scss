@@ -2,15 +2,39 @@
   /* min-height: var(--fs-page-max-height);  ⟵ makni */
   inline-size: 100%;
   /* cijela stranica = točno vidljivi viewport */
-  block-size: 100%;
+  --fs-safe-area-top: env(safe-area-inset-top);
+  --fs-safe-area-bottom: env(safe-area-inset-bottom);
+  --fs-viewport-height: max(
+    0px,
+    calc(100svh - var(--fs-safe-area-top) - var(--fs-safe-area-bottom))
+  );
+  block-size: calc(
+    var(--fs-viewport-height) +
+    var(--fs-safe-area-top) +
+    var(--fs-safe-area-bottom)
+  );
   display: flex;
   flex-direction: column;
   align-items: center;
   background: var(--page-bg);
   color: var(--page-fg);
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-top: var(--fs-safe-area-top);
+  padding-bottom: var(--fs-safe-area-bottom);
   overflow: clip; /* nema scroll trake od subpiksel overflowa */
+}
+
+@supports (block-size: 100dvh) {
+  .page {
+    --fs-viewport-height: max(
+      0px,
+      calc(100dvh - var(--fs-safe-area-top) - var(--fs-safe-area-bottom))
+    );
+    block-size: calc(
+      var(--fs-viewport-height) +
+      var(--fs-safe-area-top) +
+      var(--fs-safe-area-bottom)
+    );
+  }
 }
 
 .header,
