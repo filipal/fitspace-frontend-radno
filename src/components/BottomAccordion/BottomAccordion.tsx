@@ -19,7 +19,7 @@ interface BottomAccordionProps {
 }
 
 export default function BottomAccordion({ variant = 'mobile' }: BottomAccordionProps) {
-  const { sendFittingRoomCommand, connectionState } = usePixelStreaming()
+  const { sendFitSpaceCommand, connectionState } = usePixelStreaming()
   const [index, setIndex] = useState(0)
   const prev = () => {
     setIndex(i => {
@@ -27,7 +27,7 @@ export default function BottomAccordion({ variant = 'mobile' }: BottomAccordionP
       // Send selectClothing command for bottoms (map to 0-2 range)
       if (connectionState === 'connected') {
         const itemId = (newIndex % 2).toString()
-        sendFittingRoomCommand('selectClothing', { itemId, category: 'bottom' })
+        sendFitSpaceCommand('selectClothing', { itemId, category: 'bottom' })
         console.log(`Sent selectClothing command: itemId=${itemId}, category=bottom`)
       }
       return newIndex
@@ -39,7 +39,7 @@ export default function BottomAccordion({ variant = 'mobile' }: BottomAccordionP
       // Send selectClothing command for bottoms (map to 0-2 range)  
       if (connectionState === 'connected') {
         const itemId = (newIndex % 2).toString()
-        sendFittingRoomCommand('selectClothing', { itemId, category: 'bottom' })
+        sendFitSpaceCommand('selectClothing', { itemId, category: 'bottom' })
         console.log(`Sent selectClothing command: itemId=${itemId}, category=bottom`)
       }
       return newIndex

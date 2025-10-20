@@ -9,7 +9,7 @@ export default function PixelStreamingDemo() {
   const { 
     connectionState, 
     connectionError, 
-    sendFittingRoomCommand,
+    sendFitSpaceCommand,
     connect,
     disconnect 
   } = usePixelStreaming();
@@ -20,7 +20,7 @@ export default function PixelStreamingDemo() {
 
   const handleClothingSelect = (category: string, itemId: string) => {
     setSelectedClothing(`${category}-${itemId}`);
-    sendFittingRoomCommand('selectClothing', {
+    sendFitSpaceCommand('selectClothing', {
       category,
       itemId
     });
@@ -31,7 +31,7 @@ export default function PixelStreamingDemo() {
     const newRotation = cameraRotation + degrees;
     setCameraRotation(newRotation);
     
-    sendFittingRoomCommand('rotateCamera', {
+    sendFitSpaceCommand('rotateCamera', {
       direction,
       degrees: 45,
       totalRotation: newRotation
@@ -42,14 +42,14 @@ export default function PixelStreamingDemo() {
     const newZoom = Math.max(0.5, Math.min(3, cameraZoom + delta));
     setCameraZoom(newZoom);
     
-    sendFittingRoomCommand('zoomCamera', {
+    sendFitSpaceCommand('zoomCamera', {
       level: newZoom,
       delta
     });
   };
 
   const handleMorphAdjustment = (morphName: string, value: number) => {
-    sendFittingRoomCommand('morphAdjustment', {
+    sendFitSpaceCommand('morphAdjustment', {
       morphName,
       value,
       timestamp: Date.now()
@@ -166,10 +166,10 @@ export default function PixelStreamingDemo() {
 
           <h3>Actions</h3>
           <div>
-            <button onClick={() => sendFittingRoomCommand('resetAvatar')}>
+            <button onClick={() => sendFitSpaceCommand('resetAvatar')}>
               Reset Avatar
             </button>
-            <button onClick={() => sendFittingRoomCommand('saveLook', { timestamp: Date.now() })}>
+            <button onClick={() => sendFitSpaceCommand('saveLook', { timestamp: Date.now() })}>
               Save Current Look
             </button>
           </div>

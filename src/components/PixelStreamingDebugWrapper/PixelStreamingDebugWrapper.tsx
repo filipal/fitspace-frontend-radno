@@ -31,7 +31,7 @@ export const PixelStreamingWrapper = ({
     connect,
     disconnect,
     sendCommand,
-    sendFittingRoomCommand
+    sendFitSpaceCommand
   } = usePixelStreaming();
 
   const initialSettingsAppliedRef = useRef(false);
@@ -179,7 +179,7 @@ export const PixelStreamingWrapper = ({
     customData?: Record<string, unknown>
   ) => {
     const data = customData || { timestamp: Date.now() };
-    sendFittingRoomCommand(type, data);
+    sendFitSpaceCommand(type, data);
     console.log('Sent fitting room command via main context:', { type, data });
   };
 

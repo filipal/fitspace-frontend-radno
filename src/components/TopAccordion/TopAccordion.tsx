@@ -18,7 +18,7 @@ interface TopAccordionProps {
 }
 
 export default function TopAccordion({ variant = 'mobile' }: TopAccordionProps) {
-  const { sendFittingRoomCommand, connectionState } = usePixelStreaming()
+  const { sendFitSpaceCommand, connectionState } = usePixelStreaming()
   const [index, setIndex] = useState(0)
   const prev = () => {
     setIndex(i => {
@@ -26,7 +26,7 @@ export default function TopAccordion({ variant = 'mobile' }: TopAccordionProps) 
       // Send selectClothing command for tops (map to 0-2 range)
       if (connectionState === 'connected') {
         const itemId = (newIndex % 2).toString()
-        sendFittingRoomCommand('selectClothing', { itemId, category: 'top' })
+        sendFitSpaceCommand('selectClothing', { itemId, category: 'top' })
         console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
       }
       return newIndex
@@ -38,7 +38,7 @@ export default function TopAccordion({ variant = 'mobile' }: TopAccordionProps) 
       // Send selectClothing command for tops (map to 0-2 range)
       if (connectionState === 'connected') {
         const itemId = (newIndex % 2).toString()
-        sendFittingRoomCommand('selectClothing', { itemId, category: 'top' })
+        sendFitSpaceCommand('selectClothing', { itemId, category: 'top' })
         console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
       }
       return newIndex

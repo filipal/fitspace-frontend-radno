@@ -84,7 +84,7 @@ export default function ExtrasAccordion() {
   const { updateAvatarMeasurements } = useAvatarApi()
 
   // Pixel Streaming
-  const { sendFittingRoomCommand, connectionState } = usePixelStreaming()
+  const { sendFitSpaceCommand, connectionState } = usePixelStreaming()
   const simpleState = useMemo<'connected' | 'connecting' | 'disconnected'>(() => {
     return connectionState === 'connected'
       ? 'connected'
@@ -92,7 +92,7 @@ export default function ExtrasAccordion() {
         ? 'connecting'
         : 'disconnected'
   }, [connectionState])
-  const sendQueued = useQueuedUnreal(sendFittingRoomCommand, simpleState)
+  const sendQueued = useQueuedUnreal(sendFitSpaceCommand, simpleState)
 
   // Učitaj spremljene vrijednosti
   const saved = (currentAvatar?.quickModeSettings?.measurements ?? {}) as Record<string, unknown>

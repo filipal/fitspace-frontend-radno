@@ -44,7 +44,7 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
   const { currentAvatar } = useAvatarConfiguration()
   const { updateAvatarMeasurements } = useAvatarApi()
 
-  const { sendFittingRoomCommand, connectionState } = usePixelStreaming();
+  const { sendFitSpaceCommand, connectionState } = usePixelStreaming();
   const simpleState = useMemo<'connected' | 'connecting' | 'disconnected'>(() => {
     return connectionState === 'connected'
       ? 'connected'
@@ -53,7 +53,7 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
         : 'disconnected';
   }, [connectionState])
 
-const sendQueued = useQueuedUnreal(sendFittingRoomCommand, simpleState /*, 50 */)
+const sendQueued = useQueuedUnreal(sendFitSpaceCommand, simpleState /*, 50 */)
 
 
   // Paleta baza (svjetlije ←→ tamnije)

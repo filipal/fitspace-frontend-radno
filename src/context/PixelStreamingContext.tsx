@@ -128,7 +128,7 @@ interface PixelStreamingContextType {
   reconnect: () => Promise<void>;
   
   // Fitting room specific commands
-  sendFittingRoomCommand: (type: FittingRoomCommand['type'], data?: Record<string, unknown>) => void;
+  sendFitSpaceCommand: (type: FittingRoomCommand['type'], data?: Record<string, unknown>) => void;
   
   // Generic command sending (for advanced use)
   sendCommand: (command: string, data?: unknown) => void;
@@ -870,7 +870,8 @@ const connect = useCallback(async (overrideUrl?: string) => {
       debugSettings,
       application,
       connectionState,
-      notifyMessageHandlers
+      notifyMessageHandlers,
+      authData?.sessionId
     ]);
 
   const disconnect = useCallback(() => {
@@ -893,7 +894,7 @@ const connect = useCallback(async (overrideUrl?: string) => {
     await connect();
   }, [disconnect, connect]);
 
-  const sendFittingRoomCommand = useCallback((
+  const sendFitSpaceCommand = useCallback((
     type: FittingRoomCommand['type'],
     data?: Record<string, unknown>
   ) => {
@@ -1152,7 +1153,7 @@ const connect = useCallback(async (overrideUrl?: string) => {
       connect,
       disconnect,
       reconnect,
-      sendFittingRoomCommand,
+      sendFitSpaceCommand,
       sendCommand,
       forceResolutionMatch,
       onMessageReceived,

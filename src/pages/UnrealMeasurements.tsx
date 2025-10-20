@@ -257,7 +257,7 @@ export default function UnrealMeasurements() {
 
   const navigate = useNavigate()
   const location = useLocation()
-  const { sendFittingRoomCommand, connectionState, application, devMode } = usePixelStreaming()
+  const { sendFitSpaceCommand, connectionState, application, devMode } = usePixelStreaming()
 
   const { updateMorphValue, currentAvatar } = useAvatarConfiguration()
 
@@ -318,11 +318,11 @@ export default function UnrealMeasurements() {
     }
 
     const unrealValue = convertSliderValueToUnrealValue(sliderPercentage, morphAttribute)
-    sendFittingRoomCommand('updateMorph', {
+    sendFitSpaceCommand('updateMorph', {
       morphId: String(morphId),
       value: unrealValue
     })
-  }, [findMorphAttribute, sendFittingRoomCommand])
+  }, [findMorphAttribute, sendFitSpaceCommand])
 
   const locationState = location.state as { avatarId?: number | string; openSkinRight?: boolean } | null
   const avatarIdFromState = locationState?.avatarId
@@ -1122,22 +1122,22 @@ export default function UnrealMeasurements() {
     if (connectionState === 'connected') {
       switch (controlKey) {
         case 'rotate-left':
-          sendFittingRoomCommand('rotateCamera', { direction: 'left', speed: 1 })
+          sendFitSpaceCommand('rotateCamera', { direction: 'left', speed: 1 })
           console.log('Sent rotate left command')
           break
         case 'upload': // Second button - now sends zoom command
-          sendFittingRoomCommand('zoomCamera', { direction: 'in', amount: 0.1 })
+          sendFitSpaceCommand('zoomCamera', { direction: 'in', amount: 0.1 })
           console.log('Sent zoom command')
           break
         case 'fullscreen': // Middle button - pass for now
           console.log('Fullscreen button clicked - no command defined yet')
           break
         case 'download': // Fourth button - now sends moveCamera command
-          sendFittingRoomCommand('moveCamera', { direction: 'up', amount: 0.1 })
+          sendFitSpaceCommand('moveCamera', { direction: 'up', amount: 0.1 })
           console.log('Sent move camera command')
           break
         case 'rotate-right':
-          sendFittingRoomCommand('rotateCamera', { direction: 'right', speed: 1 })
+          sendFitSpaceCommand('rotateCamera', { direction: 'right', speed: 1 })
           console.log('Sent rotate right command')
           break
         default:

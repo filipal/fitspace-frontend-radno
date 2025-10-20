@@ -145,7 +145,7 @@ export function useAvatarLoader() {
       
       // Send command to Unreal Engine - will be queued if not connected
       console.log('Sending configureAvatar command to Unreal Engine...');
-      pixelStreaming.sendFittingRoomCommand('configureAvatar', unrealCommand.data);
+      pixelStreaming.sendFitSpaceCommand('configureAvatar', unrealCommand.data);
       
       if (pixelStreaming.connectionState === 'connected') {
         console.log('✅ Avatar command sent to Unreal Engine immediately (connected)');

@@ -14,7 +14,7 @@ type UECommand =
 type UECommandPayload = Record<string, unknown> | undefined
 
 export function useQueuedUnreal(
-  sendFittingRoomCommand: (cmd: UECommand, payload?: UECommandPayload) => void,
+  sendFitSpaceCommand: (cmd: UECommand, payload?: UECommandPayload) => void,
   connectionState: 'connected' | 'connecting' | 'disconnected',
   throttleMs = 50
 ) {
@@ -32,25 +32,25 @@ export function useQueuedUnreal(
       const current = { cmd, payload, label };
       timerRef.current = setTimeout(() => {
         const toSend = pendingRef.current ?? current;
-        sendFittingRoomCommand(toSend.cmd, toSend.payload);
+        sendFitSpaceCommand(toSend.cmd, toSend.payload);
         console.log(`Sent ${toSend.label} to Unreal`, toSend);
         pendingRef.current = null;
       }, throttleMs);
     },
-    [connectionState, sendFittingRoomCommand, throttleMs]
+    [connectionState, sendFitSpaceCommand, throttleMs]
   );
 
   useEffect(() => {
     if (connectionState === 'connected' && pendingRef.current) {
       const { cmd, payload, label } = pendingRef.current;
-      sendFittingRoomCommand(cmd, payload);
+      sendFitSpaceCommand(cmd, payload);
       console.log(`Flushed queued ${label} after reconnect`, { cmd, payload });
       pendingRef.current = null;
     }
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [connectionState, sendFittingRoomCommand]);
+  }, [connectionState, sendFitSpaceCommand]);
 
   return send;
 }

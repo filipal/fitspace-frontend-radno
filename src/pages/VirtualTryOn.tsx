@@ -68,7 +68,7 @@ const toCqw = (px: number) => (px === 0 ? '0' : `calc(${px} / ${DESIGN_WIDTH} * 
 
 export default function VirtualTryOn() {
   const navigate = useNavigate()
-  const { sendFittingRoomCommand, connectionState, application, devMode } = usePixelStreaming()
+  const { sendFitSpaceCommand, connectionState, application, devMode } = usePixelStreaming()
 
   // Connection is now managed by the persistent PixelStreamingContainer
   // No need for reconnection logic here - the container handles seamless transitions
@@ -124,7 +124,7 @@ export default function VirtualTryOn() {
       // Send selectClothing command for tops (map to 0-2 range)
       if (connectionState === 'connected') {
         const itemId = (newIndex % 2).toString()
-        sendFittingRoomCommand('selectClothing', { itemId, category: 'top' })
+        sendFitSpaceCommand('selectClothing', { itemId, category: 'top' })
         console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
       }
       return newIndex
@@ -136,7 +136,7 @@ export default function VirtualTryOn() {
       // Send selectClothing command for tops (map to 0-2 range)
       if (connectionState === 'connected') {
         const itemId = (newIndex % 2).toString()
-        sendFittingRoomCommand('selectClothing', { itemId, category: 'top' })
+        sendFitSpaceCommand('selectClothing', { itemId, category: 'top' })
         console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
       }
       return newIndex
@@ -147,7 +147,7 @@ export default function VirtualTryOn() {
       const newIndex = (i + bottomOptions.length - 1) % bottomOptions.length
       if (connectionState === 'connected') {
         const itemId = (newIndex % 2).toString()
-        sendFittingRoomCommand('selectClothing', { itemId, category: 'bottom' })
+        sendFitSpaceCommand('selectClothing', { itemId, category: 'bottom' })
         console.log(`Sent selectClothing command: itemId=${itemId}, category=bottom`)
       }
       return newIndex
@@ -158,7 +158,7 @@ export default function VirtualTryOn() {
       const newIndex = (i + 1) % bottomOptions.length
       if (connectionState === 'connected') {
         const itemId = (newIndex % 2).toString()
-        sendFittingRoomCommand('selectClothing', { itemId, category: 'bottom' })
+        sendFitSpaceCommand('selectClothing', { itemId, category: 'bottom' })
         console.log(`Sent selectClothing command: itemId=${itemId}, category=bottom`)
       }
       return newIndex
@@ -184,7 +184,7 @@ export default function VirtualTryOn() {
       // Send selectClothing command for tops (use index directly as it's already 0-2)
       if (connectionState === 'connected') {
         const itemId = newIndex.toString()
-        sendFittingRoomCommand('selectClothing', { itemId, category: 'top' })
+        sendFitSpaceCommand('selectClothing', { itemId, category: 'top' })
         console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
       }
       return newIndex
@@ -196,7 +196,7 @@ export default function VirtualTryOn() {
       // Send selectClothing command for bottoms (use index directly as it's already 0-2)
       if (connectionState === 'connected') {
         const itemId = newIndex.toString()
-        sendFittingRoomCommand('selectClothing', { itemId, category: 'bottom' })
+        sendFitSpaceCommand('selectClothing', { itemId, category: 'bottom' })
         console.log(`Sent selectClothing command: itemId=${itemId}, category=bottom`)
       }
       return newIndex
@@ -259,7 +259,7 @@ export default function VirtualTryOn() {
       // Send selectClothing command for tops (map to 0-2 range)
       if (connectionState === 'connected') {
         const itemId = (newIndex % 2).toString()
-        sendFittingRoomCommand('selectClothing', { itemId, category: 'top' })
+        sendFitSpaceCommand('selectClothing', { itemId, category: 'top' })
         console.log(`Sent selectClothing command: itemId=${itemId}, category=top`)
       }
       return newIndex
@@ -271,7 +271,7 @@ export default function VirtualTryOn() {
       // Send selectClothing command for bottoms (map to 0-2 range)
       if (connectionState === 'connected') {
         const itemId = (newIndex % 2).toString()
-        sendFittingRoomCommand('selectClothing', { itemId, category: 'bottom' })
+        sendFitSpaceCommand('selectClothing', { itemId, category: 'bottom' })
         console.log(`Sent selectClothing command: itemId=${itemId}, category=bottom`)
       }
       return newIndex
@@ -344,22 +344,22 @@ export default function VirtualTryOn() {
     if (connectionState === 'connected') {
       switch (controlKey) {
         case 'rotate-left':
-          sendFittingRoomCommand('rotateCamera', { direction: 'left', speed: 1 })
+          sendFitSpaceCommand('rotateCamera', { direction: 'left', speed: 1 })
           console.log('Sent rotate left command')
           break
         case 'upload':
-          sendFittingRoomCommand('zoomCamera', { direction: 'in', amount: 0.1 })
+          sendFitSpaceCommand('zoomCamera', { direction: 'in', amount: 0.1 })
           console.log('Sent zoom in command')
           break
         case 'fullscreen':
           console.log('Fullscreen button clicked - no command defined yet')
           break
         case 'download':
-          sendFittingRoomCommand('moveCamera', { direction: 'up', amount: 0.1 })
+          sendFitSpaceCommand('moveCamera', { direction: 'up', amount: 0.1 })
           console.log('Sent move camera command')
           break
         case 'rotate-right':
-          sendFittingRoomCommand('rotateCamera', { direction: 'right', speed: 1 })
+          sendFitSpaceCommand('rotateCamera', { direction: 'right', speed: 1 })
           console.log('Sent rotate right command')
           break
         default:
@@ -439,21 +439,21 @@ export default function VirtualTryOn() {
               onClick={() => {
                 // Send pixel streaming commands for rotate buttons
                 if (control.key === 'rotate-left' && connectionState === 'connected') {
-                  sendFittingRoomCommand('rotateCamera', { direction: 'left', speed: 1 })
+                  sendFitSpaceCommand('rotateCamera', { direction: 'left', speed: 1 })
                   console.log('Sent rotate left command')
                 }
                 if (control.key === 'rotate-right' && connectionState === 'connected') {
-                  sendFittingRoomCommand('rotateCamera', { direction: 'right', speed: 1 })
+                  sendFitSpaceCommand('rotateCamera', { direction: 'right', speed: 1 })
                   console.log('Sent rotate right command')
                 }
 
                 // Send pixel streaming commands for middle buttons
                 if (control.key === 'top-zoom' && connectionState === 'connected') {
-                  sendFittingRoomCommand('zoomCamera', { direction: 'in', amount: 0.1 })
+                  sendFitSpaceCommand('zoomCamera', { direction: 'in', amount: 0.1 })
                   console.log('Sent zoom camera command')
                 }
                 if (control.key === 'bottom-zoom' && connectionState === 'connected') {
-                  sendFittingRoomCommand('moveCamera', { direction: 'up', amount: 0.1 })
+                  sendFitSpaceCommand('moveCamera', { direction: 'up', amount: 0.1 })
                   console.log('Sent move camera command')
                 }
 
