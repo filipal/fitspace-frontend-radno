@@ -76,9 +76,9 @@ $design-w: 430;
 }
 
 .iconsThree {
-  --tri-tone-display: flex;
-  --tri-tone-gap: min(cqw(10), 10px);
-  --tri-tone-justify: space-between;
+  display: flex;
+  align-items: center;
+  gap: cqw(10);
 }
 
 .iconBtn {
@@ -269,7 +269,8 @@ $design-w: 430;
   }
 
   .iconsThree {
-    --tri-tone-gap: 24px;
+    flex-direction: column;
+    gap: 24px;
   }
 
   .iconLarge {

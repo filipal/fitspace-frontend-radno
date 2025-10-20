@@ -11,7 +11,6 @@ import { useAvatarConfiguration } from '../../context/AvatarConfigurationContext
 import { usePixelStreaming } from '../../context/PixelStreamingContext'
 import { useQueuedUnreal } from '../../services/queuedUnreal'
 import { getAvatarDisplayName } from '../../utils/avatarName'
-import TriToneSelector from '../TriToneSelector/TriToneSelector'
 
 interface SkinAccordionProps {
   defaultRightExpanded?: boolean
@@ -103,14 +102,7 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
   })()
 
   // UI state, lijevi dio (varijante ikonica), desni dio (slider)
-  const initialVariantIndex = (() => {
-    const raw = Number(savedMeas[SKIN_KEYS.variantIndex])
-    if (!Number.isFinite(raw)) return null
-    const clamped = Math.min(Math.max(raw, 0), 2)
-    return clamped
-  })()
-
-  const [focusedIndex, setFocusedIndex] = useState<number | null>(initialVariantIndex)
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null) // ili initialVariant ako želiš odmah “single” view
   const [rightExpanded, setRightExpanded] = useState(defaultRightExpanded)
 
   // Stanje za bazu, varijantu i “tone” (0–100)
@@ -266,6 +258,10 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
     setBaseIndex(nextBase)
   }
 
+  const onSelectIcon = (idx: number) => {
+    setFocusedIndex(idx)
+  }
+
   const onStartDrag = (startEvent: PointerEvent) => {
     const bar = barRef.current
     if (!bar) return
@@ -299,21 +295,27 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
             <img src={ArrowLeft} alt="Prev" />
           </button>
 
-          <TriToneSelector
-            className={focusedIndex === null ? styles.iconsThree : styles.iconOne}
-            icons={[Skin1, Skin2, Skin3]}
-            colors={[light, base, dark]}
-            selectedIndex={focusedIndex}
-            defaultIndex={1}
-            responsiveOrientation={{ breakpoint: 1024, above: 'vertical', below: 'horizontal' }}
-            collapseToSelected={focusedIndex !== null}
-            buttonClassName={styles.iconBtn}
-            iconClassNames={[styles.iconSmall, styles.iconLarge, styles.iconSmall]}
-            collapsedIconClassName={styles.iconLarge}
-            onSelect={(idx) => {
-              setFocusedIndex((prev) => (prev === idx ? null : idx))
-            }}
-          />
+          {focusedIndex === null ? (
+            <div className={styles.iconsThree}>
+              <button type="button" className={styles.iconBtn} onClick={() => onSelectIcon(0)}>
+                <Skin1 className={styles.iconSmall} style={{ color: lightenHex(basePalette[baseIndex]) }} />
+              </button>
+              <button type="button" className={styles.iconBtn} onClick={() => onSelectIcon(1)}>
+                <Skin2 className={styles.iconLarge} style={{ color: basePalette[baseIndex] }} />
+              </button>
+              <button type="button" className={styles.iconBtn} onClick={() => onSelectIcon(2)}>
+                <Skin3 className={styles.iconSmall} style={{ color: darkenHex(basePalette[baseIndex]) }} />
+              </button>
+            </div>
+          ) : (
+            <div className={styles.iconOne}>
+              <button type="button" className={styles.iconBtn} onClick={() => setFocusedIndex(null)}>
+                {focusedIndex === 0 && <Skin1 className={styles.iconLarge} style={{ color: lightenHex(base) }} />}
+                {focusedIndex === 1 && <Skin2 className={styles.iconLarge} style={{ color: base }} />}
+                {focusedIndex === 2 && <Skin3 className={styles.iconLarge} style={{ color: darkenHex(base) }} />}
+              </button>
+            </div>
+          )}
 
           <button type="button" className={styles.arrow} onClick={handleNext}>
             <img src={ArrowRight} alt="Next" />

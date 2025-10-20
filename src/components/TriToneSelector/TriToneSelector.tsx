@@ -98,7 +98,7 @@ export function TriToneSelector({
       return () => media.removeEventListener('change', handler)
     }
 
-   const legacyMedia = media as LegacyMediaQueryList
+    const legacyMedia = media as LegacyMediaQueryList
     legacyMedia.addListener?.(handler)
     return () => legacyMedia.removeListener?.(handler)
   }, [responsiveOrientation, orientation])
