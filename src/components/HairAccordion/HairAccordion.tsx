@@ -203,11 +203,14 @@ export default function HairAccordion() {
             className={styles.colorSwatches}
             icons={[Skin1Icon, Skin1Icon, Skin1Icon]}
             colors={[light, base, dark]}
+            selectedIndex={1}
             orientation="vertical"
             interactive={false}
             buttonClassName={styles.swatch}
             buttonClassNames={[styles.swatchSide, styles.swatchCenter, styles.swatchSide]}
             iconClassName={styles.previewIcon}
+            collapseToSelected
+            responsiveCollapse={{ breakpoint: 1024, above: false, below: true }}
           />
 
           <button type="button" className={styles.vArrow} onClick={nextColor} aria-label="Lighter">

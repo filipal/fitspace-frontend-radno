@@ -5,6 +5,11 @@ type Orientation = 'horizontal' | 'vertical'
 
 type ClassTuple = [string | undefined, string | undefined, string | undefined]
 
+type LegacyMediaQueryList = MediaQueryList & {
+  addListener?: (listener: (event: MediaQueryListEvent) => void) => void
+  removeListener?: (listener: (event: MediaQueryListEvent) => void) => void
+}
+
 interface TriToneSelectorProps {
   icons: [
     ComponentType<SVGProps<SVGSVGElement>>,
@@ -31,6 +36,11 @@ interface TriToneSelectorProps {
   iconClassName?: string
   iconClassNames?: ClassTuple
   collapsedIconClassName?: string
+  responsiveCollapse?: {
+    breakpoint: number
+    above: boolean
+    below?: boolean
+  }
 }
 
 const classList = (...tokens: Array<string | false | null | undefined>) =>
@@ -54,10 +64,12 @@ export function TriToneSelector({
   iconClassName,
   iconClassNames,
   collapsedIconClassName,
+  responsiveCollapse,
 }: TriToneSelectorProps) {
   const resolvedIndex = selectedIndex ?? defaultIndex ?? 0
 
   const [currentOrientation, setCurrentOrientation] = useState<Orientation>(orientation)
+  const [collapseSelected, setCollapseSelected] = useState<boolean>(collapseToSelected)
 
   useEffect(() => {
     if (!responsiveOrientation) {
@@ -81,16 +93,49 @@ export function TriToneSelector({
 
     const handler = (event: MediaQueryListEvent) => apply(event.matches)
 
-    if (typeof media.addEventListener === 'function') {
+    if (typeof media.addEventListener === 'function' && typeof media.removeEventListener === 'function') {
       media.addEventListener('change', handler)
       return () => media.removeEventListener('change', handler)
     }
 
-    media.addListener(handler)
-    return () => media.removeListener(handler)
+   const legacyMedia = media as LegacyMediaQueryList
+    legacyMedia.addListener?.(handler)
+    return () => legacyMedia.removeListener?.(handler)
   }, [responsiveOrientation, orientation])
 
-  const shouldCollapse = collapseToSelected && selectedIndex != null
+  useEffect(() => {
+    if (!responsiveCollapse) {
+      setCollapseSelected(collapseToSelected)
+      return
+    }
+
+    if (typeof window === 'undefined' || !window.matchMedia) {
+      setCollapseSelected(collapseToSelected)
+      return
+    }
+
+    const { breakpoint, above, below = collapseToSelected } = responsiveCollapse
+    const media = window.matchMedia(`(min-width: ${breakpoint}px)`)
+
+    const apply = (matches: boolean) => {
+      setCollapseSelected(matches ? above : below)
+    }
+
+    apply(media.matches)
+
+    const handler = (event: MediaQueryListEvent) => apply(event.matches)
+
+    if (typeof media.addEventListener === 'function' && typeof media.removeEventListener === 'function') {
+      media.addEventListener('change', handler)
+      return () => media.removeEventListener('change', handler)
+    }
+
+    const legacyMedia = media as LegacyMediaQueryList
+    legacyMedia.addListener?.(handler)
+    return () => legacyMedia.removeListener?.(handler)
+  }, [responsiveCollapse, collapseToSelected])
+
+  const shouldCollapse = collapseSelected && selectedIndex != null
 
   const indicesToRender = useMemo(() => {
     if (shouldCollapse && selectedIndex != null) {

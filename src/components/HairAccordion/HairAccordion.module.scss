@@ -98,7 +98,7 @@ $design-w: 430;
   display: flex;
   --tri-tone-display: flex;
   --tri-tone-direction: column;
-  --tri-tone-gap: cqw(6);
+  --tri-tone-gap: cqw(22);
   --tri-tone-justify: center;
   --tri-tone-align: center;
   align-items: center;
@@ -282,7 +282,7 @@ $design-w: 430;
     block-size: 189px;
     width: 55px;
     height: 189px;
-    --tri-tone-gap: 0;
+    --tri-tone-gap: 22px;
     --tri-tone-justify: space-between;
   }
 
