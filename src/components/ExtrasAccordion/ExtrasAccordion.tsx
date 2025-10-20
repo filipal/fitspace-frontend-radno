@@ -24,6 +24,17 @@ const STYLE_COUNTS: Record<ExtraType, number> = {
   Hats: 5,
 }
 
+// Unreal očekuje IDs u rasponu 0-11, pri čemu 11 predstavlja "bez dodatka".
+// UI i backend mogu koristiti proizvoljne duljine kolekcija, ali prije slanja u UE
+// mapiramo odabrani indeks na dopušteni raspon kako bismo izbjegli slučajno slanje
+// izvan raspona. Ako je korisnik odabrao zadnji element u kolekciji, šaljemo ID 11.
+const STYLE_ID_RANGE = { min: 0, max: 11 } as const
+
+// Unreal paleta je pojednostavljena na dva ID-a: 0 = neutralne/metalne nijanse,
+// 1 = sve ostale boje. UI i backend i dalje mogu koristiti proširenu paletu za vizualni
+// odabir, ali prije slanja u UE mapiramo indeks na pripadajući ID.
+const COLOR_ID_RANGE = { min: 0, max: 1 } as const
+
 // Ključevi koje spremamo u quickModeSettings.measurements (samo brojevi!)
 const EXTRA_KEYS = {
   typeIndex: 'extraTypeIndex',
@@ -79,6 +90,32 @@ function buildPalette(): string[] {
 
 const PALETTE = buildPalette()
 
+const NEUTRAL_COLOR_COUNT = 6 // prvih 6 nijansi su neutralne; sve ostalo spada u "accent"
+
+const mapStyleIndexToUnreal = (
+  index: number,
+  totalForType: number,
+): number => {
+  if (totalForType <= 0) return STYLE_ID_RANGE.max
+
+  const safeIndex = Math.max(0, Math.min(index, totalForType - 1))
+
+  if (safeIndex === totalForType - 1) {
+    return STYLE_ID_RANGE.max
+  }
+
+  const relativeId = Math.min(safeIndex, STYLE_ID_RANGE.max - 1)
+
+  // Ako ikada dobijemo više od 11 stilova po tipu, morat ćemo dogovoriti novu mapu.
+  // Za sada jednostavno mapiramo 0 → 0, 1 → 1, ... unutar raspona.
+  return STYLE_ID_RANGE.min + relativeId
+}
+
+const mapColorIndexToUnreal = (index: number): number => {
+  const safeIndex = Math.max(0, Math.min(index, PALETTE.length - 1))
+  return safeIndex < NEUTRAL_COLOR_COUNT ? COLOR_ID_RANGE.min : COLOR_ID_RANGE.max
+}
+
 export default function ExtrasAccordion() {
   const { currentAvatar } = useAvatarConfiguration()
   const { updateAvatarMeasurements } = useAvatarApi()
@@ -125,6 +162,18 @@ export default function ExtrasAccordion() {
   const totalForActive = STYLE_COUNTS[activeType]
   const styleIndex = styleByType[activeType]
   const colorIndex = colorByType[activeType]
+  const unrealStyleId = useMemo(
+    () => mapStyleIndexToUnreal(styleIndex, totalForActive),
+    [styleIndex, totalForActive],
+  )
+  const unrealColorId = useMemo(
+    () => mapColorIndexToUnreal(colorIndex),
+    [colorIndex],
+  )
+  const isNoneSelected = useMemo(
+    () => totalForActive > 0 && styleIndex === totalForActive - 1,
+    [styleIndex, totalForActive],
+  )
   const base = useMemo(() => PALETTE[colorIndex], [colorIndex])
   const leftColor = useMemo(
     () => PALETTE[(colorIndex + PALETTE.length - 1) % PALETTE.length],
@@ -187,7 +236,10 @@ export default function ExtrasAccordion() {
   }, [flushSave])
 
   // helper za packed boju (0xRRGGBB)
-  const colorPacked = useMemo(() => parseInt(base.slice(1), 16) || 0, [base])
+  const colorPacked = useMemo(
+    () => (isNoneSelected ? 0 : parseInt(base.slice(1), 16) || 0),
+    [base, isNoneSelected],
+  )
 
   // --- Slanje u Unreal (queued) ---
   const pushToUnreal = useCallback(() => {
@@ -196,14 +248,14 @@ export default function ExtrasAccordion() {
       'updateExtras',
       {
         type: activeType.toLowerCase(), // 'glasses' | 'earrings' | 'hats'
-        styleIndex,
-        colorIndex,
+        styleIndex: unrealStyleId,
+        colorIndex: unrealColorId,
         color: base,         // hex za UE
         colorPacked,         // pogodnije za materijale ako treba broj
       },
       'extras update'
     )
-  }, [activeType, styleIndex, colorIndex, base, colorPacked, sendQueued])
+  }, [activeType, unrealStyleId, unrealColorId, base, colorPacked, sendQueued])
 
   // Svaka promjena (tip, stil, boja) -> UE + backend (debounce)
   useEffect(() => {
