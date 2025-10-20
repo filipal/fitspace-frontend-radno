@@ -12,6 +12,9 @@ import { DEFAULT_POST_LOGIN_ROUTE, POST_LOGIN_REDIRECT_KEY } from '../config/aut
 
 const MOBILE_DESIGN_WIDTH = 430
 const MOBILE_DESIGN_HEIGHT = 932
+const DESKTOP_DESIGN_WIDTH = 1440
+const DESKTOP_DESIGN_HEIGHT = 1024
+const DESKTOP_BREAKPOINT = 1024
 const TOP_SPACER_HEIGHT = 60
 const GAP_SEGMENTS_HEIGHT = 18 + 35 + 28 + 15 + 15 + 142 + 21
 const BACKGROUND_SEGMENT_HEIGHT = 386
@@ -176,6 +179,7 @@ function computeLayoutMetrics(viewportHeight: number): LayoutMetrics {
 }
 
 type LoginPageCssVars = CSSProperties & {
+  '--fs-design-width'?: string
   '--fs-design-height'?: string
   '--fs-design-safe-height'?: string
   '--fs-viewport-height'?: string
@@ -238,6 +242,44 @@ export default function LoginPage() {
   }, [])
 
   const { cssVars: layoutVars, canvasHeight } = useMemo(() => {
+    if (viewportWidth >= DESKTOP_BREAKPOINT) {
+      const scaleWidth = clamp(
+        viewportWidth / DESKTOP_DESIGN_WIDTH,
+        0,
+        Number.POSITIVE_INFINITY
+      )
+
+      const scaleHeight = clamp(
+        viewportHeight / DESKTOP_DESIGN_HEIGHT,
+        0,
+        Number.POSITIVE_INFINITY
+      )
+
+      const viewportScale = Math.min(scaleWidth, scaleHeight, 1)
+      const canvasWidth = DESKTOP_DESIGN_WIDTH * viewportScale
+      const canvasHeight = DESKTOP_DESIGN_HEIGHT * viewportScale
+      const pageMaxHeight = Math.min(canvasHeight, viewportHeight)
+
+      const cssVars: LoginPageCssVars = {
+        '--fs-design-width': `${DESKTOP_DESIGN_WIDTH}px`,
+        '--fs-design-height': `${DESKTOP_DESIGN_HEIGHT}px`,
+        '--fs-design-safe-height': `${DESKTOP_DESIGN_HEIGHT}px`,
+        '--fs-viewport-height': `${viewportHeight.toFixed(3)}px`,
+        '--fs-scale-width': scaleWidth.toFixed(5),
+        '--fs-scale-height': scaleHeight.toFixed(5),
+        '--fs-scale': viewportScale.toFixed(5),
+        '--fs-canvas-width': `${canvasWidth.toFixed(3)}px`,
+        '--fs-canvas-height': `${canvasHeight.toFixed(3)}px`,
+        '--fs-page-max-height': `${pageMaxHeight.toFixed(3)}px`,
+        '--login-density': '1',
+        '--login-gap-scale': '1',
+        '--login-top-scale': '1',
+        '--login-bg-scale': '1'
+      }
+
+      return { cssVars, canvasHeight }
+    }
+
     const { topScale, gapScale, bgScale, designHeight } = computeLayoutMetrics(
       viewportHeight
     )
@@ -262,8 +304,9 @@ export default function LoginPage() {
     const canvasWidth = MOBILE_DESIGN_WIDTH * viewportScale
     const canvasHeight = designHeight * viewportScale
     const pageMaxHeight = Math.min(canvasHeight, viewportHeight)
-  
+
     const cssVars: LoginPageCssVars = {
+      '--fs-design-width': `${MOBILE_DESIGN_WIDTH}px`,
       '--fs-design-height': `${designHeight.toFixed(3)}px`,
       '--fs-design-safe-height': `${designHeight.toFixed(3)}px`,
       '--fs-viewport-height': `${viewportHeight.toFixed(3)}px`,
@@ -282,7 +325,8 @@ export default function LoginPage() {
     return { cssVars, canvasHeight }
   }, [viewportHeight, viewportWidth])
 
-  const needsScroll = canvasHeight > viewportHeight + 0.5
+  const needsScroll =
+    viewportWidth >= DESKTOP_BREAKPOINT || canvasHeight > viewportHeight + 0.5
   const pageClassName = needsScroll
     ? `${styles.page} ${styles.pageScrollable}`
     : styles.page

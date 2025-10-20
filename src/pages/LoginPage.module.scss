@@ -66,8 +66,8 @@
   inline-size: 100%;
 }
 
-/* Desktop: sadržaj centriran, skrol prema potrebi, dimenzije “u stvarnim px” (ne rastu preko dizajna) */
-@media (min-width: 1200px) {
+/* Desktop / tablet landscape: sadržaj centriran, skrol prema potrebi, dimenzije “u stvarnim px” (ne rastu preko dizajna) */
+@media (min-width: 1024px) {
   .page  { block-size: auto; min-block-size: 100dvh; overflow-y: auto; }
   .body  { align-items: flex-start; }
   .canvas { padding: 0; margin: 0; }
@@ -178,7 +178,7 @@
 /* ——— WEB PANEL I SADRŽAJ ——— */
 
 /* Mobile: sve “u dizajn px” + skala drži istočni prikaz */
-@media (max-width: 1199.98px) {
+@media (max-width: 1023.98px) {
   .canvas {position: relative; padding: 0; }
   .backButton {
     left: auto !important;
