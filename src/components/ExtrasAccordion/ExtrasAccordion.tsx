@@ -12,6 +12,7 @@ import { useAvatarConfiguration } from '../../context/AvatarConfigurationContext
 import { usePixelStreaming } from '../../context/PixelStreamingContext'
 import { useQueuedUnreal } from '../../services/queuedUnreal'
 import { getAvatarDisplayName } from '../../utils/avatarName'
+import TriToneSelector from '../TriToneSelector/TriToneSelector'
 
 // Tipovi “extra” itema
 const EXTRA_TYPES = ['Earrings', 'Glasses', 'Hats'] as const
@@ -158,6 +159,32 @@ export default function ExtrasAccordion() {
   }
   const [colorByType, setColorByType] = useState<Record<ExtraType, number>>(initialColorByType)
 
+  const [showDesktopSwatches, setShowDesktopSwatches] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.matchMedia('(min-width: 1024px)').matches
+  })
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return undefined
+
+    const media = window.matchMedia('(min-width: 1024px)')
+    const update = (event: MediaQueryList | MediaQueryListEvent) => {
+      setShowDesktopSwatches(event.matches)
+    }
+
+    update(media)
+
+    if (typeof media.addEventListener === 'function') {
+      const handler = (event: MediaQueryListEvent) => update(event)
+      media.addEventListener('change', handler)
+      return () => media.removeEventListener('change', handler)
+    }
+
+    const legacyHandler = (event: MediaQueryListEvent) => update(event)
+    media.addListener(legacyHandler)
+    return () => media.removeListener(legacyHandler)
+  }, [])
+
   // izvedenice za aktivni tip
   const totalForActive = STYLE_COUNTS[activeType]
   const styleIndex = styleByType[activeType]
@@ -193,10 +220,22 @@ export default function ExtrasAccordion() {
   const nextStyle = () =>
     setStyleByType(prev => ({ ...prev, [activeType]: (styleIndex + 1) % totalForActive }))
 
-  const prevColor = () =>
-    setColorByType(prev => ({ ...prev, [activeType]: (colorIndex + PALETTE.length - 1) % PALETTE.length }))
-  const nextColor = () =>
-    setColorByType(prev => ({ ...prev, [activeType]: (colorIndex + 1) % PALETTE.length }))
+  const prevColor = useCallback(
+    () =>
+      setColorByType(prev => ({
+        ...prev,
+        [activeType]: (colorIndex + PALETTE.length - 1) % PALETTE.length,
+      })),
+    [activeType, colorIndex],
+  )
+  const nextColor = useCallback(
+    () =>
+      setColorByType(prev => ({
+        ...prev,
+        [activeType]: (colorIndex + 1) % PALETTE.length,
+      })),
+    [activeType, colorIndex],
+  )
 
   // --- Debounced spremanje u backend ---
   const saveTimerRef = useRef<number | null>(null)
@@ -364,17 +403,18 @@ export default function ExtrasAccordion() {
           </div>
 
           {/* DESKTOP: tri swatcha (40,50,40) */}
-          <div className={styles.colorSwatches}>
-            <div className={`${styles.swatch} ${styles.swatchSide}`}>
-              <Skin1Icon className={styles.previewIcon} style={{ color: leftColor }} />
-            </div>
-            <div className={`${styles.swatch} ${styles.swatchCenter}`}>
-              <Skin1Icon className={styles.previewIcon} style={{ color: base }} />
-            </div>
-            <div className={`${styles.swatch} ${styles.swatchSide}`}>
-              <Skin1Icon className={styles.previewIcon} style={{ color: rightColor }} />
-            </div>
-          </div>
+          {showDesktopSwatches && (
+            <TriToneSelector
+              className={styles.colorSwatches}
+              icons={[Skin1Icon, Skin1Icon, Skin1Icon]}
+              colors={[leftColor, base, rightColor]}
+              orientation="vertical"
+              interactive={false}
+              buttonClassName={styles.swatch}
+              buttonClassNames={[styles.swatchSide, styles.swatchCenter, styles.swatchSide]}
+              iconClassName={styles.previewIcon}
+            />
+          )}
 
           <button type="button" className={styles.vArrow} onClick={nextColor} aria-label="Next color">
             <img src={ArrowDown} alt="Down" />

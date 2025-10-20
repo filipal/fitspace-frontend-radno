@@ -96,10 +96,13 @@ $design-w: 430;
 .colorSwatches {
   inline-size: 100%;
   display: flex;
-  flex-direction: column;
+  --tri-tone-display: flex;
+  --tri-tone-direction: column;
+  --tri-tone-gap: cqw(6);
+  --tri-tone-justify: center;
+  --tri-tone-align: center;
   align-items: center;
   justify-content: center;
-  gap: cqw(6);
 }
 
 .swatch {
@@ -110,8 +113,13 @@ $design-w: 430;
   justify-content: center;
 }
 
-.swatchSide { display: none; }
-.swatchCenter { display: flex; }
+.swatchSide {
+  display: none;
+}
+
+.swatchCenter {
+  display: flex;
+}
 
 /* Vertikalne strelice (30 × 22) */
 .vArrow {
@@ -274,11 +282,8 @@ $design-w: 430;
     block-size: 189px;
     width: 55px;
     height: 189px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0;
+    --tri-tone-gap: 0;
+    --tri-tone-justify: space-between;
   }
 
   .swatch {

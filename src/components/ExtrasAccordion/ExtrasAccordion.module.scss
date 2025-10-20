@@ -10,6 +10,7 @@ $design-w: 430;
 }
 .colorSwatches {
   display: none;           /* <-- sakrij 3-swatch layout na mobitelu */
+  --tri-tone-display: none;
 }
 
 /* 430 × 120 */
@@ -401,7 +402,7 @@ $design-w: 430;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    gap: 2px;
+    /* gap: 2px; */
     box-sizing: border-box;
   }
 
@@ -416,7 +417,12 @@ $design-w: 430;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    gap: 0;
+    gap: 8px;
+    --tri-tone-display: flex;
+    --tri-tone-direction: column;
+    --tri-tone-gap: 8px;
+    --tri-tone-justify: space-between;
+    --tri-tone-align: center;
   }
 
   .swatch {
@@ -433,7 +439,6 @@ $design-w: 430;
     block-size: 45px;
     width: 45px;
     height: 45px;
-    align-items: center;
   }
 
   .swatchCenter {
@@ -442,7 +447,6 @@ $design-w: 430;
     block-size: 55px;
     width: 55px;
     height: 55px;
-    align-items: center;
   }
 
   .swatchSide .previewIcon {

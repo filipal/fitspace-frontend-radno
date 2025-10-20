@@ -1,0 +1,52 @@
+@function cqw($px, $base: 430) {
+  @return calc((#{$px} / #{$base}) * 100cqw);
+}
+
+.root {
+  --tri-tone-display: inline-flex;
+  --tri-tone-direction: row;
+  --tri-tone-justify: center;
+  --tri-tone-align: center;
+
+  display: var(--tri-tone-display, inline-flex);
+  flex-direction: var(--tri-tone-direction, row);
+  justify-content: var(--tri-tone-justify, center);
+  align-items: var(--tri-tone-align, center);
+  gap: var(--tri-tone-gap, 0);
+}
+
+.horizontal {
+  --tri-tone-direction: row;
+}
+
+.vertical {
+  --tri-tone-direction: column;
+}
+
+.collapsed {
+  /* Hook za specifične stilove kad je prikaz sveden na jedan element */
+}
+
+.iconButton {
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iconGraphic {
+  inline-size: 100%;
+  block-size: 100%;
+  display: block;
+}
+
+.nonInteractive {
+  pointer-events: none;
+}
+
+.nonInteractive .iconButton {
+  cursor: default;
+}

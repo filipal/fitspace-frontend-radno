@@ -12,6 +12,7 @@ import { useAvatarConfiguration } from '../../context/AvatarConfigurationContext
 import { usePixelStreaming } from '../../context/PixelStreamingContext'
 import { useQueuedUnreal } from '../../services/queuedUnreal'
 import { getAvatarDisplayName } from '../../utils/avatarName'
+import TriToneSelector from '../TriToneSelector/TriToneSelector'
 
 // Paleta boja kose (ograničena na dopuštenih 0-7 ID-eva)
 const HAIR_COLORS = [
@@ -84,10 +85,14 @@ export default function HairAccordion() {
   const nextStyle = () =>
     setStyleIndex(i => (i + 1) % HAIR_STYLE_PRESETS.length)
 
-  const prevColor = () =>
-    setColorIndex(i => (i + HAIR_COLORS.length - 1) % HAIR_COLORS.length)
-  const nextColor = () =>
-    setColorIndex(i => (i + 1) % HAIR_COLORS.length)
+  const prevColor = useCallback(
+    () => setColorIndex(i => (i + HAIR_COLORS.length - 1) % HAIR_COLORS.length),
+    [],
+  )
+  const nextColor = useCallback(
+    () => setColorIndex(i => (i + 1) % HAIR_COLORS.length),
+    [],
+  )
 
   // --- Debounced spremanje u backend ---
   const saveTimerRef = useRef<number | null>(null)
@@ -194,17 +199,16 @@ export default function HairAccordion() {
             <img src={ArrowUp} alt="Up" />
           </button>
 
-          <div className={styles.colorSwatches}>
-            <div className={`${styles.swatch} ${styles.swatchSide}`}>
-              <Skin1Icon className={styles.previewIcon} style={{ color: light }} />
-            </div>
-            <div className={`${styles.swatch} ${styles.swatchCenter}`}>
-              <Skin1Icon className={styles.previewIcon} style={{ color: base }} />
-            </div>
-            <div className={`${styles.swatch} ${styles.swatchSide}`}>
-              <Skin1Icon className={styles.previewIcon} style={{ color: dark }} />
-            </div>
-          </div>
+          <TriToneSelector
+            className={styles.colorSwatches}
+            icons={[Skin1Icon, Skin1Icon, Skin1Icon]}
+            colors={[light, base, dark]}
+            orientation="vertical"
+            interactive={false}
+            buttonClassName={styles.swatch}
+            buttonClassNames={[styles.swatchSide, styles.swatchCenter, styles.swatchSide]}
+            iconClassName={styles.previewIcon}
+          />
 
           <button type="button" className={styles.vArrow} onClick={nextColor} aria-label="Lighter">
             <img src={ArrowDown} alt="Down" />
