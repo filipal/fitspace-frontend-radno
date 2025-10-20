@@ -13,14 +13,20 @@ import { usePixelStreaming } from '../../context/PixelStreamingContext'
 import { useQueuedUnreal } from '../../services/queuedUnreal'
 import { getAvatarDisplayName } from '../../utils/avatarName'
 
-// Paleta boja kose
+// Paleta boja kose (ograničena na dopuštenih 0-7 ID-eva)
 const HAIR_COLORS = [
-  '#000000', '#3B2A1A', '#5C4033', '#8B5A2B', '#A0522D', '#C68642',
-  '#D2B48C', '#E6CBA8', '#F1E3B1', '#6B4E71', '#4B5320',
-]
+  { id: 0, hex: '#000000' }, // jet black
+  { id: 1, hex: '#3B2A1A' }, // dark brown
+  { id: 2, hex: '#5C4033' }, // medium brown
+  { id: 3, hex: '#8B5A2B' }, // chestnut
+  { id: 4, hex: '#A0522D' }, // auburn
+  { id: 5, hex: '#C68642' }, // caramel
+  { id: 6, hex: '#D2B48C' }, // sandy blonde
+  { id: 7, hex: '#F1E3B1' }, // platinum blonde
+] as const
 
-// (primjer) preset ID-evi frizura — zamijeni stvarnim ako imaš
-const HAIR_STYLE_PRESETS = [0, 1, 2, 3, 4] as const
+// Preset ID-evi frizura u dopuštenom rasponu 0-7
+const HAIR_STYLE_PRESETS = [0, 1, 2, 3, 4, 5, 6, 7] as const
 
 // Ključevi koje čuvamo u quickModeSettings.measurements (samo brojevi!)
 const HAIR_KEYS = {
@@ -65,7 +71,10 @@ export default function HairAccordion() {
   const [colorIndex, setColorIndex] = useState<number>(initialColorIndex)
 
   // izvedene boje (svjetlija/baza/tamnija) za vizual
-  const base = useMemo(() => HAIR_COLORS[colorIndex], [colorIndex])
+  const colorOption = useMemo(() => {
+    return HAIR_COLORS[colorIndex] ?? HAIR_COLORS[0]
+  }, [colorIndex])
+  const base = useMemo(() => colorOption.hex, [colorOption])
   const light = useMemo(() => lightenHex(base), [base])
   const dark = useMemo(() => darkenHex(base), [base])
 
@@ -118,31 +127,43 @@ export default function HairAccordion() {
   }, [flushSave])
 
   // --- Slanje u Unreal (queued + throttled kroz useQueuedUnreal) ---
-  const pushToUnreal = useCallback(() => {
-    const colorHex = base
-    sendQueued(
-      'updateHair',
-      {
-        styleIndex,
-        stylePreset: String(HAIR_STYLE_PRESETS[styleIndex]), // ako UE želi konkretan ID
-        colorIndex,
-        color: colorHex, // hex samo za UE (ne spremamo u backend)
-      },
-      'hair update'
-    )
-  }, [base, colorIndex, styleIndex, sendQueued])
+  const styleId = useMemo(() => HAIR_STYLE_PRESETS[styleIndex] ?? HAIR_STYLE_PRESETS[0], [styleIndex])
 
   // Svaka promjena ide i u UE i u backend (debounce)
   useEffect(() => {
-    pushToUnreal()
+    if (styleId === undefined) return
+    sendQueued(
+      'updateHair',
+      {
+        mode: 'style',
+        id: styleId,
+      },
+      'hair style update'
+    )
+  }, [sendQueued, styleId])
 
+  const { id: colorId } = colorOption
+
+  useEffect(() => {
+    sendQueued(
+      'updateHair',
+      {
+        mode: 'color',
+        id: colorId,
+        hex: base,
+      },
+      'hair color update'
+    )
+  }, [base, colorId, sendQueued])
+
+  useEffect(() => {
     const colorPacked = parseInt(base.slice(1), 16) // 0xRRGGBB kao broj
     scheduleSave({
       [HAIR_KEYS.styleIndex]: styleIndex,
       [HAIR_KEYS.colorIndex]: colorIndex,
       hairColorPacked: Number.isFinite(colorPacked) ? colorPacked : 0,
     })
-  }, [styleIndex, colorIndex, base, pushToUnreal, scheduleSave])
+  }, [styleIndex, colorIndex, base, scheduleSave])
 
   // --- Render ---
   const prevIdx = (styleIndex + HAIR_STYLE_PRESETS.length - 1) % HAIR_STYLE_PRESETS.length

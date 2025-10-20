@@ -164,12 +164,16 @@ export interface FittingRoomCommandPayloads {
     tonePercent?: number;
     brightness: number;
   };
-  updateHair: {
-    styleIndex: number;
-    stylePreset?: string;
-    colorIndex: number;
-    color: string;
-  };
+  updateHair:
+    | {
+        mode: 'style';
+        id: number;
+      }
+    | {
+        mode: 'color';
+        id: number;
+        hex?: string;
+      };
   updateExtras: {
     type: string;
     styleIndex: number;
