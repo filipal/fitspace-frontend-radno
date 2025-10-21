@@ -34,6 +34,68 @@
   container-type: inline-size;
 }
 
+.forceDesktopLayout {
+  padding-inline: 64px;
+  padding-block: 64px 0;
+  align-items: center;
+
+  .content {
+    inline-size: 100%;
+    max-inline-size: var(--loggedin-content-width, 454px);
+    flex: 0 0 auto;
+    align-items: center;
+  }
+
+  .listArea {
+    gap: var(--loggedin-section-gap, 32px);
+    margin-block-end: 0;
+    inline-size: 100%;
+    align-items: center;
+  }
+
+  .avatarList {
+    gap: var(--loggedin-list-gap, 20px);
+    min-block-size: var(--loggedin-list-max-height, 280px);
+    max-block-size: var(--loggedin-list-max-height, 280px);
+    align-items: center;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+
+  .avatarItem {
+    inline-size: var(--loggedin-desktop-item-width, 454px);
+    min-block-size: var(--loggedin-list-item-height, 40px);
+    block-size: var(--loggedin-list-item-height, 40px);
+    gap: 15px;
+  }
+
+  .avatarName {
+    inline-size: var(--loggedin-desktop-name-width, 422px);
+    block-size: var(--loggedin-list-item-height, 40px);
+    font-size: 18px;
+    padding: 0;
+  }
+
+  .iconButton {
+    inline-size: var(--loggedin-desktop-icon-width, 17px);
+    block-size: var(--loggedin-list-item-height, 40px);
+  }
+
+  .iconButton img {
+    inline-size: var(--loggedin-desktop-icon-width, 17px);
+    block-size: var(--loggedin-desktop-icon-width, 17px);
+  }
+
+  .footer {
+    margin: 32px 0 0;
+    padding: 0;
+  }
+
+  .avatarList::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 .content {
   inline-size: min(100%, var(--loggedin-content-width, 100%));
   display: flex;
@@ -222,49 +284,49 @@
 
   .content {
     inline-size: 100%;
-    max-inline-size: 454px;
+    max-inline-size: var(--loggedin-content-width, 454px);
     flex: 0 0 auto;
     align-items: center;
   }
 
   .listArea {
-    gap: 32px;
+    gap: var(--loggedin-section-gap, 32px);
     margin-block-end: 0;
     inline-size: 100%;
     align-items: center;
   }
 
   .avatarList {
-    gap: 20px;
-    min-block-size: 280px;
-    max-block-size: 280px;
+    gap: var(--loggedin-list-gap, 20px);
+    min-block-size: var(--loggedin-list-max-height, 280px);
+    max-block-size: var(--loggedin-list-max-height, 280px);
     align-items: center;
     overflow-y: auto;
     scrollbar-width: none;
   }
 
   .avatarItem {
-    inline-size: 454px;
-    min-block-size: 40px;
-    block-size: 40px;
+    inline-size: var(--loggedin-desktop-item-width, 454px);
+    min-block-size: var(--loggedin-list-item-height, 40px);
+    block-size: var(--loggedin-list-item-height, 40px);
     gap: 15px;
   }
 
   .avatarName {
-    inline-size: 422px;
-    block-size: 40px;
+    inline-size: var(--loggedin-desktop-name-width, 422px);
+    block-size: var(--loggedin-list-item-height, 40px);
     font-size: 18px;
     padding: 0;
   }
 
   .iconButton {
-    inline-size: 17px;
-    block-size: 40px;
+    inline-size: var(--loggedin-desktop-icon-width, 17px);
+    block-size: var(--loggedin-list-item-height, 40px);
   }
 
   .iconButton img {
-    inline-size: 17px;
-    block-size: 17px;
+    inline-size: var(--loggedin-desktop-icon-width, 17px);
+    block-size: var(--loggedin-desktop-icon-width, 17px);
   }
 
   .footer {
@@ -325,4 +387,19 @@
       calc(23px * var(--loggedin-font-scale, 1))
     );
   }
+}
+
+.forceDesktopHeader {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  height: 71px;
+  padding-inline: 35px 22px;
+  padding-top: 0;
+  padding-bottom: 0;
+  align-items: center;
+}
+
+.forceDesktopHeader > * {
+  align-self: center;
 }

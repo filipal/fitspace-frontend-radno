@@ -14,7 +14,15 @@ const USE_LOADING_ROUTE = import.meta.env.VITE_USE_LOADING_ROUTE === 'true';
 const MOBILE_DESIGN_WIDTH = 430
 const DESKTOP_DESIGN_WIDTH = 1440
 const DESKTOP_BREAKPOINT = 768
+const DESKTOP_HEADER_BASE_WIDTH = 1024
 const MAX_VISIBLE_AVATARS = 5
+
+const TABLET_DESIGN_HEIGHT = 1024
+const TABLET_FOOTER_OFFSET = 82
+
+const DESKTOP_CONTENT_WIDTH = 454
+const DESKTOP_ICON_SIZE = 17
+const DESKTOP_ITEM_GAP = 15
 
 const MIN_DENSITY_SCALE = 0.75
 const MIN_TOP_SCALE = 0.6
@@ -242,6 +250,9 @@ type LoggedInPageCssVars = CSSProperties & {
   '--loggedin-font-scale'?: string
   '--loggedin-footer-button-height'?: string
   '--loggedin-inline-padding'?: string
+  '--loggedin-desktop-item-width'?: string
+  '--loggedin-desktop-name-width'?: string
+  '--loggedin-desktop-icon-width'?: string
 }
 
 function readViewportSize(): ViewportSize {
@@ -255,6 +266,19 @@ function readViewportSize(): ViewportSize {
   }
 
   return { width: window.innerWidth, height: window.innerHeight }
+}
+
+function readPointerIsCoarse(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return true
+  }
+
+  try {
+    return window.matchMedia('(pointer: coarse)').matches
+  } catch (error) {
+    console.warn('Failed to evaluate pointer media query', error)
+    return true
+  }
 }
 
 export default function LoggedInPage() {
@@ -284,6 +308,11 @@ export default function LoggedInPage() {
   const [viewportSize, setViewportSize] = useState<ViewportSize>(() => readViewportSize())
   const { width: viewportWidth, height: viewportHeight } = viewportSize
   const loadButtonRef = useRef<HTMLButtonElement | null>(null)
+  const [hasCoarsePointer, setHasCoarsePointer] = useState<boolean>(() => readPointerIsCoarse())
+  const isDesktopWidth = viewportWidth >= DESKTOP_BREAKPOINT
+  const shouldUseDesktopLayout = isDesktopWidth || !hasCoarsePointer
+  const isForcedDesktopWidth = shouldUseDesktopLayout && !isDesktopWidth
+  const forceDesktopHeader = shouldUseDesktopLayout && viewportWidth < DESKTOP_HEADER_BASE_WIDTH
 
   // 1) Na mount: očisti “zadnje učitan” i lokalni state
   useEffect(() => {
@@ -325,6 +354,46 @@ export default function LoggedInPage() {
       window.removeEventListener('resize', handleResize)
       viewport?.removeEventListener('resize', handleResize)
     }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return
+    }
+
+    let mediaQuery: MediaQueryList
+    try {
+      mediaQuery = window.matchMedia('(pointer: coarse)')
+    } catch (error) {
+      console.warn('Failed to create pointer media query', error)
+      return
+    }
+
+    const updatePointer = () => {
+      setHasCoarsePointer(mediaQuery.matches)
+    }
+
+    updatePointer()
+
+    const handleChange = (event: MediaQueryListEvent) => {
+      setHasCoarsePointer(event.matches)
+    }
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange)
+      return () => {
+        mediaQuery.removeEventListener('change', handleChange)
+      }
+    }
+
+    if (typeof mediaQuery.addListener === 'function') {
+      mediaQuery.addListener(handleChange)
+      return () => {
+        mediaQuery.removeListener(handleChange)
+      }
+    }
+
+    return undefined
   }, [])
 
   // NOVO
@@ -447,8 +516,16 @@ export default function LoggedInPage() {
   }, [loaderState.isLoading, loaderState.stage])
 
   const { cssVars: layoutVars, canvasHeight } = useMemo(() => {
-    if (viewportWidth >= DESKTOP_BREAKPOINT) {
+    const isTouchDesktopLayout = isDesktopWidth && hasCoarsePointer
+
+    if (shouldUseDesktopLayout) {
       const designWidth = Math.min(DESKTOP_DESIGN_WIDTH, viewportWidth)
+      const contentWidth = Math.min(DESKTOP_CONTENT_WIDTH, designWidth)
+      const desktopItemWidth = contentWidth
+      const desktopNameWidth = Math.max(
+        desktopItemWidth - (DESKTOP_ICON_SIZE + DESKTOP_ITEM_GAP),
+        0
+      )
       const visibleAvatarCount = Math.min(
         Math.max(avatars.length, 1),
         MAX_VISIBLE_AVATARS
@@ -470,13 +547,23 @@ export default function LoggedInPage() {
           : 0
       const loaderBannerHeight = hasLoaderBanner ? 48 : 0
       const errorBannerHeight = hasErrorBanner ? 48 : 0
+      const baseFooterOffset = isTouchDesktopLayout
+        ? (viewportHeight >= TABLET_DESIGN_HEIGHT
+            ? TABLET_FOOTER_OFFSET
+            : TABLET_FOOTER_OFFSET * clamp(
+                viewportHeight / TABLET_DESIGN_HEIGHT,
+                MIN_BOTTOM_SCALE,
+                1
+              ))
+        : DESKTOP_METRICS.footerOffset
+
       const designHeight =
         DESKTOP_METRICS.headerToListGap +
         listHeight +
         dynamicSectionGap +
         loaderBannerHeight +
         errorBannerHeight +
-        DESKTOP_METRICS.footerOffset
+        baseFooterOffset
       const scaleWidth = clamp(
         viewportWidth / (designWidth || 1),
         0,
@@ -499,7 +586,17 @@ export default function LoggedInPage() {
         '--fs-scale': '1',
         '--fs-canvas-width': `${designWidth.toFixed(3)}px`,
         '--fs-canvas-height': `${designHeight.toFixed(3)}px`,
-        '--fs-page-max-height': `${Math.max(designHeight, viewportHeight).toFixed(3)}px`
+        '--fs-page-max-height': `${Math.max(designHeight, viewportHeight).toFixed(3)}px`,
+        '--loggedin-bottom-gap': `${baseFooterOffset.toFixed(3)}px`,
+        '--loggedin-section-gap': `${DESKTOP_METRICS.sectionGap}px`,
+        '--loggedin-content-width': `${contentWidth.toFixed(3)}px`,
+        '--loggedin-list-gap': `${DESKTOP_METRICS.listGap}px`,
+        '--loggedin-list-item-height': `${DESKTOP_METRICS.listItemHeight}px`,
+        '--loggedin-list-max-height': `${listHeight.toFixed(3)}px`,
+        '--loggedin-icon-size': `${DESKTOP_ICON_SIZE}px`,
+        '--loggedin-desktop-item-width': `${desktopItemWidth.toFixed(3)}px`,
+        '--loggedin-desktop-name-width': `${desktopNameWidth.toFixed(3)}px`,
+        '--loggedin-desktop-icon-width': `${DESKTOP_ICON_SIZE}px`
       }
 
       const totalPageHeight =
@@ -578,25 +675,33 @@ export default function LoggedInPage() {
     loaderState.error,
     loaderState.isLoading,
     fetchError,
-    deleteError
+    deleteError,
+    hasCoarsePointer,
+    shouldUseDesktopLayout,
+    isDesktopWidth
   ])
 
   const needsScroll = canvasHeight > viewportHeight + 0.5
   const pageClassName = needsScroll
     ? `${styles.page} ${styles.pageScrollable}`
     : styles.page
+  const canvasClassName = isForcedDesktopWidth
+    ? `${styles.canvasInner} ${styles.forceDesktopLayout}`
+    : styles.canvasInner
+  const headerClassName = forceDesktopHeader ? styles.forceDesktopHeader : undefined
 
   return (
     <ResponsivePage
       style={layoutVars}
       className={pageClassName}
       bodyClassName={styles.body}
-      contentClassName={styles.canvasInner}
+      contentClassName={canvasClassName}
       header={
         <Header
           title="Welcome back!"
           variant="dark"
           onExit={() => navigate('/')}
+          className={headerClassName}
           rightContent={
             <span className={styles.count}>
               {avatars.length}/{maxAvatars}
