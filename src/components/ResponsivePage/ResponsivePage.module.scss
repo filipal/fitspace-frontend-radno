@@ -39,7 +39,7 @@
 
 .header,
 .footer {
-  inline-size: min(100%, var(--fs-desktop-width));
+  inline-size: min(100%, var(--fs-desktop-width, 100%));
   flex-shrink: 0;
   display: flex;
   justify-content: center;
@@ -47,7 +47,7 @@
 }
 
 .body {
-  inline-size: min(100%, var(--fs-desktop-width));
+  inline-size: min(100%, var(--fs-desktop-width, 100%));
   flex: 1 1 auto;
   display: flex;
   justify-content: center;

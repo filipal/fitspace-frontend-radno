@@ -39,23 +39,12 @@ import HeatMapButton from '../assets/heat-map-button.svg'
 import TensionMapButton from '../assets/tension-map-button.svg'
 import {
   type ClothingCategory,
+  getClothingCatalog,
   getClothingIdentifierForIndex,
   getClothingSubCategoryList,
 } from '../constants/clothing'
 import ArrowUp from '../assets/arrow-up.svg'
 import ArrowDown from '../assets/arrow-down.svg'
-import HoodieImg from '../assets/hoodie.png'
-import MilitaryJacketImg from '../assets/military-jacket.png'
-import Jacket1Img from '../assets/jacket-1.png'
-import Jacket2Img from '../assets/jacket-2.png'
-import Jacket3Img from '../assets/jacket-3.png'
-import Jacket4Img from '../assets/jacket-4.png'
-import BossDyn01Img from '../assets/boss-dyn01.png'
-import Pants1Img from '../assets/pants-1.png'
-import Pants2Img from '../assets/pants-2.png'
-import Pants3Img from '../assets/pants-3.png'
-import Pants4Img from '../assets/pants-4.png'
-import Pants5Img from '../assets/pants-5.png'
 import { useQueuedUnreal } from '../services/queuedUnreal'
 
 // View state structure
@@ -211,9 +200,7 @@ export default function VirtualTryOn() {
     setLowerCenterIdx((i) => {
       const newIndex = (i + dir + lowerCategories.length) % lowerCategories.length
       // Pošalji selectClothing prema odabranoj potkategoriji donjeg dijela
-      if (connectionState === 'connected') {
       sendClothingSelection('bottom', newIndex, lowerCategories[newIndex])
-      }
       return newIndex
     })
   }
@@ -257,15 +244,16 @@ export default function VirtualTryOn() {
     fullBodyDetailCategories[(fullBodyDetailCenterIdx + 1) % fullBodyDetailCategories.length]
 
   // Right-side image selectors (jackets & pants) single image display with arrows
-  const jacketImages = [
-    HoodieImg,
-    MilitaryJacketImg,
-    Jacket1Img,
-    Jacket2Img,
-    Jacket3Img,
-    Jacket4Img,
-  ]
-  const pantsImages = [BossDyn01Img, Pants1Img, Pants2Img, Pants3Img, Pants4Img, Pants5Img]
+  const { jacketImages, pantsImages } = useMemo(() => {
+    const catalog = getClothingCatalog()
+    const topAssets = catalog.top.map((item) => item.asset)
+    const bottomAssets = catalog.bottom.map((item) => item.asset)
+
+    return {
+      jacketImages: topAssets.length > 0 ? topAssets : [''],
+      pantsImages: bottomAssets.length > 0 ? bottomAssets : [''],
+    }
+  }, [])
   const [jacketIndex, setJacketIndex] = useState(0)
   const [pantsIndex, setPantsIndex] = useState(0)
   const cycleJackets = (dir: 1 | -1) => {

@@ -588,6 +588,8 @@ export default function LoggedInPage() {
 
   return (
     <ResponsivePage
+      useInnerContainers
+      desktopMaxWidth={1440}
       style={layoutVars}
       className={pageClassName}
       bodyClassName={styles.body}
