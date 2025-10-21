@@ -23,9 +23,9 @@ export default function BodyScanInfo() {
   const isMobile = useIsMobile(1024);
   useEffect(() => {
     if (!isMobile) {
-      navigate('/scan-qr-bodyscan', { replace: true, state: { mode: 'face' } });
+      navigate('/scan-qr-bodyscan', { replace: true, state: { mode: 'body' } })
     }
-  }, [isMobile, navigate]);
+  }, [isMobile, navigate])
 
   if (!isMobile) return null; // spriječi flicker
 

@@ -39,9 +39,9 @@ export default function BodyScan({ onClose }: { onClose?: () => void }) {
   const isMobile = useIsMobile(1024);
   useEffect(() => {
     if (!isMobile) {
-      navigate('/scan-qr-bodyscan', { replace: true, state: { mode: 'face' } });
+      navigate('/scan-qr-bodyscan', { replace: true, state: { mode: 'body' } })
     }
-  }, [isMobile, navigate]);
+  }, [isMobile, navigate])
 
   // Resetira naslijeđeni scroll + isključi auto-restoration
   useEffect(() => {

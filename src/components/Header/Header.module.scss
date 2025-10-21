@@ -1,26 +1,28 @@
 /* header file */
 .appHeader {
+  --header-scale: clamp(0.65, var(--fs-scale-height, 1), 1);
+  --header-padding-start: clamp(18px, calc(35px * var(--header-scale)), 35px);
+  --header-padding-end: clamp(12px, calc(16px * var(--header-scale)), 16px);
+  --header-gap: clamp(10px, calc(16px * var(--header-scale)), 16px);
+  --header-padding-bottom: clamp(8px, calc(15px * var(--header-scale)), 15px);
+
   width: 100%;
   max-width: var(--page-max-width);
-  height: 101px;                         /* dizajn visina */
+  height: clamp(40px, calc(71.31px * var(--header-scale)), 71.31px);
   margin: 0 auto;
   position: relative;
-  /* Omogući stabilno cqw skaliranje u odnosu na sam header */
   container-type: inline-size;
 
-  /* bočni guteri + safe-area */
-  padding-inline: calc(16px + env(safe-area-inset-left));
-  padding-inline-start: calc(35px + env(safe-area-inset-left));
-  padding-inline-end:   calc(16px + env(safe-area-inset-right));
-
-  /* poravnaj sve na dno i daj 15px baseline */
+  padding-inline-start: calc(var(--header-padding-start) + env(safe-area-inset-left));
+  padding-inline-end: calc(var(--header-padding-end) + env(safe-area-inset-right));
+  padding-bottom: var(--header-padding-bottom);
   padding-top: 0;
-  padding-bottom: 15px;
+  padding-top: 0;
 
   display: grid;
-  grid-template-columns: auto 1fr auto;  /* [exit] [title] [right] */
-  column-gap: 16px;
-  align-items: end;                      /* dno */
+  grid-template-columns: auto 1fr auto; /* [exit] [title] [right] */
+  column-gap: var(--header-gap);
+  align-items: end;
   box-sizing: border-box;
 
   color: #000;
@@ -32,7 +34,7 @@
     left: 50%;
     width: 100vw;
     transform: translateX(-50%);
-    border-bottom: 1px solid #000;
+    border-bottom: calc(0.706009px * var(--header-scale)) solid #000;
   }
 }
 .appHeader > * {
@@ -44,7 +46,11 @@
   background: transparent !important;
 }
 .exitButton img,
-.infoButton img { width: 20px; height: 20px; display: block; }
+.infoButton img {
+  width: clamp(16px, calc(20px * var(--header-scale)), 20px);
+  height: clamp(16px, calc(20px * var(--header-scale)), 20px);
+  display: block;
+}
 .light {
   color: #fff;
 
@@ -77,15 +83,10 @@
 }
 
 .exitButton { grid-column: 1; justify-self: start; }
-.rightBox   { grid-column: 3; justify-self: end; display: inline-flex; gap: 12px; }
-.rightBox > *:last-child { margin-inline-end: 14px; } /* 16 + 14 = 30px do ruba */
-
-@supports (container-type: inline-size) and (width: 1cqw) {
-  .rightBox > *:last-child { margin-inline-end: 3.2558cqw; } /* 14px @ 430 */
-/*   @media (min-width: 1024px) {
-    .rightBox > *:last-child { margin-inline-end: 14px; }
-  } */
-}
+.rightBox   { grid-column: 3; justify-self: end; display: inline-flex; gap: clamp(8px, calc(12px * var(--header-scale)), 12px); }
+.rightBox > *:last-child {
+  margin-inline-end: clamp(8px, calc(14px * var(--header-scale)), 14px);
+} /* 16 + 14 = 30px do ruba */
 
 .exitButton:focus,
 .exitButton:active {
@@ -104,42 +105,16 @@
 .headerTitle {
   grid-column: 2;
   justify-self: center;
-  padding-inline: 8px;
+  padding-inline: clamp(6px, calc(8px * var(--header-scale)), 8px);
   font-family: 'Outfit', sans-serif;
   font-weight: 400;
-  font-size: 23px;
+  font-size: clamp(16px, calc(23px * var(--header-scale)), 23px);
   line-height: 1;
   color: inherit;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-
-/* Container-query skala (npr. stranice s container-type: inline-size) */
-@supports (container-type: inline-size) and (width: 1cqw) {
-  .appHeader {
-    /* 101 / 430 * 100 */
-    height: clamp(70px, 23.4884cqw, 101px);
-    padding-top: 0;
-    padding-bottom: clamp(10.3961px, 3.4884cqw, 15px);
-    /* Skalarni bočni odmaci: 35px i 16px → cqw + safe-area */
-    padding-inline-start: calc(8.1395cqw + env(safe-area-inset-left));  /* 35/430 */
-    padding-inline-end:   calc(3.7209cqw + env(safe-area-inset-right)); /* 16/430 */
-    column-gap: 3.7209cqw; /* 16/430 */
-  }
-  .headerTitle {
-    /* 23 / 430 * 100 = 5.3488cqw, sa zaštitnim granicama */
-    font-size: clamp(16px, 5.3488cqw, 23px);
-  }
-  .exitButton img,
-  .infoButton img {
-    /* 20 / 430 * 100 = 4.6512cqw */
-    width: clamp(16px, 4.6512cqw, 20px);
-    height: clamp(16px, 4.6512cqw, 20px);
-    display: block;
-  }
 }
 
 /* WEB ≥ 600px: fiksna visina 71px, svi elementi centrirani po visini */

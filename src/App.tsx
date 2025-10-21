@@ -91,8 +91,22 @@ export default function App() {
                       </GuestAccessibleRoute>
                     )}
                   />
-                  <Route path="/body-scan" element={<PrivateRoute><BodyScan /></PrivateRoute>} />
-                  <Route path="/face-scan" element={<PrivateRoute><FaceScan /></PrivateRoute>} />
+                  <Route
+                    path="/body-scan"
+                    element={(
+                      <GuestAccessibleRoute allowGuestWithoutTokens>
+                        <BodyScan />
+                      </GuestAccessibleRoute>
+                    )}
+                  />
+                  <Route
+                    path="/face-scan"
+                    element={(
+                      <GuestAccessibleRoute allowGuestWithoutTokens>
+                        <FaceScan />
+                      </GuestAccessibleRoute>
+                    )}
+                  />
                   <Route
                     path="/unreal-measurements"
                     element={<GuestAccessibleRoute><UnrealMeasurements /></GuestAccessibleRoute>}
@@ -101,7 +115,14 @@ export default function App() {
                     path="/virtual-try-on"
                     element={<GuestAccessibleRoute><VirtualTryOn /></GuestAccessibleRoute>}
                   />
-                  <Route path="/scan-qr-bodyscan" element={<PrivateRoute><ScanQRBodyscan /></PrivateRoute>} />
+                  <Route
+                    path="/scan-qr-bodyscan"
+                    element={(
+                      <GuestAccessibleRoute allowGuestWithoutTokens>
+                        <ScanQRBodyscan />
+                      </GuestAccessibleRoute>
+                    )}
+                  />
                   <Route path="/body-photos-check" element={<PrivateRoute><BodyPhotosCheck /></PrivateRoute>} />
                   <Route path="/face-photos-check" element={<PrivateRoute><FacePhotosCheck /></PrivateRoute>} />
                   <Route
