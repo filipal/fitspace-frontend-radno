@@ -12,11 +12,18 @@ import ResponsivePage from '../components/ResponsivePage/ResponsivePage'
 const USE_LOADING_ROUTE = import.meta.env.VITE_USE_LOADING_ROUTE === 'true';
 
 const MOBILE_DESIGN_WIDTH = 430
-const MOBILE_DESIGN_HEIGHT = 932
 const DESKTOP_DESIGN_WIDTH = 1440
 const DESKTOP_DESIGN_HEIGHT = 1024
 const DESKTOP_BREAKPOINT = 768
 const MAX_VISIBLE_AVATARS = 5
+
+const MIN_DENSITY_SCALE = 0.75
+const MIN_TOP_SCALE = 0.6
+const MIN_SECTION_SCALE = 0.6
+const MIN_LIST_GAP_SCALE = 0.65
+const MIN_LIST_ITEM_SCALE = 0.88
+const MIN_BOTTOM_SCALE = 0.6
+const MOBILE_SAFE_VISIBLE_HEIGHT = 658
 
 const MOBILE_METRICS = {
   headerToListGap: 24,
@@ -46,9 +53,179 @@ interface ViewportSize {
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
 
+type SegmentKey = 'top' | 'section' | 'listGap' | 'listItem' | 'bottom'
+
+interface SegmentDefinition {
+  key: SegmentKey
+  base: number
+  minScale: number
+  shrinkWeight: number
+}
+
+interface SegmentState extends SegmentDefinition {
+  scale: number
+}
+
+interface LayoutMetrics {
+  designHeight: number
+  topScale: number
+  sectionScale: number
+  listGapScale: number
+  listItemScale: number
+  bottomScale: number
+}
+
+const FLEXIBLE_SEGMENTS: readonly SegmentDefinition[] = [
+  {
+    key: 'top',
+    base: MOBILE_METRICS.headerToListGap,
+    minScale: MIN_TOP_SCALE,
+    shrinkWeight: 0.9
+  },
+  {
+    key: 'section',
+    base: MOBILE_METRICS.sectionGap,
+    minScale: MIN_SECTION_SCALE,
+    shrinkWeight: 0.8
+  },
+  {
+    key: 'listGap',
+    base: MOBILE_METRICS.listGap * (MAX_VISIBLE_AVATARS - 1),
+    minScale: MIN_LIST_GAP_SCALE,
+    shrinkWeight: 1
+  },
+  {
+    key: 'listItem',
+    base: MOBILE_METRICS.listItemHeight * MAX_VISIBLE_AVATARS,
+    minScale: MIN_LIST_ITEM_SCALE,
+    shrinkWeight: 0.7
+  },
+  {
+    key: 'bottom',
+    base: MOBILE_METRICS.footerOffset,
+    minScale: MIN_BOTTOM_SCALE,
+    shrinkWeight: 0.85
+  }
+]
+
+const FULL_FLEXIBLE_HEIGHT = FLEXIBLE_SEGMENTS.reduce((sum, segment) => sum + segment.base, 0)
+
+const MIN_FLEXIBLE_HEIGHT = FLEXIBLE_SEGMENTS.reduce(
+  (sum, segment) => sum + segment.base * segment.minScale,
+  0
+)
+
+function computeLayoutMetrics(viewportHeight: number): LayoutMetrics {
+  const targetFlexibleHeight = clamp(
+    viewportHeight,
+    MIN_FLEXIBLE_HEIGHT,
+    FULL_FLEXIBLE_HEIGHT
+  )
+
+  const workingSegments: SegmentState[] = FLEXIBLE_SEGMENTS.map((segment) => ({
+    ...segment,
+    scale: 1
+  }))
+
+  let currentFlexibleHeight = FULL_FLEXIBLE_HEIGHT
+
+  for (let iteration = 0; iteration < 6; iteration += 1) {
+    if (currentFlexibleHeight <= targetFlexibleHeight + 0.01) {
+      break
+    }
+
+    const shrinkable = workingSegments.filter(
+      (segment) => segment.scale > segment.minScale + 0.0001
+    )
+
+    if (shrinkable.length === 0) {
+      break
+    }
+
+    const totalWeightedCapacity = shrinkable.reduce((sum, segment) => {
+      const capacity = (segment.scale - segment.minScale) * segment.base
+      return sum + capacity * segment.shrinkWeight
+    }, 0)
+
+    if (totalWeightedCapacity <= 0) {
+      break
+    }
+
+    const excess = currentFlexibleHeight - targetFlexibleHeight
+    let consumedHeight = 0
+
+    shrinkable.forEach((segment) => {
+      const capacity = (segment.scale - segment.minScale) * segment.base
+      if (capacity <= 0) {
+        return
+      }
+
+      const weightedCapacity = capacity * segment.shrinkWeight
+      const shrinkHeight = Math.min(
+        capacity,
+        (excess * weightedCapacity) / totalWeightedCapacity
+      )
+
+      if (shrinkHeight <= 0) {
+        return
+      }
+
+      segment.scale -= shrinkHeight / segment.base
+      consumedHeight += shrinkHeight
+    })
+
+    if (consumedHeight <= 0.001) {
+      break
+    }
+
+    currentFlexibleHeight -= consumedHeight
+  }
+
+  let topScale = MIN_TOP_SCALE
+  let sectionScale = MIN_SECTION_SCALE
+  let listGapScale = MIN_LIST_GAP_SCALE
+  let listItemScale = MIN_LIST_ITEM_SCALE
+  let bottomScale = MIN_BOTTOM_SCALE
+  let flexibleHeight = 0
+
+  workingSegments.forEach((segment) => {
+    const finalScale = clamp(segment.scale, segment.minScale, 1)
+    flexibleHeight += segment.base * finalScale
+
+    switch (segment.key) {
+      case 'top':
+        topScale = finalScale
+        break
+      case 'section':
+        sectionScale = finalScale
+        break
+      case 'listGap':
+        listGapScale = finalScale
+        break
+      case 'listItem':
+        listItemScale = finalScale
+        break
+      case 'bottom':
+        bottomScale = finalScale
+        break
+    }
+  })
+
+  return {
+    designHeight: flexibleHeight,
+    topScale,
+    sectionScale,
+    listGapScale,
+    listItemScale,
+    bottomScale
+  }
+}
+
+
 type LoggedInPageCssVars = CSSProperties & {
   '--fs-design-width'?: string
   '--fs-design-height'?: string
+  '--fs-design-safe-height'?: string
   '--fs-viewport-height'?: string
   '--fs-scale-width'?: string
   '--fs-scale-height'?: string
@@ -64,11 +241,13 @@ type LoggedInPageCssVars = CSSProperties & {
   '--loggedin-list-item-height'?: string
   '--loggedin-list-max-height'?: string
   '--loggedin-icon-size'?: string
+  '--loggedin-font-scale'?: string
+  '--loggedin-footer-button-height'?: string
 }
 
 function readViewportSize(): ViewportSize {
   if (typeof window === 'undefined') {
-    return { width: MOBILE_DESIGN_WIDTH, height: MOBILE_DESIGN_HEIGHT }
+    return { width: MOBILE_DESIGN_WIDTH, height: MOBILE_SAFE_VISIBLE_HEIGHT }
   }
 
   const viewport = window.visualViewport
@@ -308,11 +487,35 @@ export default function LoggedInPage() {
         '--loggedin-list-gap': `${DESKTOP_METRICS.listGap}px`,
         '--loggedin-list-item-height': `${DESKTOP_METRICS.listItemHeight}px`,
         '--loggedin-list-max-height': `${listMaxHeight}px`,
-        '--loggedin-icon-size': `${DESKTOP_METRICS.iconSize}px`
-      }
+        '--loggedin-icon-size': `${DESKTOP_METRICS.iconSize}px`,
+        '--loggedin-font-scale': '1',
+        '--loggedin-footer-button-height': '50px'
+    }
+
 
       return { cssVars, canvasHeight: designHeight }
     }
+
+    const {
+      designHeight,
+      topScale,
+      sectionScale,
+      listGapScale,
+      listItemScale,
+      bottomScale
+    } = computeLayoutMetrics(viewportHeight)
+
+    const density = clamp(
+      viewportHeight / MOBILE_SAFE_VISIBLE_HEIGHT,
+      MIN_DENSITY_SCALE,
+      1
+    )
+
+    const listItemHeight = MOBILE_METRICS.listItemHeight * listItemScale
+    const listGap = MOBILE_METRICS.listGap * listGapScale
+    const listMaxHeight =
+      listItemHeight * MAX_VISIBLE_AVATARS + listGap * (MAX_VISIBLE_AVATARS - 1)
+    const iconSize = MOBILE_METRICS.iconSize * listItemScale
 
     const scaleWidth = clamp(
       viewportWidth / (MOBILE_DESIGN_WIDTH || 1),
@@ -320,37 +523,38 @@ export default function LoggedInPage() {
       Number.POSITIVE_INFINITY
     )
 
-    const scaleHeight = clamp(
-      viewportHeight / (MOBILE_DESIGN_HEIGHT || 1),
-      0,
-      Number.POSITIVE_INFINITY
-    )
+    const scaleHeight = designHeight > 0
+      ? clamp(viewportHeight / designHeight, 0, Number.POSITIVE_INFINITY)
+      : 1
 
     const viewportScale = Math.min(scaleWidth, scaleHeight, 1)
     const canvasWidth = MOBILE_DESIGN_WIDTH * viewportScale
-    const canvasHeight = MOBILE_DESIGN_HEIGHT * viewportScale
-    const listMaxHeight =
-      MOBILE_METRICS.listItemHeight * MAX_VISIBLE_AVATARS +
-      MOBILE_METRICS.listGap * (MAX_VISIBLE_AVATARS - 1)
+    const canvasHeight = designHeight * viewportScale
+    const pageMaxHeight = Math.min(canvasHeight, viewportHeight)
+
+    const footerButtonHeight = 50 * bottomScale
 
     const cssVars: LoggedInPageCssVars = {
       '--fs-design-width': `${MOBILE_DESIGN_WIDTH}px`,
-      '--fs-design-height': `${MOBILE_DESIGN_HEIGHT}px`,
+      '--fs-design-height': `${designHeight.toFixed(3)}px`,
+      '--fs-design-safe-height': `${designHeight.toFixed(3)}px`,
       '--fs-viewport-height': `${viewportHeight.toFixed(3)}px`,
       '--fs-scale-width': scaleWidth.toFixed(5),
       '--fs-scale-height': scaleHeight.toFixed(5),
       '--fs-scale': viewportScale.toFixed(5),
       '--fs-canvas-width': `${canvasWidth.toFixed(3)}px`,
       '--fs-canvas-height': `${canvasHeight.toFixed(3)}px`,
-      '--fs-page-max-height': `${Math.max(canvasHeight, viewportHeight).toFixed(3)}px`,
-      '--loggedin-top-gap': `${MOBILE_METRICS.headerToListGap}px`,
-      '--loggedin-bottom-gap': `${MOBILE_METRICS.footerOffset}px`,
-      '--loggedin-section-gap': `${MOBILE_METRICS.sectionGap}px`,
+      '--fs-page-max-height': `${pageMaxHeight.toFixed(3)}px`,
+      '--loggedin-top-gap': `${(MOBILE_METRICS.headerToListGap * topScale).toFixed(3)}px`,
+      '--loggedin-bottom-gap': `${(MOBILE_METRICS.footerOffset * bottomScale).toFixed(3)}px`,
+      '--loggedin-section-gap': `${(MOBILE_METRICS.sectionGap * sectionScale).toFixed(3)}px`,
       '--loggedin-content-width': `${MOBILE_METRICS.contentWidth}px`,
-      '--loggedin-list-gap': `${MOBILE_METRICS.listGap}px`,
-      '--loggedin-list-item-height': `${MOBILE_METRICS.listItemHeight}px`,
-      '--loggedin-list-max-height': `${listMaxHeight}px`,
-      '--loggedin-icon-size': `${MOBILE_METRICS.iconSize}px`
+      '--loggedin-list-gap': `${listGap.toFixed(3)}px`,
+      '--loggedin-list-item-height': `${listItemHeight.toFixed(3)}px`,
+      '--loggedin-list-max-height': `${listMaxHeight.toFixed(3)}px`,
+      '--loggedin-icon-size': `${iconSize.toFixed(3)}px`,
+      '--loggedin-font-scale': density.toFixed(3),
+      '--loggedin-footer-button-height': `${footerButtonHeight.toFixed(3)}px`
     }
 
     return { cssVars, canvasHeight }

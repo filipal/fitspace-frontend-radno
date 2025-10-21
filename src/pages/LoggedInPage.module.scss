@@ -2,6 +2,7 @@
   block-size: 100%;
   color: #000;
   overflow-y: clip;
+  --loggedin-font-scale: 1;
 }
 
 .pageScrollable {
@@ -83,7 +84,7 @@
   background: #fff;
   color: #000;
   font-family: 'Outfit', sans-serif;
-  font-size: 18px;
+  font-size: calc(18px * var(--loggedin-font-scale));
   font-weight: 400;
   line-height: 1;
   cursor: pointer;
@@ -122,7 +123,7 @@
 
 .count {
   font-family: 'Outfit', sans-serif;
-  font-size: 23px;
+  font-size: calc(23px * var(--loggedin-font-scale));
   font-weight: 400;
   color: inherit;
 }
@@ -136,7 +137,7 @@
   border-radius: 12px;
   text-align: center;
   font-family: 'Outfit', sans-serif;
-  font-size: 16px;
+  font-size: calc(16px * var(--loggedin-font-scale));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -161,6 +162,29 @@
   inline-size: 100%;
 }
 
+.footer :global(.footerTopButton),
+.footer :global(.buttonPrimary),
+.footer :global(.buttonBlack),
+.footer :global(.buttonSingle),
+.footer :global(.buttonBack) {
+  min-block-size: var(--loggedin-footer-button-height, 50px);
+  block-size: var(--loggedin-footer-button-height, 50px);
+  max-block-size: var(--loggedin-footer-button-height, 50px);
+  height: var(--loggedin-footer-button-height, 50px);
+  min-height: var(--loggedin-footer-button-height, 50px);
+  max-height: var(--loggedin-footer-button-height, 50px);
+  font-size: calc(18px * var(--loggedin-font-scale, 1));
+  line-height: 1;
+}
+
+.footer :global(.footerActions),
+.footer :global(.footerActionsRow) {
+  min-block-size: var(--loggedin-footer-button-height, 50px);
+  block-size: var(--loggedin-footer-button-height, 50px);
+  height: var(--loggedin-footer-button-height, 50px);
+  min-height: var(--loggedin-footer-button-height, 50px);
+}
+
 .deleteConfirmOverlay {
   position: fixed;
   z-index: 100;
@@ -175,7 +199,7 @@
   background: #d44b3e;
   color: #fff;
   font-family: 'Outfit', sans-serif;
-  font-size: 20px;
+  font-size: calc(20px * var(--loggedin-font-scale));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -184,11 +208,19 @@
 
 @supports (container-type: inline-size) and (width: 1cqw) {
   .avatarName {
-    font-size: clamp(16px, 4.186cqw, 18px);
+    font-size: clamp(
+      calc(16px * var(--loggedin-font-scale)),
+      calc(4.186cqw * var(--loggedin-font-scale)),
+      calc(18px * var(--loggedin-font-scale))
+    );
   }
 
   .count {
-    font-size: clamp(18px, 5.3488cqw, 23px);
+    font-size: clamp(
+      calc(18px * var(--loggedin-font-scale)),
+      calc(5.3488cqw * var(--loggedin-font-scale)),
+      calc(23px * var(--loggedin-font-scale))
+    );
   }
 }
 
