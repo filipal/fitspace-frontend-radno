@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useState,
   type ComponentType,
   type SVGProps,
@@ -55,6 +56,7 @@ import Pants2Img from '../assets/pants-2.png'
 import Pants3Img from '../assets/pants-3.png'
 import Pants4Img from '../assets/pants-4.png'
 import Pants5Img from '../assets/pants-5.png'
+import { useQueuedUnreal } from '../services/queuedUnreal'
 
 // View state structure
 interface ViewState {
@@ -75,6 +77,16 @@ const toCqw = (px: number) => (px === 0 ? '0' : `calc(${px} / ${DESIGN_WIDTH} * 
 export default function VirtualTryOn() {
   const navigate = useNavigate()
   const { sendFitSpaceCommand, connectionState, application, devMode } = usePixelStreaming()
+
+  const simpleState = useMemo<'connected' | 'connecting' | 'disconnected'>(() => {
+    return connectionState === 'connected'
+      ? 'connected'
+      : connectionState === 'connecting'
+        ? 'connecting'
+        : 'disconnected'
+  }, [connectionState])
+
+  const sendQueued = useQueuedUnreal(sendFitSpaceCommand, simpleState)
 
   // Connection is now managed by the persistent PixelStreamingContainer
   // No need for reconnection logic here - the container handles seamless transitions
@@ -128,51 +140,48 @@ export default function VirtualTryOn() {
     (category: ClothingCategory, itemIndex: number, overrideSubCategory?: string) => {
       const { itemId, subCategory } = getClothingIdentifierForIndex(category, itemIndex)
       const effectiveSubCategory = overrideSubCategory ?? subCategory
+      const label = `selectClothing/${category}/${effectiveSubCategory ?? itemId}`
 
-      sendFitSpaceCommand('selectClothing', {
-        category,
-        subCategory: effectiveSubCategory,
-        itemId,
-      })
+      sendQueued(
+        'selectClothing',
+        {
+          category,
+          subCategory: effectiveSubCategory,
+          itemId,
+        },
+        label,
+      )
       console.log(
-        `Sent selectClothing command: itemId=${itemId}, category=${category}, subCategory=${effectiveSubCategory}`,
+        `Queued selectClothing command: itemId=${itemId}, category=${category}, subCategory=${effectiveSubCategory}`,
       )
     },
-    [sendFitSpaceCommand]
+    [sendQueued],
   )
   const cycleTopPrev = () => {
     setTopOptionIndex((i) => {
       const newIndex = (i + 5 - 1) % 5
-      if (connectionState === 'connected') {
-        sendClothingSelection('top', newIndex)
-      }
+      sendClothingSelection('top', newIndex)
       return newIndex
     })
   }
   const cycleTopNext = () => {
     setTopOptionIndex((i) => {
       const newIndex = (i + 1) % 5
-      if (connectionState === 'connected') {
-        sendClothingSelection('top', newIndex)
-      }
+      sendClothingSelection('top', newIndex)
       return newIndex
     })
   }
   const cycleBottomPrev = () => {
     setBottomOptionIndex((i) => {
       const newIndex = (i + bottomOptions.length - 1) % bottomOptions.length
-      if (connectionState === 'connected') {
-        sendClothingSelection('bottom', newIndex)
-      }
+      sendClothingSelection('bottom', newIndex)
       return newIndex
     })
   }
   const cycleBottomNext = () => {
     setBottomOptionIndex((i) => {
       const newIndex = (i + 1) % bottomOptions.length
-      if (connectionState === 'connected') {
-        sendClothingSelection('bottom', newIndex)
-      }
+      sendClothingSelection('bottom', newIndex)
       return newIndex
     })
   }
@@ -194,9 +203,7 @@ export default function VirtualTryOn() {
     setUpperCenterIdx((i) => {
       const newIndex = (i + dir + upperCategories.length) % upperCategories.length
       // Pošalji selectClothing prema odabranoj potkategoriji gornjeg dijela
-      if (connectionState === 'connected') {
-        sendClothingSelection('top', newIndex, upperCategories[newIndex])
-      }
+      sendClothingSelection('top', newIndex, upperCategories[newIndex])
       return newIndex
     })
   }
@@ -205,7 +212,7 @@ export default function VirtualTryOn() {
       const newIndex = (i + dir + lowerCategories.length) % lowerCategories.length
       // Pošalji selectClothing prema odabranoj potkategoriji donjeg dijela
       if (connectionState === 'connected') {
-        sendClothingSelection('bottom', newIndex, lowerCategories[newIndex])
+      sendClothingSelection('bottom', newIndex, lowerCategories[newIndex])
       }
       return newIndex
     })
@@ -265,9 +272,7 @@ export default function VirtualTryOn() {
     setJacketIndex((i) => {
       const newIndex = (i + dir + jacketImages.length) % jacketImages.length
       // Pošalji selectClothing uz centralizirane identifikatore za gornji dio
-      if (connectionState === 'connected') {
-        sendClothingSelection('top', newIndex)
-      }
+      sendClothingSelection('top', newIndex)
       return newIndex
     })
   }
@@ -275,9 +280,7 @@ export default function VirtualTryOn() {
     setPantsIndex((i) => {
       const newIndex = (i + dir + pantsImages.length) % pantsImages.length
       // Pošalji selectClothing uz centralizirane identifikatore za donji dio
-      if (connectionState === 'connected') {
-        sendClothingSelection('bottom', newIndex)
-      }
+      sendClothingSelection('bottom', newIndex)
       return newIndex
     })
   }

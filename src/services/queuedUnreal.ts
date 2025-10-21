@@ -17,7 +17,8 @@ type UECommand =
   | 'updateSkin'
   | 'updateSkinBrightness'
   | 'updateHair'
-  | 'updateExtras';
+  | 'updateExtras'
+  | 'selectClothing';
 
 type UECommandPayload<T extends UECommand = UECommand> = FitSpaceCommandData<T>;
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { usePixelStreaming } from '../hooks/usePixelStreamingSettings';
 import { AppPixelStreamingWrapper } from '../components/AppPixelStreamingWrapper/AppPixelStreamingWrapper';
 import Header from '../components/Header/Header';
@@ -7,17 +7,28 @@ import {
   type ClothingCategory,
   getClothingIdentifierBySubCategory,
 } from '../constants/clothing';
+import { useQueuedUnreal } from '../services/queuedUnreal';
 
 export default function PixelStreamingDemo() {
   const navigate = useNavigate();
-  const { 
-    connectionState, 
-    connectionError, 
+  const {
+    connectionState,
+    connectionError,
     sendFitSpaceCommand,
     connect,
-    disconnect 
+    disconnect
   } = usePixelStreaming();
   
+  const simpleState = useMemo<'connected' | 'connecting' | 'disconnected'>(() => {
+    return connectionState === 'connected'
+      ? 'connected'
+      : connectionState === 'connecting'
+        ? 'connecting'
+        : 'disconnected';
+  }, [connectionState]);
+
+  const sendQueued = useQueuedUnreal(sendFitSpaceCommand, simpleState);
+
   const [selectedClothing, setSelectedClothing] = useState('');
   const [cameraRotation, setCameraRotation] = useState(0);
   const [cameraZoom, setCameraZoom] = useState(1);
@@ -28,11 +39,15 @@ export default function PixelStreamingDemo() {
 
     setSelectedClothing(`${category}-${normalizedSubCategory}`);
 
-    sendFitSpaceCommand('selectClothing', {
-      category,
-      subCategory: normalizedSubCategory,
-      itemId
-    });
+    sendQueued(
+      'selectClothing',
+      {
+        category,
+        subCategory: normalizedSubCategory,
+        itemId
+      },
+      `selectClothing/${category}/${normalizedSubCategory ?? itemId}`
+    );
   };
 
   const handleCameraRotate = (direction: 'left' | 'right') => {
@@ -40,21 +55,29 @@ export default function PixelStreamingDemo() {
     const newRotation = cameraRotation + degrees;
     setCameraRotation(newRotation);
     
-    sendFitSpaceCommand('rotateCamera', {
-      direction,
-      degrees: 45,
-      totalRotation: newRotation
-    });
+    sendQueued(
+      'rotateCamera',
+      {
+        direction,
+        degrees: 45,
+        totalRotation: newRotation
+      },
+      `rotateCamera/${direction}`
+    );
   };
 
   const handleZoom = (delta: number) => {
     const newZoom = Math.max(0.5, Math.min(3, cameraZoom + delta));
     setCameraZoom(newZoom);
     
-    sendFitSpaceCommand('zoomCamera', {
-      level: newZoom,
-      delta
-    });
+    sendQueued(
+      'zoomCamera',
+      {
+        level: newZoom,
+        delta
+      },
+      'zoomCamera'
+    );
   };
 
   const handleMorphAdjustment = (morphName: string, value: number) => {

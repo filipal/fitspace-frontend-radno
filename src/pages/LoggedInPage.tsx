@@ -13,7 +13,6 @@ const USE_LOADING_ROUTE = import.meta.env.VITE_USE_LOADING_ROUTE === 'true';
 
 const MOBILE_DESIGN_WIDTH = 430
 const DESKTOP_DESIGN_WIDTH = 1440
-const DESKTOP_DESIGN_HEIGHT = 1024
 const DESKTOP_BREAKPOINT = 768
 const MAX_VISIBLE_AVATARS = 5
 
@@ -36,14 +35,14 @@ const MOBILE_METRICS = {
 } as const
 
 const DESKTOP_METRICS = {
-  headerToListGap: 48,
+  headerToListGap: 64,
   sectionGap: 32,
-  listGap: 18,
+  listGap: 20,
   listItemHeight: 42,
-  footerOffset: 96,
-  narrowContentWidth: 422,
-  wideContentWidth: 480,
-  iconSize: 50
+  footerOffset: 0,
+  minListHeight: 280,
+  headerHeight: 71,
+  footerHeight: 155
 } as const
 
 interface ViewportSize {
@@ -221,7 +220,6 @@ function computeLayoutMetrics(viewportHeight: number): LayoutMetrics {
   }
 }
 
-
 type LoggedInPageCssVars = CSSProperties & {
   '--fs-design-width'?: string
   '--fs-design-height'?: string
@@ -243,6 +241,7 @@ type LoggedInPageCssVars = CSSProperties & {
   '--loggedin-icon-size'?: string
   '--loggedin-font-scale'?: string
   '--loggedin-footer-button-height'?: string
+  '--loggedin-inline-padding'?: string
 }
 
 function readViewportSize(): ViewportSize {
@@ -450,14 +449,34 @@ export default function LoggedInPage() {
   const { cssVars: layoutVars, canvasHeight } = useMemo(() => {
     if (viewportWidth >= DESKTOP_BREAKPOINT) {
       const designWidth = Math.min(DESKTOP_DESIGN_WIDTH, viewportWidth)
-      const designHeight = DESKTOP_DESIGN_HEIGHT
-      const isWide = viewportWidth >= 1280
-      const contentWidth = isWide
-        ? DESKTOP_METRICS.wideContentWidth
-        : DESKTOP_METRICS.narrowContentWidth
-      const listMaxHeight =
-        DESKTOP_METRICS.listItemHeight * MAX_VISIBLE_AVATARS +
-        DESKTOP_METRICS.listGap * (MAX_VISIBLE_AVATARS - 1)
+      const visibleAvatarCount = Math.min(
+        Math.max(avatars.length, 1),
+        MAX_VISIBLE_AVATARS
+      )
+      const listHeight = Math.max(
+        DESKTOP_METRICS.listItemHeight * visibleAvatarCount +
+          DESKTOP_METRICS.listGap * Math.max(visibleAvatarCount - 1, 0),
+        DESKTOP_METRICS.minListHeight
+      )
+      const hasLoaderBanner = loaderState.isLoading
+      const hasErrorBanner = Boolean(
+        loaderState.error || fetchError || deleteError
+      )
+      const dynamicSectionCount =
+        1 + (hasLoaderBanner ? 1 : 0) + (hasErrorBanner ? 1 : 0)
+      const dynamicSectionGap =
+        dynamicSectionCount > 1
+          ? DESKTOP_METRICS.sectionGap * (dynamicSectionCount - 1)
+          : 0
+      const loaderBannerHeight = hasLoaderBanner ? 48 : 0
+      const errorBannerHeight = hasErrorBanner ? 48 : 0
+      const designHeight =
+        DESKTOP_METRICS.headerToListGap +
+        listHeight +
+        dynamicSectionGap +
+        loaderBannerHeight +
+        errorBannerHeight +
+        DESKTOP_METRICS.footerOffset
       const scaleWidth = clamp(
         viewportWidth / (designWidth || 1),
         0,
@@ -470,30 +489,23 @@ export default function LoggedInPage() {
         Number.POSITIVE_INFINITY
       )
 
-    const cssVars: LoggedInPageCssVars = {
+      const cssVars: LoggedInPageCssVars = {
         '--fs-design-width': `${designWidth}px`,
         '--fs-design-height': `${designHeight}px`,
+        '--fs-design-safe-height': `${designHeight}px`,
         '--fs-viewport-height': `${viewportHeight.toFixed(3)}px`,
         '--fs-scale-width': scaleWidth.toFixed(5),
         '--fs-scale-height': scaleHeight.toFixed(5),
         '--fs-scale': '1',
         '--fs-canvas-width': `${designWidth.toFixed(3)}px`,
         '--fs-canvas-height': `${designHeight.toFixed(3)}px`,
-        '--fs-page-max-height': `${Math.max(designHeight, viewportHeight).toFixed(3)}px`,
-        '--loggedin-top-gap': `${DESKTOP_METRICS.headerToListGap}px`,
-        '--loggedin-bottom-gap': `${DESKTOP_METRICS.footerOffset}px`,
-        '--loggedin-section-gap': `${DESKTOP_METRICS.sectionGap}px`,
-        '--loggedin-content-width': `${contentWidth}px`,
-        '--loggedin-list-gap': `${DESKTOP_METRICS.listGap}px`,
-        '--loggedin-list-item-height': `${DESKTOP_METRICS.listItemHeight}px`,
-        '--loggedin-list-max-height': `${listMaxHeight}px`,
-        '--loggedin-icon-size': `${DESKTOP_METRICS.iconSize}px`,
-        '--loggedin-font-scale': '1',
-        '--loggedin-footer-button-height': '50px'
-    }
+        '--fs-page-max-height': `${Math.max(designHeight, viewportHeight).toFixed(3)}px`
+      }
 
+      const totalPageHeight =
+        designHeight + DESKTOP_METRICS.headerHeight + DESKTOP_METRICS.footerHeight
 
-      return { cssVars, canvasHeight: designHeight }
+      return { cssVars, canvasHeight: totalPageHeight }
     }
 
     const {
@@ -554,14 +566,22 @@ export default function LoggedInPage() {
       '--loggedin-list-max-height': `${listMaxHeight.toFixed(3)}px`,
       '--loggedin-icon-size': `${iconSize.toFixed(3)}px`,
       '--loggedin-font-scale': density.toFixed(3),
-      '--loggedin-footer-button-height': `${footerButtonHeight.toFixed(3)}px`
+      '--loggedin-footer-button-height': `${footerButtonHeight.toFixed(3)}px`,
+      '--loggedin-inline-padding': '0px'
     }
 
     return { cssVars, canvasHeight }
-  }, [viewportHeight, viewportWidth])
+  }, [
+    viewportHeight,
+    viewportWidth,
+    avatars.length,
+    loaderState.error,
+    loaderState.isLoading,
+    fetchError,
+    deleteError
+  ])
 
-  const needsScroll =
-    viewportWidth >= DESKTOP_BREAKPOINT || canvasHeight > viewportHeight + 0.5
+  const needsScroll = canvasHeight > viewportHeight + 0.5
   const pageClassName = needsScroll
     ? `${styles.page} ${styles.pageScrollable}`
     : styles.page

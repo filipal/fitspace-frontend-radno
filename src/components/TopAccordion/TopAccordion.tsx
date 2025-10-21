@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { usePixelStreaming } from '../../context/PixelStreamingContext'
 import styles from './TopAccordion.module.scss'
 import ArrowLeft from '../../assets/arrow-left.svg'
@@ -9,6 +9,7 @@ import {
   getClothingCatalog,
   getClothingIdentifierForIndex,
 } from '../../constants/clothing'
+import { useQueuedUnreal } from '../../services/queuedUnreal'
 
 // Čuvamo lokalni popis asseta preko centralizirane konfiguracije
 const carouselItems = getClothingCatalog().top.map((item) => item.asset)
@@ -19,15 +20,27 @@ interface TopAccordionProps {
 
 export default function TopAccordion({ variant = 'mobile' }: TopAccordionProps) {
   const { sendFitSpaceCommand, connectionState } = usePixelStreaming()
+  const simpleState = useMemo<'connected' | 'connecting' | 'disconnected'>(() => {
+    return connectionState === 'connected'
+      ? 'connected'
+      : connectionState === 'connecting'
+        ? 'connecting'
+        : 'disconnected'
+  }, [connectionState])
+  const sendQueued = useQueuedUnreal(sendFitSpaceCommand, simpleState)
   const [index, setIndex] = useState(0)
   const sendClothingSelection = (itemIndex: number) => {
     const identifier = getClothingIdentifierForIndex('top', itemIndex)
 
-    sendFitSpaceCommand('selectClothing', {
-      category: 'top',
-      subCategory: identifier.subCategory,
-      itemId: identifier.itemId,
-    })
+    sendQueued(
+      'selectClothing',
+      {
+        category: 'top',
+        subCategory: identifier.subCategory,
+        itemId: identifier.itemId,
+      },
+      `selectClothing/top/${identifier.subCategory ?? identifier.itemId}`,
+    )
 
     return identifier
   }
@@ -35,12 +48,10 @@ export default function TopAccordion({ variant = 'mobile' }: TopAccordionProps) 
     setIndex(i => {
       const newIndex = (i + carouselItems.length - 1) % carouselItems.length
       // Pošalji selectClothing uz centralizirane identifikatore za gornji dio
-      if (connectionState === 'connected') {
-        const { itemId, subCategory } = sendClothingSelection(newIndex)
-        console.log(
-          `Sent selectClothing command: itemId=${itemId}, category=top, subCategory=${subCategory}`,
-        )
-      }
+      const { itemId, subCategory } = sendClothingSelection(newIndex)
+      console.log(
+        `Queued selectClothing command: itemId=${itemId}, category=top, subCategory=${subCategory}`,
+      )
       return newIndex
     })
   }
@@ -48,12 +59,10 @@ export default function TopAccordion({ variant = 'mobile' }: TopAccordionProps) 
     setIndex(i => {
       const newIndex = (i + 1) % carouselItems.length
       // Pošalji selectClothing uz centralizirane identifikatore za gornji dio
-      if (connectionState === 'connected') {
-        const { itemId, subCategory } = sendClothingSelection(newIndex)
-        console.log(
-          `Sent selectClothing command: itemId=${itemId}, category=top, subCategory=${subCategory}`,
-        )
-      }
+      const { itemId, subCategory } = sendClothingSelection(newIndex)
+      console.log(
+        `Queued selectClothing command: itemId=${itemId}, category=top, subCategory=${subCategory}`,
+      )
       return newIndex
     })
   }
