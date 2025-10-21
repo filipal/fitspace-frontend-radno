@@ -282,19 +282,26 @@ export default function ExtrasAccordion() {
 
   // --- Slanje u Unreal (queued) ---
   const pushToUnreal = useCallback(() => {
-    // pošalji aktivni item; UE neka odluči kako mijenja ostale
+    const typeForCommand = activeType.toLowerCase() as Lowercase<ExtraType>
+
     sendQueued(
       'updateExtras',
       {
-        type: activeType.toLowerCase(), // 'glasses' | 'earrings' | 'hats'
-        styleIndex: unrealStyleId,
-        colorIndex: unrealColorId,
-        color: base,         // hex za UE
-        colorPacked,         // pogodnije za materijale ako treba broj
+        type: typeForCommand,
+        id: unrealStyleId,
       },
-      'extras update'
+      'extras style update'
     )
-  }, [activeType, unrealStyleId, unrealColorId, base, colorPacked, sendQueued])
+
+    sendQueued(
+      'updateExtras',
+      {
+        type: 'color',
+        id: unrealColorId,
+      },
+      'extras color update'
+    )
+  }, [activeType, unrealStyleId, unrealColorId, sendQueued])
 
   // Svaka promjena (tip, stil, boja) -> UE + backend (debounce)
   useEffect(() => {

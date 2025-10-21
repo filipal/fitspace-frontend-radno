@@ -29,6 +29,7 @@
   align-items: center;
   justify-content: flex-start;
   padding-block: var(--loggedin-top-gap) var(--loggedin-bottom-gap);
+  padding-inline: var(--loggedin-inline-padding, 0px);
   color: inherit;
   container-type: inline-size;
 }
@@ -98,7 +99,7 @@
 
 .iconButton {
   inline-size: var(--loggedin-icon-size);
-  block-size: var(--loggedin-icon-size);
+  block-size: var(--loggedin-list-item-height);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -225,14 +226,74 @@
 }
 
 @media (min-width: 768px) {
+  .body {
+    flex: 0 0 auto;
+  }
+
   .canvasInner {
     block-size: auto;
     min-block-size: var(--fs-design-height);
+    padding-inline: var(--loggedin-inline-padding, 64px);
+  }
+
+  .canvasInner {
+    block-size: auto;
+    min-block-size: var(--fs-design-height);
+    padding-inline: var(--loggedin-inline-padding, 64px);
+  }
+
+  .avatarList {
+    max-block-size: var(--loggedin-list-max-height);
+    gap: var(--loggedin-list-gap);
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+
+  .avatarList::-webkit-scrollbar {
+    display: none;
   }
 
   .avatarItem {
     gap: 18px;
+    inline-size: min(100%, 454px);
+    block-size: var(--loggedin-list-item-height);
   }
+
+  .avatarName {
+    padding: 0;
+  }
+
+  .iconButton {
+    inline-size: 20px;
+    block-size: var(--loggedin-list-item-height);
+  }
+
+  .iconButton img {
+    inline-size: 20px;
+    block-size: 20px;
+  }
+/*   .avatarItem {
+    width: 454px;
+    height: 42px;
+    gap: 15px;
+  }
+
+  .iconButton {
+    width: 20px;
+    height: 42px;
+  }
+
+  .avatarName {
+    padding: 0;
+  }
+  .avatarList {
+    max-height: 290px;
+    gap: 20px;
+  }
+  .canvasInner {
+    padding: 64px;
+    padding-bottom: 0;
+  } */
 }
 
 /* @media (min-width: 1280px) {

@@ -107,7 +107,7 @@ export default function PixelStreamingDemo() {
             <button onClick={() => handleClothingSelect('top', 'Jackets')}>
               Select Jacket
             </button>
-            <button onClick={() => handleClothingSelect('top', 'T-Shirts')}>
+            <button onClick={() => handleClothingSelect('top', 'T-Shirt')}>
               Select Shirt
             </button>
             <button onClick={() => handleClothingSelect('bottom', 'Jeans')}>

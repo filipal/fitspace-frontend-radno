@@ -22,6 +22,8 @@ const SKIN_KEYS = {
   variantIndex: 'skinVariant',
 } as const
 
+const SKIN_VARIANT_COUNT = 3
+
 // Mapping helpers -----------------------------------------------------------
 // Skin tone values in Unreal are expressed as a discrete range [0, 12].
 // We map our palette selection (baseIndex) and variant focus (focusedIndex)
@@ -46,24 +48,6 @@ const mapToBrightness = (tonePercent: number) => {
   const min = 0.25
   const max = 1.75
   return min + (clamped / 100) * (max - min)
-}
-
-// Pomoćne funkcije za miješanje boja
-function hexToRgb(hex: string) {
-  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-  if (!m) return { r: 255, g: 255, b: 255 }
-  return { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) }
-}
-function rgbToHex(r: number, g: number, b: number) {
-  const c = (n: number) => n.toString(16).padStart(2, '0')
-  return `#${c(Math.round(r))}${c(Math.round(g))}${c(Math.round(b))}`
-}
-function lerp(a: number, b: number, t: number) {
-  return a + (b - a) * t
-}
-function mixHex(aHex: string, bHex: string, t: number) {
-  const a = hexToRgb(aHex); const b = hexToRgb(bHex)
-  return rgbToHex(lerp(a.r, b.r, t), lerp(a.g, b.g, t), lerp(a.b, b.b, t))
 }
 
 export default function SkinAccordion({ defaultRightExpanded = false }: SkinAccordionProps) {
@@ -110,16 +94,9 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
   const [tonePct, setTonePct] = useState(initialTonePct)
 
   // izvedene boje (za UI prikaz)
-  const items = [Skin1, Skin2, Skin3]
   const base = basePalette[baseIndex]
   const light = lightenHex(base)
   const dark = darkenHex(base)
-
-  // BOJA ZA UNREAL (lerp između light i dark po slideru)
-  const toneHex = useMemo(() => {
-    const t = Math.max(0, Math.min(1, tonePct / 100))
-    return mixHex(light, dark, t)
-  }, [light, dark, tonePct])
 
   // orijentacija slidera --- Desni slider: horizontalno na mobu, vertikalno >=1024px ---
   const [isVertical, setIsVertical] = useState(false)
@@ -202,22 +179,16 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
 
   // Svaka promjena statea šalje u UE + sprema u backend (debounce)
   useEffect(() => {
-    const variantIndex = focusedIndex ?? 1
     sendQueued(
       'updateSkin',
       {
-        baseIndex,
-        variantIndex,
-        tonePercent: tonePct,
-        color: toneHex,
-        skinTone,
+        skin_tone: skinTone,
       },
       'skin update'
     )
     sendQueued(
       'updateSkinBrightness',
       {
-        tonePercent: tonePct,
         brightness,
       },
       'skin brightness'
@@ -234,7 +205,6 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
     focusedIndex,
     sendQueued,
     scheduleSave,
-    toneHex,
     skinTone,
     brightness,
   ])
@@ -242,7 +212,7 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
   // --- Handleri za promjene UI-a + spremanje ---
   const handlePrev = () => {
     if (focusedIndex !== null) {
-      const nextVar = (focusedIndex + items.length - 1) % items.length
+      const nextVar = (focusedIndex + SKIN_VARIANT_COUNT - 1) % SKIN_VARIANT_COUNT
       setFocusedIndex(nextVar)
     }
     const nextBase = (baseIndex + basePalette.length - 1) % basePalette.length
@@ -251,7 +221,7 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
 
   const handleNext = () => {
     if (focusedIndex !== null) {
-      const nextVar = (focusedIndex + 1) % items.length
+      const nextVar = (focusedIndex + 1) % SKIN_VARIANT_COUNT
       setFocusedIndex(nextVar)
     }
     const nextBase = (baseIndex + 1) % basePalette.length
@@ -298,21 +268,21 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
           {focusedIndex === null ? (
             <div className={styles.iconsThree}>
               <button type="button" className={styles.iconBtn} onClick={() => onSelectIcon(0)}>
-                <Skin1 className={styles.iconSmall} style={{ color: lightenHex(basePalette[baseIndex]) }} />
+                <Skin1 className={styles.iconSmall} style={{ color: light }} />
               </button>
               <button type="button" className={styles.iconBtn} onClick={() => onSelectIcon(1)}>
-                <Skin2 className={styles.iconLarge} style={{ color: basePalette[baseIndex] }} />
+                <Skin2 className={styles.iconLarge} style={{ color: base }} />
               </button>
               <button type="button" className={styles.iconBtn} onClick={() => onSelectIcon(2)}>
-                <Skin3 className={styles.iconSmall} style={{ color: darkenHex(basePalette[baseIndex]) }} />
+                <Skin3 className={styles.iconSmall} style={{ color: dark }} />
               </button>
             </div>
           ) : (
             <div className={styles.iconOne}>
               <button type="button" className={styles.iconBtn} onClick={() => setFocusedIndex(null)}>
-                {focusedIndex === 0 && <Skin1 className={styles.iconLarge} style={{ color: lightenHex(base) }} />}
+                {focusedIndex === 0 && <Skin1 className={styles.iconLarge} style={{ color: light }} />}
                 {focusedIndex === 1 && <Skin2 className={styles.iconLarge} style={{ color: base }} />}
-                {focusedIndex === 2 && <Skin3 className={styles.iconLarge} style={{ color: darkenHex(base) }} />}
+                {focusedIndex === 2 && <Skin3 className={styles.iconLarge} style={{ color: dark }} />}
               </button>
             </div>
           )}

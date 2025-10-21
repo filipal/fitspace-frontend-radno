@@ -154,14 +154,9 @@ export interface FittingRoomCommandPayloads {
     morphValues: Record<string, number>;
   };
   updateSkin: {
-    baseIndex: number;
-    variantIndex?: number | null;
-    tonePercent?: number;
-    color?: string;
-    skinTone: number;
+    skin_tone: number;
   };
   updateSkinBrightness: {
-    tonePercent?: number;
     brightness: number;
   };
   updateHair:
@@ -175,11 +170,8 @@ export interface FittingRoomCommandPayloads {
         hex?: string;
       };
   updateExtras: {
-    type: string;
-    styleIndex: number;
-    colorIndex: number;
-    color: string;
-    colorPacked?: number;
+    type: 'glasses' | 'earrings' | 'hats' | 'color';
+    id: number;
   };
 }
 

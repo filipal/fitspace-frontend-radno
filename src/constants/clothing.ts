@@ -33,7 +33,7 @@ type ClothingCatalog = Record<ClothingCategory, ClothingItemConfig[]>
 
 const clothingCatalog: ClothingCatalog = {
   top: [
-    { itemId: 0, subCategory: 'T-Shirts', asset: FalconIcon },
+    { itemId: 0, subCategory: 'T-Shirt', asset: FalconIcon },
     { itemId: 1, subCategory: 'Jackets', asset: ShellIcon },
     { itemId: 0, subCategory: 'Base Layer', asset: MilitaryJacket },
     { itemId: 1, subCategory: 'Jackets', asset: Hoodie },
