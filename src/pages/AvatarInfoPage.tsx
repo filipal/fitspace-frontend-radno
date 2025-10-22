@@ -21,9 +21,10 @@ import type { BackendAvatarMorphTarget } from '../context/AvatarConfigurationCon
 import useIsMobile from '../hooks/useIsMobile'
 import { useAuthData } from '../hooks/useAuthData'
 
-const MOBILE_DESIGN_WIDTH = 303.58
-const MOBILE_DESIGN_HEIGHT = 658
-const MOBILE_SAFE_HEIGHT = 658
+const MOBILE_DESIGN_WIDTH = 393
+const HEADER_DESIGN_HEIGHT = 71.31
+const MOBILE_DESIGN_HEIGHT = 586.69
+const MOBILE_SAFE_HEIGHT = MOBILE_DESIGN_HEIGHT + HEADER_DESIGN_HEIGHT
 const DESKTOP_BREAKPOINT = 768
 const DESKTOP_DESIGN_WIDTH = 1440
 const DESKTOP_DESIGN_HEIGHT = 1024
@@ -51,7 +52,7 @@ type AvatarInfoPageCssVars = CSSProperties & {
 
 function readViewportSize(): ViewportSize {
   if (typeof window === 'undefined') {
-    return { width: MOBILE_DESIGN_WIDTH, height: MOBILE_DESIGN_HEIGHT }
+    return { width: MOBILE_DESIGN_WIDTH, height: MOBILE_DESIGN_HEIGHT + HEADER_DESIGN_HEIGHT }
   }
 
   const viewport = window.visualViewport
