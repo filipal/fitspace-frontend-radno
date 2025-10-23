@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import cn from 'classnames'
 import { useNavigate } from 'react-router-dom'
 import leftArrow from '../assets/arrow-left.svg'
@@ -57,7 +57,7 @@ function readViewportSize(): ViewportSize {
 
   const viewport = window.visualViewport
   if (viewport) {
-    return { width: viewport.width, height: viewport.height }
+    return { width: window.innerWidth, height: viewport.height }
   }
 
   return { width: window.innerWidth, height: window.innerHeight }
@@ -86,6 +86,9 @@ export default function AvatarInfoPage() {
   const authData = useAuthData()
   const [viewportSize, setViewportSize] = useState<ViewportSize>(() => readViewportSize())
   const { width: viewportWidth, height: viewportHeight } = viewportSize
+  const stableViewportHeightRef = useRef(viewportHeight)
+  const stableViewportWidthRef = useRef(viewportWidth)
+  const previousViewportWidthRef = useRef(viewportWidth)
   const age = usePicker(1, ages)
   const height = usePicker(2, heights)
   const weight = usePicker(2, weights)
@@ -114,29 +117,65 @@ export default function AvatarInfoPage() {
     }
   }, [])
 
+  useEffect(() => {
+    if (viewportWidth !== previousViewportWidthRef.current) {
+      previousViewportWidthRef.current = viewportWidth
+      stableViewportHeightRef.current = viewportHeight
+      return
+    }
+
+    if (viewportHeight > stableViewportHeightRef.current) {
+      stableViewportHeightRef.current = viewportHeight
+    }
+  }, [viewportHeight, viewportWidth])
+
+  useEffect(() => {
+    const stableHeight = stableViewportHeightRef.current
+
+    if (viewportWidth > stableViewportWidthRef.current) {
+      stableViewportWidthRef.current = viewportWidth
+      return
+    }
+
+    if (viewportHeight >= stableHeight - 1) {
+      stableViewportWidthRef.current = viewportWidth
+    }
+  }, [viewportHeight, viewportWidth])
+
+  const stableViewportHeight = Math.max(
+    viewportHeight,
+    stableViewportHeightRef.current
+  )
+  const widthDelta = Math.abs(viewportWidth - stableViewportWidthRef.current)
+  const keyboardLikelyOpen =
+    stableViewportHeight - viewportHeight > 1 && widthDelta < 24
+  const effectiveViewportWidth = keyboardLikelyOpen
+    ? stableViewportWidthRef.current
+    : viewportWidth
+
   const { cssVars: layoutVars, canvasHeight } = useMemo(() => {
-    if (viewportWidth >= DESKTOP_BREAKPOINT) {
-      const designWidth = Math.min(DESKTOP_DESIGN_WIDTH, viewportWidth)
+    if (effectiveViewportWidth >= DESKTOP_BREAKPOINT) {
+      const designWidth = Math.min(DESKTOP_DESIGN_WIDTH, effectiveViewportWidth)
       const designHeight = DESKTOP_DESIGN_HEIGHT
       const scaleWidth = clamp(
-        viewportWidth / (designWidth || 1),
+        effectiveViewportWidth / (designWidth || 1),
         0,
         Number.POSITIVE_INFINITY
       )
       const scaleHeight = clamp(
-        viewportHeight / (designHeight || 1),
+        stableViewportHeight / (designHeight || 1),
         0,
         Number.POSITIVE_INFINITY
       )
       const canvasWidth = designWidth
       const canvasHeight = designHeight
-      const pageMaxHeight = Math.max(canvasHeight, viewportHeight)
+      const pageMaxHeight = Math.max(canvasHeight, stableViewportHeight)
 
       const cssVars: AvatarInfoPageCssVars = {
         '--fs-design-width': `${designWidth}px`,
         '--fs-design-height': `${designHeight}px`,
         '--fs-design-safe-height': `${designHeight}px`,
-        '--fs-viewport-height': `${viewportHeight.toFixed(3)}px`,
+        '--fs-viewport-height': `${stableViewportHeight.toFixed(3)}px`,
         '--fs-scale-width': scaleWidth.toFixed(5),
         '--fs-scale-height': scaleHeight.toFixed(5),
         '--fs-scale': '1',
@@ -149,25 +188,25 @@ export default function AvatarInfoPage() {
     }
 
     const scaleWidth = clamp(
-      viewportWidth / MOBILE_DESIGN_WIDTH,
+      effectiveViewportWidth / MOBILE_DESIGN_WIDTH,
       0,
       Number.POSITIVE_INFINITY
     )
     const scaleHeightSafe = clamp(
-      viewportHeight / MOBILE_SAFE_HEIGHT,
+      stableViewportHeight / MOBILE_SAFE_HEIGHT,
       0,
       Number.POSITIVE_INFINITY
     )
     const viewportScale = Math.min(scaleWidth, scaleHeightSafe, 1)
     const canvasWidth = MOBILE_DESIGN_WIDTH * viewportScale
     const canvasHeight = MOBILE_DESIGN_HEIGHT * viewportScale
-    const pageMaxHeight = Math.max(canvasHeight, viewportHeight)
+    const pageMaxHeight = Math.max(canvasHeight, stableViewportHeight)
 
     const cssVars: AvatarInfoPageCssVars = {
       '--fs-design-width': `${MOBILE_DESIGN_WIDTH}px`,
       '--fs-design-height': `${MOBILE_DESIGN_HEIGHT}px`,
       '--fs-design-safe-height': `${MOBILE_SAFE_HEIGHT}px`,
-      '--fs-viewport-height': `${viewportHeight.toFixed(3)}px`,
+      '--fs-viewport-height': `${stableViewportHeight.toFixed(3)}px`,
       '--fs-scale-width': scaleWidth.toFixed(5),
       '--fs-scale-height': scaleHeightSafe.toFixed(5),
       '--fs-scale': viewportScale.toFixed(5),
@@ -177,10 +216,10 @@ export default function AvatarInfoPage() {
     }
 
     return { cssVars, canvasHeight }
-  }, [viewportHeight, viewportWidth])
+  }, [effectiveViewportWidth, stableViewportHeight])
 
   const needsScroll =
-    viewportWidth >= DESKTOP_BREAKPOINT || canvasHeight > viewportHeight + 0.5
+    viewportWidth >= DESKTOP_BREAKPOINT || canvasHeight > stableViewportHeight + 0.5
   const pageClassName = needsScroll
     ? `${styles.page} ${styles.pageScrollable}`
     : styles.page
