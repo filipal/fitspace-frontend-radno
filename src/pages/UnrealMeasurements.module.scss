@@ -73,6 +73,19 @@ $design-w: 430; /* jedan izvor istine */
   background: #ADADAC;
 }
 
+.virtualWrapper {
+  width: 100%;
+  height: var(--avatar-h);
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.virtualWrapper > * {
+  flex: 1 1 auto;
+  max-width: 100%;
+}
+
 .avatarButton {
   inline-size: min(calc((30 / 430) * var(--page-w-px)), 30px);
   height: min(calc((19 / 430) * var(--page-w-px)), 19px);

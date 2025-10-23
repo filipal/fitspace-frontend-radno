@@ -52,10 +52,13 @@ import FaceAccordion from '../components/FaceAccordion/FaceAccordion'
 import SkinAccordion from '../components/SkinAccordion/SkinAccordion'
 import HairAccordion from '../components/HairAccordion/HairAccordion'
 import ExtrasAccordion from '../components/ExtrasAccordion/ExtrasAccordion'
+import VirtualTryOnPanel, { type VirtualTryOnHeaderState } from '../components/VirtualTryOnPanel/VirtualTryOnPanel'
+import virtualTryOnStyles from '../components/VirtualTryOnPanel/VirtualTryOnPanel.module.scss'
 import styles from './UnrealMeasurements.module.scss'
 
 import { estimateMissingMeasurements } from '../services/anthroEstimator'
 import { getAvatarDisplayName } from '../utils/avatarName'
+import cartIcon from '../assets/cart.svg'
 
 interface ControlButton {
   key: string
@@ -150,6 +153,26 @@ export default function UnrealMeasurements() {
   const isSavingMorphsRef = useRef(false)
   const isMountedRef = useRef(true)
   const lastViewportStateRef = useRef({ height: 0 })
+  const initialViewAppliedRef = useRef(false)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [activeView, setActiveView] = useState<'measurements' | 'virtualTryOn'>(() => {
+    const locationState = location.state as { initialView?: 'virtualTryOn' } | null
+    return locationState?.initialView === 'virtualTryOn' ? 'virtualTryOn' : 'measurements'
+  })
+  const [virtualHeaderState, setVirtualHeaderState] = useState<VirtualTryOnHeaderState>({
+    title: 'Virtual Try-on',
+    showCartButton: false,
+  })
+
+  useEffect(() => {
+    if (initialViewAppliedRef.current) return
+    const locationState = location.state as { initialView?: 'virtualTryOn' } | null
+    if (locationState?.initialView === 'virtualTryOn') {
+      initialViewAppliedRef.current = true
+      setActiveView('virtualTryOn')
+    }
+  }, [location.state])
 
   useLayoutEffect(() => {
     const el = pageRef.current
@@ -198,6 +221,8 @@ export default function UnrealMeasurements() {
   }, [])
 
   useLayoutEffect(() => {
+    if (activeView !== 'measurements') return
+
     const page = pageRef.current
     const header = document.querySelector('[data-app-header]') as HTMLElement | null
     const bottom = bottomRef.current
@@ -253,11 +278,19 @@ export default function UnrealMeasurements() {
       window.visualViewport?.removeEventListener('scroll', set)
       ro.disconnect()
     }
-  }, [selectedNav, computeFocusedAvatarZoom])
+  }, [selectedNav, computeFocusedAvatarZoom, activeView])
 
-  const navigate = useNavigate()
-  const location = useLocation()
-  const { sendFitSpaceCommand, connectionState, application, devMode } = usePixelStreaming()
+  const { sendFitSpaceCommand, connectionState, application, devMode, setActiveStreamMode } = usePixelStreaming()
+
+  useEffect(() => {
+    setActiveStreamMode(activeView === 'virtualTryOn' ? 'fittingRoom' : 'measurement')
+  }, [activeView, setActiveStreamMode])
+
+  useEffect(() => {
+    return () => {
+      setActiveStreamMode(null)
+    }
+  }, [setActiveStreamMode])
 
   const { updateMorphValue, currentAvatar } = useAvatarConfiguration()
 
@@ -324,7 +357,11 @@ export default function UnrealMeasurements() {
     })
   }, [findMorphAttribute, sendFitSpaceCommand])
 
-  const locationState = location.state as { avatarId?: number | string; openSkinRight?: boolean } | null
+  const locationState = location.state as {
+    avatarId?: number | string
+    openSkinRight?: boolean
+    initialView?: 'virtualTryOn'
+  } | null
   const avatarIdFromState = locationState?.avatarId
   const openSkinRight = locationState?.openSkinRight
 
@@ -1153,15 +1190,16 @@ export default function UnrealMeasurements() {
       console.log('💾 Save pressed → persisting morphs...')
       const saved = await persistMorphTargets()
       if (saved) {
-        console.log('✅ Morphs persisted → navigating to /virtual-try-on')
-        navigate('/virtual-try-on')
+        console.log('✅ Morphs persisted → switching to virtual try-on view')
+        setSelectedNav(null)
+        setActiveView('virtualTryOn')
       } else {
         console.warn('⚠️ Persist failed; staying on page.')
       }
       return
     }
     setSelectedNav(prev => (prev === btnKey ? null : btnKey))
-  }, [navigate, persistMorphTargets])
+  }, [persistMorphTargets])
 
   useEffect(() => {
     if (!hasDirtyMorphs) return
@@ -1196,26 +1234,55 @@ export default function UnrealMeasurements() {
     }
   }, [loaderState.isLoading, loaderState.stage])
 
+  const headerTitle = activeView === 'virtualTryOn' ? virtualHeaderState.title : 'Your Avatar'
+  const headerRightContent = activeView === 'virtualTryOn'
+    ? (
+        <div className={virtualTryOnStyles.headerButtonGroup}>
+          {virtualHeaderState.showCartButton ? (
+            <button className={virtualTryOnStyles.cartButton} type="button">
+              <img src={cartIcon} alt="Cart" />
+            </button>
+          ) : null}
+          <button
+            className={virtualTryOnStyles.avatarButton}
+            onClick={() => {
+              setActiveView('measurements')
+              setSelectedNav(null)
+            }}
+            type="button"
+          >
+            <img src={avatarsButton} alt="Avatars" />
+          </button>
+        </div>
+      )
+    : (
+        <button className={styles.avatarButton} onClick={() => navigate('/logged-in')} type="button">
+          <img src={avatarsButton} alt="Avatars" />
+        </button>
+      )
+
   const handleExit = useCallback(() => {
+    if (activeView === 'virtualTryOn') {
+      setActiveView('measurements')
+      setSelectedNav(null)
+      return
+    }
+
     if (isAuthenticated) {
       navigate('/')
     } else {
       navigate('/exit-guest-user')
     }
-  }, [isAuthenticated, navigate])
+  }, [activeView, isAuthenticated, navigate])
 
   return (
     <div ref={pageRef} className={styles.page}>
       <Header
         data-app-header
-        title="Your Avatar"
+        title={headerTitle}
         variant="dark"
         onExit={handleExit}
-        rightContent={(
-          <button className={styles.avatarButton} onClick={() => navigate('/logged-in')} type="button">
-            <img src={avatarsButton} alt="Avatars" />
-          </button>
-        )}
+        rightContent={headerRightContent}
       />
       {devMode === 'localhost' && (
         <div className={styles.devBadge} title="Pixel Streaming Localhost">
@@ -1240,116 +1307,136 @@ export default function UnrealMeasurements() {
         </div>
       )}
 
-      <div className={`${styles.centralWrapper} ${selectedNav ? styles.withAccordion : ''} ${selectedNav === 'Body' ? styles.accBody : ''} ${selectedNav === 'Face' ? styles.accFace : ''} ${selectedNav === 'Skin' ? styles.accSkin : ''} ${selectedNav === 'Hair' ? styles.accHair : ''} ${selectedNav === 'Extras' ? styles.accExtras : ''}`}>
-        <div className={`${styles.avatarSection} ${selectedNav ? styles.avatarShifted : ''} ${selectedNav === 'Body' ? styles.bodySelected : ''} ${selectedNav === 'Face' ? styles.faceSelected : ''} ${selectedNav === 'Skin' ? styles.skinSelected : ''} ${selectedNav === 'Hair' ? styles.hairSelected : ''} ${selectedNav === 'Extras' ? styles.extrasSelected : ''}`}>
+      {activeView === 'measurements' ? (
+        <>
+          <div className={`${styles.centralWrapper} ${selectedNav ? styles.withAccordion : ''} ${selectedNav === 'Body' ? styles.accBody : ''} ${selectedNav === 'Face' ? styles.accFace : ''} ${selectedNav === 'Skin' ? styles.accSkin : ''} ${selectedNav === 'Hair' ? styles.accHair : ''} ${selectedNav === 'Extras' ? styles.accExtras : ''}`}>
+            <div className={`${styles.avatarSection} ${selectedNav ? styles.avatarShifted : ''} ${selectedNav === 'Body' ? styles.bodySelected : ''} ${selectedNav === 'Face' ? styles.faceSelected : ''} ${selectedNav === 'Skin' ? styles.skinSelected : ''} ${selectedNav === 'Hair' ? styles.hairSelected : ''} ${selectedNav === 'Extras' ? styles.extrasSelected : ''}`}>
 
-          {/* PixelStreaming when connected OR in localhost mode; fallback image otherwise */}
-          {((connectionState === 'connected' && application) || devMode === 'localhost') ? (
-            <PixelStreamingView
-              className={styles.avatarImage}
-              autoConnect={devMode === 'localhost'}
-            />
-          ) : (
-            <img src={avatarImage} alt="Avatar" className={styles.avatarImage} />
+              {/* PixelStreaming when connected OR in localhost mode; fallback image otherwise */}
+              {((connectionState === 'connected' && application) || devMode === 'localhost') ? (
+                <PixelStreamingView
+                  className={styles.avatarImage}
+                  autoConnect={devMode === 'localhost'}
+                />
+              ) : (
+                <img src={avatarImage} alt="Avatar" className={styles.avatarImage} />
+              )}
+
+              <div className={styles.controlGroup}>
+                {controls.map(control => (
+                  <button
+                    key={control.key}
+                    className={`${styles.controlButton} ${styles[control.key.replace('-', '')]} ${selectedControl === control.key ? styles.selected : ''}`}
+                    onClick={() => handleControlClick(control.key)}
+                    type="button"
+                  >
+                    <div className={styles.outerCircle} />
+                    <control.Icon className={styles.controlIcon} />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {selectedNav === 'Body' && (
+              <div className={styles.dataPanelWrapper}>
+                <DataPanel title="Body Measurements (cm)" measurements={measurements ?? undefined}>
+                  {isLoadingMeasurements && (
+                    <div className={styles.measurementsSkeleton} aria-busy="true" aria-live="polite">
+                      {Array.from({ length: skeletonRowCount }).map((_, idx) => (
+                        <div key={idx} className={styles.measurementsSkeletonRow}>
+                          <span className={styles.measurementsSkeletonIcon} />
+                          <span className={styles.measurementsSkeletonLabel} />
+                          <span className={styles.measurementsSkeletonValue} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </DataPanel>
+              </div>
+            )}
+          </div>
+
+          {selectedNav === 'Body' && (
+            <div ref={accordionRef} className={styles.accordion}>
+              <BodyAccordion
+                key={currentAvatar?.avatarId ?? 'no-avatar'}
+                avatar={accordionAvatar}
+                updateMorph={updateMorph}
+              />
+            </div>
           )}
 
-          <div className={styles.controlGroup}>
-            {controls.map(control => (
-              <button
-                key={control.key}
-                className={`${styles.controlButton} ${styles[control.key.replace('-', '')]} ${selectedControl === control.key ? styles.selected : ''}`}
-                onClick={() => handleControlClick(control.key)}
-                type="button"
-              >
-                <div className={styles.outerCircle} />
-                <control.Icon className={styles.controlIcon} />
-              </button>
-            ))}
-          </div>
-        </div>
+          {selectedNav === 'Face' && (
+            <div ref={accordionRef} className={styles.accordion}>
+              <FaceAccordion />
+            </div>
+          )}
 
-        {selectedNav === 'Body' && (
-          <div className={styles.dataPanelWrapper}>
-            <DataPanel title="Body Measurements (cm)" measurements={measurements ?? undefined}>
-              {isLoadingMeasurements && (
-                <div className={styles.measurementsSkeleton} aria-busy="true" aria-live="polite">
-                  {Array.from({ length: skeletonRowCount }).map((_, idx) => (
-                    <div key={idx} className={styles.measurementsSkeletonRow}>
-                      <span className={styles.measurementsSkeletonIcon} />
-                      <span className={styles.measurementsSkeletonLabel} />
-                      <span className={styles.measurementsSkeletonValue} />
+          {selectedNav === 'Skin' && (
+            <div ref={accordionRef} className={styles.accordion}>
+              <SkinAccordion defaultRightExpanded={openSkinRight} />
+            </div>
+          )}
+
+
+          {selectedNav === 'Hair' && (
+            <div ref={accordionRef} className={styles.accordion}>
+              <HairAccordion />
+            </div>
+          )}
+
+          {selectedNav === 'Extras' && (
+            <div ref={accordionRef} className={styles.accordion}>
+              <ExtrasAccordion />
+            </div>
+          )}
+
+          <div ref={bottomRef} className={styles.bottomSection}>
+            <div className={styles.bottomNav}>
+              {navButtons.map(btn => {
+                const navButtonVars = {
+                  '--nav-icon-width': `${btn.iconWidth}px`,
+                  '--nav-icon-height': `${btn.iconHeight}px`,
+                } as CSSProperties
+
+                return (
+                  <button
+                    key={btn.key}
+                    className={`${styles.navButton} ${selectedNav === btn.key ? styles.active : ''}`}
+                    onClick={() => { void handleNavClick(btn.key) }}
+                    type="button"
+                    style={navButtonVars}
+                    disabled={btn.key === 'Save' && isSavingMorphs}
+                  >
+                    <div className={styles.navIndicator} />
+                    <div className={styles.navIcon}>
+                      <img src={btn.icon} alt={btn.label} />
                     </div>
-                  ))}
-                </div>
-              )}
-            </DataPanel>
+                    <span className={styles.navLabel}>
+                      {btn.key === 'Save' && isSavingMorphs ? 'Saving…' : btn.label}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
-        )}
-      </div>
-
-      {selectedNav === 'Body' && (
-        <div ref={accordionRef} className={styles.accordion}>
-          <BodyAccordion
-            key={currentAvatar?.avatarId ?? 'no-avatar'}
-            avatar={accordionAvatar}
-            updateMorph={updateMorph}
-          />          
+        </>
+      ) : (
+        <div className={styles.virtualWrapper}>
+          <VirtualTryOnPanel
+            embedded
+            onRequestExit={() => {
+              setActiveView('measurements')
+              setSelectedNav(null)
+            }}
+            onRequestAvatarList={() => {
+              setActiveView('measurements')
+              setSelectedNav(null)
+            }}
+            onHeaderStateChange={setVirtualHeaderState}
+          />
         </div>
       )}
-
-      {selectedNav === 'Face' && (
-        <div ref={accordionRef} className={styles.accordion}>
-          <FaceAccordion />
-        </div>
-      )}
-
-      {selectedNav === 'Skin' && (
-        <div ref={accordionRef} className={styles.accordion}>
-          <SkinAccordion defaultRightExpanded={openSkinRight} />
-        </div>
-      )}
-
-      {selectedNav === 'Hair' && (
-        <div ref={accordionRef} className={styles.accordion}>
-          <HairAccordion />
-        </div>
-      )}
-
-      {selectedNav === 'Extras' && (
-        <div ref={accordionRef} className={styles.accordion}>
-          <ExtrasAccordion />
-        </div>
-      )}
-
-      <div ref={bottomRef} className={styles.bottomSection}>
-        <div className={styles.bottomNav}>
-          {navButtons.map(btn => {
-            const navButtonVars = {
-              '--nav-icon-width': `${btn.iconWidth}px`,
-              '--nav-icon-height': `${btn.iconHeight}px`,
-            } as CSSProperties
-
-            return (
-              <button
-                key={btn.key}
-                className={`${styles.navButton} ${selectedNav === btn.key ? styles.active : ''}`}
-                onClick={() => { void handleNavClick(btn.key) }}
-                type="button"
-                style={navButtonVars}
-                disabled={btn.key === 'Save' && isSavingMorphs}
-              >
-                <div className={styles.navIndicator} />
-                <div className={styles.navIcon}>
-                  <img src={btn.icon} alt={btn.label} />
-                </div>
-                <span className={styles.navLabel}>
-                  {btn.key === 'Save' && isSavingMorphs ? 'Saving…' : btn.label}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
     </div>
   )
 }

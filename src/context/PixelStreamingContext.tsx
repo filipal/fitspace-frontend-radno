@@ -225,7 +225,9 @@ interface PixelStreamingContextType {
   application: Application | null;
   connectionState: ConnectionState;
   connectionError: string | null;
-  
+
+  activeStreamMode: 'measurement' | 'fittingRoom' | null;
+  setActiveStreamMode: (mode: 'measurement' | 'fittingRoom' | null) => void;
   // Connection methods
   connect: (overrideUrl?: string) => Promise<void>;
   disconnect: () => void;
@@ -264,7 +266,8 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [stream, setStream] = useState<PixelStreaming | null>(null);
   const [application, setApplication] = useState<Application | null>(null);
-  
+  const [activeStreamMode, setActiveStreamMode] = useState<'measurement' | 'fittingRoom' | null>(null);
+
   // Auth data for session management
   const authData = useAuthData();
   
@@ -1238,9 +1241,9 @@ const connect = useCallback(async (overrideUrl?: string) => {
   }, [forceResolutionMatch]);
 
   return (
-    <PixelStreamingContext.Provider value={{ 
-      settings, 
-      updateSettings, 
+    <PixelStreamingContext.Provider value={{
+      settings,
+      updateSettings,
       resetSettings,
       debugMode,
       debugSettings,
@@ -1258,6 +1261,8 @@ const connect = useCallback(async (overrideUrl?: string) => {
       connect,
       disconnect,
       reconnect,
+      activeStreamMode,
+      setActiveStreamMode,
       sendFitSpaceCommand,
       sendCommand,
       forceResolutionMatch,

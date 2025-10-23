@@ -24,6 +24,7 @@ export const PixelStreamingContainer: React.FC<{ renderView?: boolean }> = ({
     devMode,
     setDebugMode,
     setDebugSettings,
+    activeStreamMode,
   } = usePixelStreaming()
 
   // stabilna slika postavki u ovom renderu
@@ -38,15 +39,15 @@ export const PixelStreamingContainer: React.FC<{ renderView?: boolean }> = ({
 
   // rute koje koriste streaming
   const streamPages = ['/unreal-measurements', '/virtual-try-on'] as const
-  const isStreamPage = streamPages.includes(location.pathname as (typeof streamPages)[number])
+  const isStreamPage = Boolean(activeStreamMode) || streamPages.includes(location.pathname as (typeof streamPages)[number])
 
   // trenutni "mode" u UE
-  const currentMode =
-    location.pathname === '/unreal-measurements'
+  const currentMode = activeStreamMode
+    ?? (location.pathname === '/unreal-measurements'
       ? 'measurement'
       : location.pathname === '/virtual-try-on'
         ? 'fittingRoom'
-        : null
+        : null)
 
   // zapamti prethodni mode da šaljemo switchMode samo kad se stvarno promijeni
   const prevModeRef = useRef<string | null>(null)
