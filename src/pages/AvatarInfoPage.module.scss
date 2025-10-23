@@ -178,7 +178,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: calc(var(--avatar-scale) * 9.18px);
+  gap: calc(var(--avatar-scale) * 10px);
 }
 
 .pickerLabel {
@@ -186,7 +186,7 @@
   text-align: center;
   font-size: calc(var(--avatar-scale) * 12.7082px);
   font-weight: 300;
-  line-height: calc(var(--avatar-scale) * 9.18px);
+  line-height: calc(var(--avatar-scale) * 10px);
   color: #000;
 }
 
