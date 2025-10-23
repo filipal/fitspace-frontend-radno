@@ -194,6 +194,8 @@
   display: grid;
   grid-template-columns: var(--avatar-arrow-width) minmax(0, 1fr) var(--avatar-arrow-width);
   align-items: center;
+  block-size: var(--avatar-arrow-width);
+  min-block-size: var(--avatar-arrow-width);
 }
 
 .arrowButton {
@@ -216,10 +218,12 @@
 
 .pickerValues {
   inline-size: 100%;
+  block-size: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: calc(var(--avatar-scale) * 12px);
+  overflow: hidden;
 }
 
 .pickerValue {
@@ -242,6 +246,7 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   column-gap: calc(var(--avatar-scale) * 22px);
   justify-items: center;
+  align-items: center;
 }
 
 .pickerAge .selected {
@@ -381,8 +386,8 @@
     max-inline-size: 760px;
     block-size: auto;
     --avatar-scale: 1;
-    --avatar-input-width: 420px;
-    --avatar-panel-width: 480px;
+    --avatar-input-width: 421px;
+    --avatar-panel-width: 490px;
     --avatar-choice-gap: 24px;
     --avatar-button-height: 50px;
     --avatar-control-height: 40px;
@@ -411,13 +416,12 @@
     align-items: center;
   }
 
-  .formSection,
-  .actionsGrid {
+  .formSection {
     inline-size: min(100%, 420px);
   }
 
   .pickersGroup {
-    inline-size: min(100%, 480px);
+    inline-size: min(100%, 490px);
   }
 
   .pickerControl {
@@ -442,14 +446,31 @@
   }
 
   .actionsGrid {
-    gap: 36px;
-    margin-top: 40px;
+    inline-size: min(100%, 720px);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 60px;
+    row-gap: 0;
+    justify-content: center;
+    margin-top: 48px;
+  }
+
+  .action {
+    inline-size: 100%;
+    max-inline-size: 350px;
+    justify-self: center;
   }
 
   .backButtonAvatarinfo {
     margin-top: 52px;
     font-size: 18px;
     line-height: 22px;
+  }
+
+  .howText {
+    font-size: 20px;
+    line-height: 25px;
+    max-inline-size: 420px;
   }
 
   .avatarNameInput {
@@ -510,10 +531,12 @@
     inline-size: 21px;
     block-size: 21px;
   }
+
   .scanDesc,
   .quickDesc {
-    font-size: 12px;
-    line-height: 16px;
+    font-size: 15px;
+    line-height: 19px;
     min-block-size: auto;
+    max-inline-size: 350px;
   }
 }
