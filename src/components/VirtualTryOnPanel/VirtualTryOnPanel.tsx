@@ -46,6 +46,7 @@ import {
 import ArrowUp from '../../assets/arrow-up.svg'
 import ArrowDown from '../../assets/arrow-down.svg'
 import { useQueuedUnreal } from '../../services/queuedUnreal'
+import { useAuthData } from '../../hooks/useAuthData'
 
 // View state structure
 interface ViewState {
@@ -82,21 +83,24 @@ function VirtualTryOnPanel({
   onHeaderStateChange,
 }: VirtualTryOnPanelProps) {
   const navigate = useNavigate()
+  const { isAuthenticated } = useAuthData()
 
   const handleExit = useCallback(() => {
     if (embedded) {
       onRequestExit?.()
+    } else if (isAuthenticated) {
+      navigate('/')
     } else {
-      navigate(-1)
+      navigate('/exit-guest-user')
     }
-  }, [embedded, navigate, onRequestExit])
+  }, [embedded, isAuthenticated, navigate, onRequestExit])
 
   const handleAvatarClick = useCallback(() => {
     if (embedded) {
       const fallback = onRequestAvatarList ?? onRequestExit
       fallback?.()
     } else {
-      navigate('/unreal-measurements')
+      navigate('/')
     }
   }, [embedded, navigate, onRequestAvatarList, onRequestExit])
   const { sendFitSpaceCommand, connectionState, application, devMode } = usePixelStreaming()

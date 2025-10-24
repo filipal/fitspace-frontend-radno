@@ -416,7 +416,7 @@ export default function LoginPage() {
           <button
             type="button"
             className={styles.createButton}
-            onClick={() => (window.location.href = '/avatar-info')}
+            onClick={() => navigate('/avatar-info', { state: { origin: 'login' } })}
           >
             Create Your Digital Twin
           </button>

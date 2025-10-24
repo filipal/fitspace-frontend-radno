@@ -752,7 +752,9 @@ export default function LoggedInPage() {
                   })
             }
             onAction={() =>
-              showDeleteConfirm ? confirmDelete() : navigate('/avatar-info')
+              showDeleteConfirm
+                ? confirmDelete()
+                : navigate('/avatar-info', { state: { origin: 'logged-in' } })
             }
             actionDisabled={
               showDeleteConfirm ? Boolean(deletingId) : avatars.length >= maxAvatars

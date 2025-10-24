@@ -1256,24 +1256,27 @@ export default function UnrealMeasurements() {
         </div>
       )
     : (
-        <button className={styles.avatarButton} onClick={() => navigate('/logged-in')} type="button">
+        <button
+          className={styles.avatarButton}
+          onClick={() => {
+            setActiveView('virtualTryOn')
+            setSelectedNav(null)
+          }}
+          type="button"
+        >
           <img src={avatarsButton} alt="Avatars" />
         </button>
       )
 
-  const handleExit = useCallback(() => {
-    if (activeView === 'virtualTryOn') {
-      setActiveView('measurements')
-      setSelectedNav(null)
-      return
-    }
-
+  const exitToHomeOrGuest = useCallback(() => {
     if (isAuthenticated) {
-      navigate('/')
+      navigate('/logged-in')
     } else {
       navigate('/exit-guest-user')
     }
-  }, [activeView, isAuthenticated, navigate])
+  }, [isAuthenticated, navigate])
+
+  const handleExit = exitToHomeOrGuest
 
   return (
     <div ref={pageRef} className={styles.page}>
@@ -1425,10 +1428,7 @@ export default function UnrealMeasurements() {
         <div className={styles.virtualWrapper}>
           <VirtualTryOnPanel
             embedded
-            onRequestExit={() => {
-              setActiveView('measurements')
-              setSelectedNav(null)
-            }}
+            onRequestExit={exitToHomeOrGuest}
             onRequestAvatarList={() => {
               setActiveView('measurements')
               setSelectedNav(null)
