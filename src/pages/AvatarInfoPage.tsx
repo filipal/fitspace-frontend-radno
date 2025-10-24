@@ -552,7 +552,17 @@ export default function AvatarInfoPage() {
                 </div>
               </div>
             </div>
-            <button className={styles.backButtonAvatarinfo} onClick={() => navigate('/') }>
+            <button
+              className={styles.backButtonAvatarinfo}
+              onClick={() => {
+                if (typeof window !== 'undefined' && window.history.length > 1) {
+                  navigate(-1)
+                  return
+                }
+
+                navigate('/')
+              }}
+            >
               Back
             </button>
           </div>

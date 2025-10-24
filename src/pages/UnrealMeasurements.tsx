@@ -1269,12 +1269,21 @@ export default function UnrealMeasurements() {
       )
 
   const exitToHomeOrGuest = useCallback(() => {
+    if (activeView === 'virtualTryOn') {
+      if (isAuthenticated) {
+        navigate('/')
+      } else {
+        navigate('/exit-guest-user')
+      }
+      return
+    }
+
     if (isAuthenticated) {
       navigate('/logged-in')
     } else {
       navigate('/exit-guest-user')
     }
-  }, [isAuthenticated, navigate])
+  }, [activeView, isAuthenticated, navigate])
 
   const handleExit = exitToHomeOrGuest
 
