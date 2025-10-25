@@ -197,7 +197,7 @@ export default function AvatarInfoPage() {
       0,
       Number.POSITIVE_INFINITY
     )
-    const viewportScale = Math.min(scaleWidth, scaleHeightSafe, 1)
+   const viewportScale = Math.min(scaleWidth, scaleHeightSafe)
     const canvasWidth = MOBILE_DESIGN_WIDTH * viewportScale
     const canvasHeight = MOBILE_DESIGN_HEIGHT * viewportScale
     const pageMaxHeight = Math.max(canvasHeight, stableViewportHeight)

@@ -352,7 +352,7 @@
 .quickDesc {
   inline-size: 100%;
   max-inline-size: var(--avatar-panel-width);
-  font-size: calc(var(--avatar-scale) * 8.4721px);
+  font-size: calc(var(--avatar-scale) * 12px);
   line-height: calc(var(--avatar-scale) * 11px);
   min-block-size: calc(var(--avatar-scale) * 22px);
   font-weight: 300;

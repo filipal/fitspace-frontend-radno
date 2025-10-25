@@ -4,6 +4,7 @@
   /* cijela stranica = točno vidljivi viewport */
   --fs-safe-area-top: env(safe-area-inset-top);
   --fs-safe-area-bottom: env(safe-area-inset-bottom);
+  --fs-scale-safe: max(var(--fs-scale, 1), 0.0001);
   --fs-viewport-height: max(
     0px,
     calc(100svh - var(--fs-safe-area-top) - var(--fs-safe-area-bottom))
@@ -59,7 +60,10 @@
 .canvas {
   inline-size: var(--fs-canvas-width);
   /* min-block-size: var(--fs-canvas-height); ⟵ makni “min-” */
-  block-size: var(--fs-canvas-height);
+  block-size: max(
+    var(--fs-canvas-height),
+    var(--fs-page-max-height, var(--fs-canvas-height))
+  );
   display: flex;
   justify-content: center;
   position: relative;
@@ -69,7 +73,13 @@
 .canvasInner {
   inline-size: var(--fs-design-width);
   /* min-block-size: var(--fs-design-height); ⟵ makni “min-” */
-  block-size: var(--fs-design-height);
+  block-size: max(
+    var(--fs-design-height),
+    calc(
+      var(--fs-page-max-height, var(--fs-canvas-height)) /
+      var(--fs-scale-safe)
+    )
+  );
   transform-origin: top center;
   transform: scale(var(--fs-scale));
   position: relative;
