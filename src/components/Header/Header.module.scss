@@ -117,15 +117,13 @@
   text-overflow: ellipsis;
 }
 
-/* WEB ≥ 600px: fiksna visina 71px, svi elementi centrirani po visini */
+/* WEB ≥ 600px: fiksna visina 70px */
 @media (min-width: 600px) {
   .appHeader {
-    height: 71px;
+    height: 70px;
     padding-top: 0;
     padding-bottom: 0;
-    align-items: center;
   }
-  .appHeader > * { align-self: center; }
 }
 
 
@@ -138,17 +136,24 @@
     width: 100vw;
     margin-left: calc(50% - 50vw);
     margin-right: calc(50% - 50vw);
-    height: 71px;
+    height: 70px;
     padding-left: 35px;
     padding-right: 22px;
-/*     padding-inline: 24px; */
+    padding-bottom: 21px;
     grid-template-columns: auto 1fr auto;
-    align-items: center;
+    align-items: end;
     padding-top: 0;
-    padding-bottom: 0;
+  }
+  .headerTitle {
+    font-size: 23px;
   }
   .appHeader > * {
-    align-self: center;
+    align-self: end;
   }
-  .rightBox > *:last-child { margin-inline-end: 14px; }
+  .rightBox > *:last-child {
+    margin-inline-end: 14px;
+  }
+  .headerTitle {
+    font-size: 23px;
+  }
 }

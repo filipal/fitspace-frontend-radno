@@ -258,3 +258,30 @@ $design-w: 430;
   background: #000; color: #fff; border: none;
   font-size: fsz(18); display: flex; align-items: center; justify-content: center; cursor: pointer;
 }
+
+@media (min-width: 800px) {
+  .canvas { width: 420px;}
+  .sectionLabel{
+    font-size: 20px;
+  }
+  .bodyshapeRow {
+    width: 417.64px;
+    height: 79.64px;
+    margin-top: 40px;
+    margin-bottom: 40px;
+  }
+  .quickmodeContent { width: 420px; height: 498.57px; gap: auto; margin-top: 65px;}
+  .athleticSliderWrap { width: 419px; height: 72.93px; }
+  .athleticSliderTrack { width: 367.52px; height: 35.75px; }
+  .athleticCircle { width: 35.75px; height: 35.75px; }
+  .athleticTrack { width: 367.52px; height: 12.87px; }
+  .athleticIcons { width: 419px; height: 30.03px; }
+  .Thin { width: 51.48px; height: 7.15px; }
+  .Normal { width: 52.91px; height: 20.02px; }
+  .Muscular { width: 51.48px; height: 30.03px; }
+  .sectionMeasurements { width: 420px; height: 160px; margin-top: 42px; gap: 20px; }
+  .measureRow { width: 420px; height: 40px; }
+  .measureLabel { width: 288.75px; height: 40px; }
+  .measureSelect { width: 78.75px; height: 40px; }
+  .measureUnit { width: 38.06px; height: 40px; }
+}
