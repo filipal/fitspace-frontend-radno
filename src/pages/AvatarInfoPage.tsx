@@ -30,10 +30,12 @@ const DESKTOP_BREAKPOINT = 768
 const DESKTOP_DESIGN_WIDTH = 1440
 const DESKTOP_DESIGN_HEIGHT = 1024
 const KEYBOARD_MIN_HEIGHT_DELTA = 150
+const PINCH_ZOOM_EPSILON = 0.02
 
 interface ViewportSize {
   width: number
   height: number
+  scale: number
 }
 
 const clamp = (value: number, min: number, max: number) =>
@@ -51,20 +53,27 @@ type AvatarInfoPageCssVars = CSSProperties & {
   '--fs-canvas-width'?: string
   '--fs-canvas-height'?: string
   '--fs-page-max-height'?: string
-  '--fs-extra-bottom-padding'?: string
 }
 
 function readViewportSize(): ViewportSize {
   if (typeof window === 'undefined') {
-    return { width: MOBILE_DESIGN_WIDTH, height: MOBILE_DESIGN_HEIGHT + HEADER_DESIGN_HEIGHT }
+    return {
+      width: MOBILE_DESIGN_WIDTH,
+      height: MOBILE_DESIGN_HEIGHT + HEADER_DESIGN_HEIGHT,
+      scale: 1,
+    }
   }
 
   const viewport = window.visualViewport
   if (viewport) {
-    return { width: window.innerWidth, height: viewport.height }
+    return {
+      width: window.innerWidth,
+      height: viewport.height,
+      scale: viewport.scale ?? 1,
+    }
   }
 
-  return { width: window.innerWidth, height: window.innerHeight }
+  return { width: window.innerWidth, height: window.innerHeight, scale: 1 }
 }
 
 const ages = ['15-19', ...Array.from({ length: 8 }, (_, i) => {
@@ -89,10 +98,11 @@ export default function AvatarInfoPage() {
   const { avatars, maxAvatars, refreshAvatars, setPendingAvatarName } = useAvatars()
   const authData = useAuthData()
   const [viewportSize, setViewportSize] = useState<ViewportSize>(() => readViewportSize())
-  const { width: viewportWidth, height: viewportHeight } = viewportSize
+  const { width: viewportWidth, height: viewportHeight, scale: viewportScale } = viewportSize
   const stableViewportHeightRef = useRef(viewportHeight)
   const stableViewportWidthRef = useRef(viewportWidth)
   const previousViewportWidthRef = useRef(viewportWidth)
+  const previousViewportScaleRef = useRef(viewportScale)
   const age = usePicker(1, ages)
   const height = usePicker(2, heights)
   const weight = usePicker(2, weights)
@@ -122,43 +132,59 @@ export default function AvatarInfoPage() {
   }, [])
 
   useEffect(() => {
-    if (viewportWidth !== previousViewportWidthRef.current) {
+    const pinchZoomActive = Math.abs(viewportScale - 1) > PINCH_ZOOM_EPSILON
+
+    if (
+      viewportWidth !== previousViewportWidthRef.current ||
+      Math.abs(viewportScale - previousViewportScaleRef.current) > PINCH_ZOOM_EPSILON
+    ) {
       previousViewportWidthRef.current = viewportWidth
-      stableViewportHeightRef.current = viewportHeight
+      previousViewportScaleRef.current = viewportScale
+      if (!pinchZoomActive) {
+        stableViewportHeightRef.current = viewportHeight
+      }
       return
     }
 
     if (viewportHeight > stableViewportHeightRef.current) {
       stableViewportHeightRef.current = viewportHeight
     }
-  }, [viewportHeight, viewportWidth])
+  }, [viewportHeight, viewportWidth, viewportScale])
 
   useEffect(() => {
     const stableHeight = stableViewportHeightRef.current
+    const pinchZoomActive = Math.abs(viewportScale - 1) > PINCH_ZOOM_EPSILON
 
-    if (viewportWidth > stableViewportWidthRef.current) {
+    if (viewportWidth > stableViewportWidthRef.current && !pinchZoomActive) {
       stableViewportWidthRef.current = viewportWidth
       return
     }
 
-    if (viewportHeight >= stableHeight - 1) {
+    if (viewportHeight >= stableHeight - 1 && !pinchZoomActive) {
       stableViewportWidthRef.current = viewportWidth
     }
-  }, [viewportHeight, viewportWidth])
+  }, [viewportHeight, viewportWidth, viewportScale])
 
   const stableViewportHeight = Math.max(
     viewportHeight,
     stableViewportHeightRef.current
   )
+  const stableViewportWidth = stableViewportWidthRef.current
+  const pinchZoomActive = Math.abs(viewportScale - 1) > PINCH_ZOOM_EPSILON
   const widthDelta = Math.abs(viewportWidth - stableViewportWidthRef.current)
   const heightDelta = stableViewportHeight - viewportHeight
-  const keyboardLikelyOpen = heightDelta > KEYBOARD_MIN_HEIGHT_DELTA && widthDelta < 24
-  const effectiveViewportWidth = keyboardLikelyOpen
-    ? stableViewportWidthRef.current
-    : viewportWidth
-  const viewportHeightForLayout = keyboardLikelyOpen
+  const keyboardLikelyOpen =
+    !pinchZoomActive && heightDelta > KEYBOARD_MIN_HEIGHT_DELTA && widthDelta < 24
+  const effectiveViewportWidth = pinchZoomActive
+    ? stableViewportWidth
+    : keyboardLikelyOpen
+      ? stableViewportWidth
+      : viewportWidth
+  const viewportHeightForLayout = pinchZoomActive
     ? stableViewportHeight
-    : viewportHeight
+    : keyboardLikelyOpen
+      ? stableViewportHeight
+      : viewportHeight
 
   const { cssVars: layoutVars, canvasHeight } = useMemo(() => {
     if (effectiveViewportWidth >= DESKTOP_BREAKPOINT) {
@@ -208,25 +234,33 @@ export default function AvatarInfoPage() {
     const headerScale = clamp(scaleHeightSafe, HEADER_MIN_SCALE, 1)
     const headerHeight = HEADER_DESIGN_HEIGHT * headerScale
     const availableHeight = Math.max(viewportHeightForLayout - headerHeight, 0)
-    const scaleHeightContent = clamp(
+    const rawScaleHeightContent = clamp(
       availableHeight / MOBILE_DESIGN_HEIGHT,
       0,
       Number.POSITIVE_INFINITY
     )
-    const viewportScale = Math.min(scaleWidth, scaleHeightContent)
-    const canvasWidth = MOBILE_DESIGN_WIDTH * viewportScale
-    const canvasHeight = MOBILE_DESIGN_HEIGHT * scaleHeightContent
+    const minContentScale = Math.min(scaleWidth, 1)
+    const canFitMinContentScale =
+      availableHeight + 0.5 >= MOBILE_DESIGN_HEIGHT * minContentScale
+    const contentScaleAbsolute = canFitMinContentScale
+      ? Math.max(rawScaleHeightContent, minContentScale)
+      : rawScaleHeightContent
+    const safeScaleWidth = scaleWidth > 0 ? scaleWidth : 1
+    const contentScaleRelative = contentScaleAbsolute / safeScaleWidth
+    const canvasWidth = MOBILE_DESIGN_WIDTH * scaleWidth
+    const canvasHeight = MOBILE_DESIGN_HEIGHT * contentScaleAbsolute
+    const designHeight = MOBILE_DESIGN_HEIGHT * contentScaleRelative
     const pageMaxHeight = Math.max(canvasHeight, availableHeight)
 
     const cssVars: AvatarInfoPageCssVars = {
       '--fs-design-width': `${MOBILE_DESIGN_WIDTH}px`,
-      '--fs-design-height': `${MOBILE_DESIGN_HEIGHT}px`,
+      '--fs-design-height': `${designHeight.toFixed(3)}px`,
       '--fs-design-safe-height': `${MOBILE_SAFE_HEIGHT}px`,
       '--fs-viewport-height': `${viewportHeightForLayout.toFixed(3)}px`,
       '--fs-scale-width': scaleWidth.toFixed(5),
       '--fs-scale-height': scaleHeightSafe.toFixed(5),
-      '--fs-scale-height-content': scaleHeightContent.toFixed(5),
-      '--fs-scale': viewportScale.toFixed(5),
+      '--fs-scale-height-content': contentScaleRelative.toFixed(5),
+      '--fs-scale': scaleWidth.toFixed(5),
       '--fs-canvas-width': `${canvasWidth.toFixed(3)}px`,
       '--fs-canvas-height': `${canvasHeight.toFixed(3)}px`,
       '--fs-page-max-height': `${pageMaxHeight.toFixed(3)}px`,
