@@ -25,6 +25,8 @@ export const PixelStreamingContainer: React.FC<{ renderView?: boolean }> = ({
     setDebugMode,
     setDebugSettings,
     activeStreamMode,
+    isIntentionalDisconnect,
+    clearIntentionalDisconnect,
   } = usePixelStreaming()
 
   // stabilna slika postavki u ovom renderu
@@ -51,6 +53,7 @@ export const PixelStreamingContainer: React.FC<{ renderView?: boolean }> = ({
 
   // zapamti prethodni mode da šaljemo switchMode samo kad se stvarno promijeni
   const prevModeRef = useRef<string | null>(null)
+  const wasOnStreamPageRef = useRef<boolean>(false)
 
   // DEV helper: localhost → forsiraj debug postavke
   useEffect(() => {
@@ -60,6 +63,22 @@ export const PixelStreamingContainer: React.FC<{ renderView?: boolean }> = ({
       setDebugSettings({ ss: 'ws://localhost:80' })
     }
   }, [isStreamPage, devMode, setDebugMode, setDebugSettings])
+
+  // Clear intentional disconnect flag ONLY when navigating TO a streaming page
+  // (not when already on one and disconnecting)
+  useEffect(() => {
+    const wasOnStreamPage = wasOnStreamPageRef.current;
+    const nowOnStreamPage = isStreamPage;
+    
+    // Update the ref for next render
+    wasOnStreamPageRef.current = nowOnStreamPage;
+    
+    // Only clear if we're transitioning FROM non-stream TO stream page
+    if (!wasOnStreamPage && nowOnStreamPage && isIntentionalDisconnect) {
+      console.log('🔓 PS Container: Navigated to streaming page, clearing intentional disconnect flag');
+      clearIntentionalDisconnect();
+    }
+  }, [isStreamPage, isIntentionalDisconnect, clearIntentionalDisconnect]);
 
   // Auto-connect čim uđemo na stranicu koja koristi stream (ako smo disconnected)
   useEffect(() => {
@@ -72,11 +91,17 @@ export const PixelStreamingContainer: React.FC<{ renderView?: boolean }> = ({
     // Ako smo već connected/connecting, ne pokušavaj opet
     if (connectionState === 'connected' || connectionState === 'connecting') return;
 
-    console.log('🔌 PS Container: initiating connect…', ss);
+    // Ne pokušavaj reconnect ako je korisnik namjerno diskonektovao
+    if (isIntentionalDisconnect) {
+      console.log('� PS Container: skipping auto-connect due to intentional disconnect');
+      return;
+    }
+
+    console.log('�🔌 PS Container: initiating connect…', ss);
     // Po želji možeš proslijediti ss kao override, ali nije nužno
     // connectRef.current(ss);
     connectRef.current();
-  }, [isStreamPage, ss, connectionState]);
+  }, [isStreamPage, ss, connectionState, isIntentionalDisconnect]);
 
   // Prebacivanje modova bez reconnecta
   useEffect(() => {

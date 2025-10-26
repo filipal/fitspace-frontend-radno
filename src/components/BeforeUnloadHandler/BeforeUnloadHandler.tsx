@@ -1,71 +1,83 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useInstanceManagement } from '../../context/InstanceManagementContext'
 
-const CLOSE_INSTANCE_LAMBDA_URL =
-  'https://hfijogsomw73ojgollhdr75oqq0osdlq.lambda-url.eu-central-1.on.aws/'
+// Stranice na kojima NE želimo prikazati beforeunload prompt
+const EXCLUDED_PATHS = ['/login', '/auth/callback', '/exit-guest-user']
+
+const LAMBDA_CLOSE_URL = 'https://hfijogsomw73ojgollhdr75oqq0osdlq.lambda-url.eu-central-1.on.aws/'
+
+/**
+ * Logika koja se izvršava kada user pritisne "Leave" i napušta stranicu.
+ * Koristi sendBeacon za garantovano slanje podataka čak i kada se stranica zatvara.
+ */
+const executeOnLeave = (instanceId?: string) => {
+  console.log('🚪 User is leaving the site...')
+  
+  if (!instanceId) {
+    console.log('No instance ID found - skipping close signal')
+    return
+  }
+
+  // Lambda očekuje samo { "instanceId": "i-xxx..." }
+  const payload = JSON.stringify({ 
+    instanceId
+  })
+
+  // Pokušaj 1: sendBeacon (BEST PRACTICE - browser garantuje slanje)
+  const blob = new Blob([payload], { type: 'application/json' })
+  const beaconSuccess = navigator.sendBeacon(LAMBDA_CLOSE_URL, blob)
+  
+  if (beaconSuccess) {
+    console.log('✅ Close signal sent via sendBeacon')
+  } else {
+    // Pokušaj 2: Fallback na fetch sa keepalive
+    console.warn('⚠️ sendBeacon failed, trying fetch with keepalive...')
+    fetch(LAMBDA_CLOSE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload,
+      keepalive: true
+    }).catch((error) => {
+      console.error('❌ Failed to send close signal:', error)
+    })
+  }
+}
 
 export default function BeforeUnloadHandler() {
+  const location = useLocation()
   const { instanceData } = useInstanceManagement()
-  const sentRef = useRef(false)
-
+  
   useEffect(() => {
-    sentRef.current = false
-
-    const sendCloseSignal = () => {
-      if (sentRef.current) return
-      sentRef.current = true
-
-      const id = instanceData?.instanceId
-      if (!id) return
-
-      const body = JSON.stringify({ instanceId: id })
-      // sendBeacon preferirano za lifecycle završetke
-      const blob = new Blob([body], { type: 'application/json' })
-      const ok = navigator.sendBeacon(CLOSE_INSTANCE_LAMBDA_URL, blob)
-
-      if (!ok) {
-        // Fallback ako sendBeacon vrati false
-        fetch(CLOSE_INSTANCE_LAMBDA_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body,
-          keepalive: true,
-        }).catch((error) => {
-          console.error('Failed to send close instance request:', error)
-        })
-      }
+    const shouldShowPrompt = !EXCLUDED_PATHS.includes(location.pathname)
+    
+    if (!shouldShowPrompt) {
+      return undefined
     }
 
-    // (Opcionalno) potvrda izlaska – ne radi custom tekst u modernim browserima
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      // Ako ti uopće treba prompt; inače slobodno izbaci cijeli beforeunload
+      // Prikaži prompt
       event.preventDefault()
-      event.returnValue = '' // generička poruka
-      // Ne šaljemo mrežne zahtjeve ovdje
+      event.returnValue = ''
+      
+      // NAPOMENA: executeOnLeave() će se pozvati bez obzira da li user pritisne Leave ili Cancel
+      // Nema način da se detektuje izbor korisnika u beforeunload eventu
     }
 
-    // Zamjena za 'unload': radi i kod navigacije i kod bfcache
+    // pagehide event se aktivira SAMO kada stranica zaista nestaje
+    // (kada user pritisne Leave ili direktno zatvori tab)
     const handlePageHide = () => {
-      sendCloseSignal()
-    }
-
-    // Dodatni osigurač (npr. neki WebKit slučajevi)
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        sendCloseSignal()
-      }
+      executeOnLeave(instanceData?.instanceId)
     }
 
     // window.addEventListener('beforeunload', handleBeforeUnload)
-    window.addEventListener('pagehide', handlePageHide)
-    document.addEventListener('visibilitychange', handleVisibilityChange)
+    // window.addEventListener('pagehide', handlePageHide)
 
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload)
       window.removeEventListener('pagehide', handlePageHide)
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [instanceData?.instanceId])
+  }, [location.pathname, instanceData?.instanceId])
 
   return null
 }

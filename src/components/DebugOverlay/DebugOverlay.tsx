@@ -76,10 +76,15 @@ export default function DebugOverlay() {
       const result = await response.json();
       console.log('✅ Terminate UE server response:', result);
       
-      if (result.status === 'TERMINATED') {
-        alert(`Server terminated successfully! Instance: ${result.instanceId}`);
+      // Lambda vraća: { "status": "STOPPED_AND_RESET", "instanceId": "i-xxx..." }
+      if (result.status === 'STOPPED_AND_RESET') {
+        alert(`✅ Server stopped and reset successfully!\nInstance: ${result.instanceId}`);
+        console.log('✅ Instance stopped and reset:', result.instanceId);
+      } else if (result.status === 'TERMINATED' || result.status === 'STOPPED') {
+        alert(`✅ Server terminated successfully!\nInstance: ${result.instanceId || instanceData.instanceId}`);
       } else {
-        alert('Server termination initiated, check console for details');
+        console.warn('⚠️ Unexpected response status:', result.status);
+        alert(`Server operation completed with status: ${result.status}\nCheck console for details`);
       }
     } catch (error) {
       console.error('❌ Failed to terminate UE server:', error);
@@ -93,7 +98,10 @@ export default function DebugOverlay() {
       console.log('🚀 Debug: Launching instance navigation');
       const targetRoute = '/virtual-try-on';
       navigate(`/loading?destination=${encodeURIComponent(targetRoute)}`, {
-        state: { debug: true }
+        state: { 
+          debug: true,
+          skipProvisioning: true // Skip provisioning for debug mode
+        }
       });
     } catch (error) {
       console.error('❌ Failed to launch debug instance:', error);

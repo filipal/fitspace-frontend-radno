@@ -63,7 +63,7 @@ interface InstanceManagementProviderProps {
   children: ReactNode
 }
 
-const LAMBDA_URL = 'https://t6kf7jfqub5z5jcetfzk64ko6u0vlpwe.lambda-url.eu-central-1.on.aws/'
+const LAMBDA_URL = 'https://aellzxc77esw24i3syrtk7fia40gpirx.lambda-url.eu-west-2.on.aws/'
 
 export function InstanceManagementProvider({ children }: InstanceManagementProviderProps) {
   const [instanceData, setInstanceData] = useState<InstanceData | null>(null)

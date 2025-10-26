@@ -280,7 +280,7 @@ export default function UnrealMeasurements() {
     }
   }, [selectedNav, computeFocusedAvatarZoom, activeView])
 
-  const { sendFitSpaceCommand, connectionState, application, devMode, setActiveStreamMode } = usePixelStreaming()
+  const { sendFitSpaceCommand, connectionState, application, devMode, setActiveStreamMode, disconnect } = usePixelStreaming()
 
   useEffect(() => {
     setActiveStreamMode(activeView === 'virtualTryOn' ? 'fittingRoom' : 'measurement')
@@ -1256,36 +1256,39 @@ export default function UnrealMeasurements() {
         </div>
       )
     : (
-        <button
-          className={styles.avatarButton}
+        <button 
+          className={styles.avatarButton} 
           onClick={() => {
-            setActiveView('virtualTryOn')
-            setSelectedNav(null)
-          }}
+            // Disconnect when leaving measurements view via avatar button
+            if (activeView === 'measurements') {
+              console.log('🔌 Navigating to avatar list - disconnecting from pixel streaming');
+              disconnect();
+            }
+            navigate('/logged-in');
+          }} 
           type="button"
         >
           <img src={avatarsButton} alt="Avatars" />
         </button>
       )
 
-  const exitToHomeOrGuest = useCallback(() => {
+  const handleExit = useCallback(() => {
     if (activeView === 'virtualTryOn') {
-      if (isAuthenticated) {
-        navigate('/')
-      } else {
-        navigate('/exit-guest-user')
-      }
+      setActiveView('measurements')
+      setSelectedNav(null)
       return
     }
 
+    // Disconnect from pixel streaming when leaving measurements view
+    console.log('🔌 Exiting measurements page - disconnecting from pixel streaming');
+    disconnect();
+
     if (isAuthenticated) {
-      navigate('/logged-in')
+      navigate('/')
     } else {
       navigate('/exit-guest-user')
     }
-  }, [activeView, isAuthenticated, navigate])
-
-  const handleExit = exitToHomeOrGuest
+  }, [activeView, isAuthenticated, navigate, disconnect])
 
   return (
     <div ref={pageRef} className={styles.page}>
@@ -1437,7 +1440,10 @@ export default function UnrealMeasurements() {
         <div className={styles.virtualWrapper}>
           <VirtualTryOnPanel
             embedded
-            onRequestExit={exitToHomeOrGuest}
+            onRequestExit={() => {
+              setActiveView('measurements')
+              setSelectedNav(null)
+            }}
             onRequestAvatarList={() => {
               setActiveView('measurements')
               setSelectedNav(null)

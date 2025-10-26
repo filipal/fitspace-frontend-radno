@@ -1,5 +1,6 @@
 import React, { createContext, useState, useCallback, useMemo } from 'react';
 import {
+  Logger,
   Config,
   PixelStreaming
 } from '@epicgames-ps/lib-pixelstreamingfrontend-ue5.6';
@@ -11,6 +12,11 @@ import type { AllSettings } from '@epicgames-ps/lib-pixelstreamingfrontend-ue5.6
 import { getPixelStreamingConfig } from '../config/pixelStreamingConfig';
 import { getNetworkInformation } from '../utils/networkInfo';
 import { useAuthData } from '../hooks/useAuthData';
+
+
+// Set Logger to only show warnings and errors (suppresses verbose info/debug logs)
+// LogLevel: 0=Verbose, 1=Info, 2=Warning, 3=Error
+Logger.InitLogging(2, false);
 
 declare global {
   interface Window {
@@ -225,6 +231,7 @@ interface PixelStreamingContextType {
   application: Application | null;
   connectionState: ConnectionState;
   connectionError: string | null;
+  isIntentionalDisconnect: boolean;
 
   activeStreamMode: 'measurement' | 'fittingRoom' | null;
   setActiveStreamMode: (mode: 'measurement' | 'fittingRoom' | null) => void;
@@ -232,6 +239,7 @@ interface PixelStreamingContextType {
   connect: (overrideUrl?: string) => Promise<void>;
   disconnect: () => void;
   reconnect: () => Promise<void>;
+  clearIntentionalDisconnect: () => void;
   
   // Fitting room specific commands
   sendFitSpaceCommand: SendFitSpaceCommand;
@@ -280,6 +288,9 @@ export const PixelStreamingProvider: React.FC<{ children: React.ReactNode }> = (
 
   // Native overlay visibility state
   const [hideNativeOverlay, setHideNativeOverlay] = useState<boolean>(true);
+
+  // Track intentional disconnect to prevent auto-reconnect
+  const [isIntentionalDisconnect, setIsIntentionalDisconnect] = useState<boolean>(false);
 
   // Spriječi paralelne/učestale connect pozive
   const connectInFlightRef = React.useRef(false);
@@ -411,6 +422,8 @@ const connect = useCallback(async (overrideUrl?: string) => {
   let stillConnecting = true;                // guard za timeout
 
   try {
+    // Clear intentional disconnect flag when manually connecting
+    setIsIntentionalDisconnect(false);
     setConnectionState('connecting');
     setConnectionError(null);
 
@@ -982,6 +995,16 @@ const connect = useCallback(async (overrideUrl?: string) => {
     ]);
 
   const disconnect = useCallback(() => {
+    console.log('🔌 Manual disconnect called - setting intentional disconnect flag');
+    console.log('🔌 Current state before disconnect:', {
+      connectionState,
+      hasStream: !!stream,
+      isIntentionalDisconnect
+    });
+    
+    // Set flag to prevent auto-reconnect
+    setIsIntentionalDisconnect(true);
+    
     if (stream) {
       try {
         stream.disconnect();
@@ -994,12 +1017,22 @@ const connect = useCallback(async (overrideUrl?: string) => {
     setApplication(null);
     setConnectionState('disconnected');
     setConnectionError(null);
-  }, [stream]);
+    
+    console.log('🔌 Disconnect completed, intentional flag set to true');
+  }, [stream, connectionState, isIntentionalDisconnect]);
 
   const reconnect = useCallback(async () => {
+    console.log('🔄 Reconnect called - clearing intentional disconnect flag');
+    // Clear intentional disconnect flag before reconnecting
+    setIsIntentionalDisconnect(false);
     disconnect();
     await connect();
   }, [disconnect, connect]);
+
+  const clearIntentionalDisconnect = useCallback(() => {
+    console.log('🔓 Clearing intentional disconnect flag');
+    setIsIntentionalDisconnect(false);
+  }, []);
 
   const sendFitSpaceCommand = useCallback<SendFitSpaceCommand>((type, ...args) => {
     if (!stream || connectionState !== 'connected') {
@@ -1258,9 +1291,11 @@ const connect = useCallback(async (overrideUrl?: string) => {
       application,
       connectionState,
       connectionError,
+      isIntentionalDisconnect,
       connect,
       disconnect,
       reconnect,
+      clearIntentionalDisconnect,
       activeStreamMode,
       setActiveStreamMode,
       sendFitSpaceCommand,

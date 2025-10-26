@@ -25,7 +25,8 @@ export function usePixelStreamingConnection() {
     connectionState,
     connectionError,
     debugMode,
-    setDebugSettings
+    setDebugSettings,
+    isIntentionalDisconnect
   } = pixelStreaming
   
   const {
@@ -179,7 +180,8 @@ export function usePixelStreamingConnection() {
       url: instanceData?.url,
       connectionState,
       lastAttemptedUrl: lastAttemptedUrlRef.current,
-      connectionAttemptInProgress: connectionAttemptRef.current
+      connectionAttemptInProgress: connectionAttemptRef.current,
+      isIntentionalDisconnect
     })
     
     // Only attempt connection if:
@@ -187,25 +189,37 @@ export function usePixelStreamingConnection() {
     // 2. We haven't already attempted this URL
     // 3. We're not currently connecting or connected
     // 4. No connection attempt is in progress
+    // 5. NOT an intentional disconnect (user clicked disconnect button)
     if (isReady && 
         instanceData?.url && 
         lastAttemptedUrlRef.current !== instanceData.url &&
         connectionState === 'disconnected' &&
-        !connectionAttemptRef.current) {
+        !connectionAttemptRef.current &&
+        !isIntentionalDisconnect) {
       
       addDebugMessage(`🚀 Instance ready, auto-connecting to WebSocket: ${instanceData.url}`)
       console.log('🔗 About to call connectToInstance...')
       connectToInstance()
     } else {
+      const reasons = [];
+      if (!isReady) reasons.push('not ready');
+      if (!instanceData?.url) reasons.push('no URL');
+      if (lastAttemptedUrlRef.current === instanceData?.url) reasons.push('same URL already attempted');
+      if (connectionState !== 'disconnected') reasons.push(`state is ${connectionState}`);
+      if (connectionAttemptRef.current) reasons.push('attempt in progress');
+      if (isIntentionalDisconnect) reasons.push('⛔ INTENTIONAL DISCONNECT FLAG SET');
+      
+      console.log('🚫 Not connecting - reasons:', reasons.join(', '));
       console.log('🚫 Not connecting yet:', {
         isReady,
         hasUrl: Boolean(instanceData?.url),
         connectionState,
         sameUrl: lastAttemptedUrlRef.current === instanceData?.url,
-        attemptInProgress: connectionAttemptRef.current
+        attemptInProgress: connectionAttemptRef.current,
+        isIntentionalDisconnect
       })
     }
-  }, [isReady, instanceData?.url, connectionState, addDebugMessage, connectToInstance])
+  }, [isReady, instanceData?.url, connectionState, addDebugMessage, connectToInstance, isIntentionalDisconnect])
 
   // Reset connection attempt flag when connection succeeds or fails definitively
   useEffect(() => {

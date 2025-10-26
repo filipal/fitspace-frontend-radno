@@ -18,34 +18,42 @@ export default function LoadingScreen() {
   const [connectionTimeout, setConnectionTimeout] = useState(false)
   const hasStartedProvisioning = useRef(false)
   const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const { devMode } = usePixelStreaming()
+  const { devMode, clearIntentionalDisconnect } = usePixelStreaming()
   
   const authData = useAuthData()
   const [allowGuestFlow, setAllowGuestFlow] = useState<boolean | null>(null)
 
   useEffect(() => {
+    console.log('🔍 LoadingScreen: Auth check - isAuthenticated:', authData.isAuthenticated)
+    
+    // If user is authenticated, they're not a guest - disable guest flow
     if (authData.isAuthenticated) {
+      console.log('✅ LoadingScreen: User authenticated, disabling guest flow')
       setAllowGuestFlow(false)
       return
     }
 
+    // For unauthenticated users, check if they have guest boot data
     let hasGuestBootData = false
     if (typeof window !== 'undefined') {
       try {
         const pendingData = window.localStorage.getItem('pendingAvatarData')
         const pendingId = window.localStorage.getItem('pendingAvatarId')
         hasGuestBootData = Boolean(pendingData || pendingId)
+        console.log('🔍 LoadingScreen: Guest boot data check:', { pendingData: !!pendingData, pendingId: !!pendingId, hasGuestBootData })
       } catch (error) {
         console.warn('Failed to inspect pending avatar data for guest flow', error)
       }
     }
 
     if (!hasGuestBootData) {
+      console.log('❌ LoadingScreen: No guest boot data, redirecting to login')
       setAllowGuestFlow(false)
       navigate('/login', { replace: true, state: { from: location } })
       return
     }
 
+    console.log('✅ LoadingScreen: Guest flow enabled')
     setAllowGuestFlow(true)
   }, [authData.isAuthenticated, navigate, location])
 
@@ -92,12 +100,20 @@ export default function LoadingScreen() {
       
       hasStartedProvisioning.current = true
       
-      // Check if dev mode is enabled
-      if (devMode === 'dev') {
-        console.log(`🔧 LoadingScreen: Dev mode enabled, skipping lambda calls and redirecting to ${resolvedDestination}`)
-        // setProgress(100)
-
-        // Simulate loading for visual feedback
+      console.log('🔍 LoadingScreen: Initialization debug info:', {
+        isAuthenticated: authData.isAuthenticated,
+        allowGuestFlow,
+        devMode,
+        skipProvisioning: location.state?.skipProvisioning,
+        locationState: location.state,
+        destination: resolvedDestination
+      })
+      
+      // Check for explicit skipProvisioning flag from navigation state (for debug/dev purposes)
+      const skipProvisioning = location.state?.skipProvisioning === true
+      
+      if (skipProvisioning) {
+        console.log(`🔧 LoadingScreen: skipProvisioning flag detected, redirecting to ${resolvedDestination}`)
         setTimeout(() => {
           navigate(resolvedDestination)
         }, 1500)
@@ -105,6 +121,7 @@ export default function LoadingScreen() {
       }
 
       if (!authData.isAuthenticated) {
+        console.log('🔒 LoadingScreen: User not authenticated, checking guest flow...')
         if (allowGuestFlow !== true) {
           if (allowGuestFlow === false) {
             console.warn('Guest user attempted to load without pending avatar data; staying on login flow')
@@ -118,8 +135,10 @@ export default function LoadingScreen() {
         }, 1500)
         return
       }
+      
+      console.log('✅ LoadingScreen: User is authenticated, proceeding with provisioning...')
 
-      // Check if localhost mode is enabled
+      // Check if localhost mode is enabled in devMode setting
       if (devMode === 'localhost') {
         console.log(`🔧 LoadingScreen: Localhost mode enabled, skipping lambda calls and redirecting to ${resolvedDestination}`)
         // setProgress(100)
@@ -132,6 +151,11 @@ export default function LoadingScreen() {
       }
 
       console.log('🚀 LoadingScreen: About to call startProvisioningWorkflow (first time)')
+      
+      // Clear intentional disconnect flag before starting new provisioning
+      // This allows auto-reconnect when instance is ready
+      clearIntentionalDisconnect()
+      console.log('🔓 Cleared intentional disconnect flag for new provisioning workflow')
       
       try {
         await startProvisioningWorkflow()
@@ -161,8 +185,9 @@ export default function LoadingScreen() {
   
   // Update progress based on provisioning status
   useEffect(() => {
-    // Skip normal progress updates in dev mode or localhost mode
-    if (devMode === 'dev' || devMode === 'localhost') {
+    // Skip normal progress updates only if explicit skipProvisioning or localhost mode
+    const skipProvisioning = location.state?.skipProvisioning === true
+    if (skipProvisioning || devMode === 'localhost') {
       return
     }
     
@@ -175,7 +200,7 @@ export default function LoadingScreen() {
         navigate(resolvedDestination)
       }, 1000) // Small delay to show completion
     }
-  }, [devMode, isConnectedToInstance, connectionState, navigate, resolvedDestination])
+  }, [location.state, devMode, isConnectedToInstance, connectionState, navigate, resolvedDestination])
   
   // Auto-show debug messages on error
   useEffect(() => {
@@ -239,7 +264,7 @@ export default function LoadingScreen() {
         <div className={styles.spinnerContainer}>
           <div className={styles.spinner}></div>
           <div className={styles.loadingText}>
-            {devMode === 'dev' ? `Dev Mode: Redirecting to ${resolvedDestination}...` :
+            {location.state?.skipProvisioning ? `Dev Mode: Redirecting to ${resolvedDestination}...` :
              devMode === 'localhost' ? `Localhost Mode: Redirecting to ${resolvedDestination}...` :
              loadingMessages[currentMessageIndex]}
           </div>
@@ -247,7 +272,7 @@ export default function LoadingScreen() {
         
         {/* Connection Status */}
         <div className={styles.statusInfo}>
-          {devMode === 'dev' && (
+          {location.state?.skipProvisioning && (
             <div className={styles.successStatus}>
               🔧 Dev Mode Active: Skipping provisioning workflow
             </div>

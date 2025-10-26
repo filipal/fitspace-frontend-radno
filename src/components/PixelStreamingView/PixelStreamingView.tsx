@@ -18,7 +18,7 @@ export const PixelStreamingView: React.FC<PixelStreamingViewProps> = ({
   autoConnect = false
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { application, connectionState, connect, settings } = usePixelStreaming();
+  const { application, connectionState, connect, settings, isIntentionalDisconnect } = usePixelStreaming();
   const [showMobileHint, setShowMobileHint] = useState(false);
 
   // SSR-safe dDetect mobile environment
@@ -27,12 +27,15 @@ export const PixelStreamingView: React.FC<PixelStreamingViewProps> = ({
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   }, []);
 
-  // Auto-connect on mount if requested
+  // Auto-connect on mount if requested (but respect intentional disconnect)
   useEffect(() => {
-    if (autoConnect && connectionState === 'disconnected') {
+    if (autoConnect && connectionState === 'disconnected' && !isIntentionalDisconnect) {
+      console.log('🔌 PixelStreamingView: Auto-connecting...');
       connect();
+    } else if (autoConnect && isIntentionalDisconnect) {
+      console.log('🚫 PixelStreamingView: Skipping auto-connect due to intentional disconnect');
     }
-  }, [autoConnect, connectionState, connect]);
+  }, [autoConnect, connectionState, connect, isIntentionalDisconnect]);
 
   // Show mobile hint when connected on mobile devices (where AutoPlayVideo is disabled)
   useEffect(() => {
