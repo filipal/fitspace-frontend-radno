@@ -25,9 +25,11 @@ const MOBILE_DESIGN_WIDTH = 393
 const HEADER_DESIGN_HEIGHT = 71.31
 const MOBILE_DESIGN_HEIGHT = 586.69
 const MOBILE_SAFE_HEIGHT = MOBILE_DESIGN_HEIGHT + HEADER_DESIGN_HEIGHT
+const HEADER_MIN_SCALE = 0.65
 const DESKTOP_BREAKPOINT = 768
 const DESKTOP_DESIGN_WIDTH = 1440
 const DESKTOP_DESIGN_HEIGHT = 1024
+const KEYBOARD_MIN_HEIGHT_DELTA = 150
 
 interface ViewportSize {
   width: number
@@ -44,10 +46,12 @@ type AvatarInfoPageCssVars = CSSProperties & {
   '--fs-viewport-height'?: string
   '--fs-scale-width'?: string
   '--fs-scale-height'?: string
+  '--fs-scale-height-content'?: string
   '--fs-scale'?: string
   '--fs-canvas-width'?: string
   '--fs-canvas-height'?: string
   '--fs-page-max-height'?: string
+  '--fs-extra-bottom-padding'?: string
 }
 
 function readViewportSize(): ViewportSize {
@@ -147,11 +151,14 @@ export default function AvatarInfoPage() {
     stableViewportHeightRef.current
   )
   const widthDelta = Math.abs(viewportWidth - stableViewportWidthRef.current)
-  const keyboardLikelyOpen =
-    stableViewportHeight - viewportHeight > 1 && widthDelta < 24
+  const heightDelta = stableViewportHeight - viewportHeight
+  const keyboardLikelyOpen = heightDelta > KEYBOARD_MIN_HEIGHT_DELTA && widthDelta < 24
   const effectiveViewportWidth = keyboardLikelyOpen
     ? stableViewportWidthRef.current
     : viewportWidth
+  const viewportHeightForLayout = keyboardLikelyOpen
+    ? stableViewportHeight
+    : viewportHeight
 
   const { cssVars: layoutVars, canvasHeight } = useMemo(() => {
     if (effectiveViewportWidth >= DESKTOP_BREAKPOINT) {
@@ -163,21 +170,22 @@ export default function AvatarInfoPage() {
         Number.POSITIVE_INFINITY
       )
       const scaleHeight = clamp(
-        stableViewportHeight / (designHeight || 1),
+        viewportHeightForLayout / (designHeight || 1),
         0,
         Number.POSITIVE_INFINITY
       )
       const canvasWidth = designWidth
       const canvasHeight = designHeight
-      const pageMaxHeight = Math.max(canvasHeight, stableViewportHeight)
+      const pageMaxHeight = Math.max(canvasHeight, viewportHeightForLayout)
 
       const cssVars: AvatarInfoPageCssVars = {
         '--fs-design-width': `${designWidth}px`,
         '--fs-design-height': `${designHeight}px`,
         '--fs-design-safe-height': `${designHeight}px`,
-        '--fs-viewport-height': `${stableViewportHeight.toFixed(3)}px`,
+        '--fs-viewport-height': `${viewportHeightForLayout.toFixed(3)}px`,
         '--fs-scale-width': scaleWidth.toFixed(5),
         '--fs-scale-height': scaleHeight.toFixed(5),
+        '--fs-scale-height-content': scaleHeight.toFixed(5),
         '--fs-scale': '1',
         '--fs-canvas-width': `${canvasWidth.toFixed(3)}px`,
         '--fs-canvas-height': `${canvasHeight.toFixed(3)}px`,
@@ -193,22 +201,31 @@ export default function AvatarInfoPage() {
       Number.POSITIVE_INFINITY
     )
     const scaleHeightSafe = clamp(
-      stableViewportHeight / MOBILE_SAFE_HEIGHT,
+      viewportHeightForLayout / MOBILE_SAFE_HEIGHT,
       0,
       Number.POSITIVE_INFINITY
     )
-   const viewportScale = Math.min(scaleWidth, scaleHeightSafe)
+    const headerScale = clamp(scaleHeightSafe, HEADER_MIN_SCALE, 1)
+    const headerHeight = HEADER_DESIGN_HEIGHT * headerScale
+    const availableHeight = Math.max(viewportHeightForLayout - headerHeight, 0)
+    const scaleHeightContent = clamp(
+      availableHeight / MOBILE_DESIGN_HEIGHT,
+      0,
+      Number.POSITIVE_INFINITY
+    )
+    const viewportScale = Math.min(scaleWidth, scaleHeightContent)
     const canvasWidth = MOBILE_DESIGN_WIDTH * viewportScale
-    const canvasHeight = MOBILE_DESIGN_HEIGHT * viewportScale
-    const pageMaxHeight = Math.max(canvasHeight, stableViewportHeight)
+    const canvasHeight = MOBILE_DESIGN_HEIGHT * scaleHeightContent
+    const pageMaxHeight = Math.max(canvasHeight, availableHeight)
 
     const cssVars: AvatarInfoPageCssVars = {
       '--fs-design-width': `${MOBILE_DESIGN_WIDTH}px`,
       '--fs-design-height': `${MOBILE_DESIGN_HEIGHT}px`,
       '--fs-design-safe-height': `${MOBILE_SAFE_HEIGHT}px`,
-      '--fs-viewport-height': `${stableViewportHeight.toFixed(3)}px`,
+      '--fs-viewport-height': `${viewportHeightForLayout.toFixed(3)}px`,
       '--fs-scale-width': scaleWidth.toFixed(5),
       '--fs-scale-height': scaleHeightSafe.toFixed(5),
+      '--fs-scale-height-content': scaleHeightContent.toFixed(5),
       '--fs-scale': viewportScale.toFixed(5),
       '--fs-canvas-width': `${canvasWidth.toFixed(3)}px`,
       '--fs-canvas-height': `${canvasHeight.toFixed(3)}px`,
@@ -216,7 +233,7 @@ export default function AvatarInfoPage() {
     }
 
     return { cssVars, canvasHeight }
-  }, [effectiveViewportWidth, stableViewportHeight])
+  }, [effectiveViewportWidth, viewportHeightForLayout])
 
   const needsScroll =
     viewportWidth >= DESKTOP_BREAKPOINT || canvasHeight > stableViewportHeight + 0.5
