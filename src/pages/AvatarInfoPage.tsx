@@ -387,8 +387,12 @@ export default function AvatarInfoPage() {
                   Scan Body
                 </button>
                 <div className={styles.scanDesc}>
-                  Highly accurate.<br />
-                  Scan your body & face with a phone in 3 minutes.
+                  <span className={styles.scanDescFirst}>
+                    Highly accurate. Scan your body & face
+                  </span>
+                  <span className={styles.scanDescSecond}>
+                    with a phone in 3 minutes.
+                  </span>
                 </div>
               </div>
               <div className={styles.action}>
@@ -547,8 +551,12 @@ export default function AvatarInfoPage() {
                   {isSubmitting ? 'Creating...' : 'Quick Mode'}
                 </button>
                 <div className={styles.quickDesc}>
-                  Fastest, but may not be as accurate.<br />
-                  Enter main body measurements and choose your body type.
+                  <span className={styles.quickDescFirst}>
+                    Fastest, but may not be as accurate.
+                  </span>
+                  <span className={styles.quickDescSecond}>
+                    Enter main body measurements and choose your body type.
+                  </span>
                 </div>
               </div>
             </div>

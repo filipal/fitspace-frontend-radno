@@ -46,8 +46,9 @@
 }
 
 .avatarInfoPage {
-  --avatar-scale: var(--fs-scale);
-  --avatar-scale-safe: max(var(--avatar-scale), 0.0001);
+  --avatar-scale: 1;
+  --avatar-scale-safe: max(var(--fs-scale, 1), 0.0001);
+  --avatar-type-scale: clamp(0.0001, var(--fs-scale, 1), 1);
   --avatar-design-width: 393px;
   --avatar-design-height: 586.69px;
 
@@ -352,16 +353,35 @@
 .quickDesc {
   inline-size: 100%;
   max-inline-size: var(--avatar-panel-width);
-  font-size: calc(var(--avatar-scale) * 12px);
-  line-height: calc(var(--avatar-scale) * 11px);
-  min-block-size: calc(var(--avatar-scale) * 22px);
+  font-size: calc(var(--avatar-type-scale) * 12px);
+  line-height: calc(var(--avatar-type-scale) * 15px);
+  min-block-size: calc(var(--avatar-type-scale) * 22px);
   font-weight: 300;
   text-align: center;
   color: #000;
 }
 
+.scanDesc {
+  max-inline-size: calc(var(--avatar-scale) * 319px);
+}
+
 .quickDesc {
-  max-inline-size: calc(var(--avatar-scale) * 225.22px);
+  max-inline-size: calc(var(--avatar-scale) * 319px);
+}
+
+.scanDescFirst,
+.scanDescSecond,
+.quickDescFirst,
+.quickDescSecond {
+  display: block;
+}
+
+.quickDescSecond {
+  font-size: calc(var(--avatar-type-scale) * 11px);
+}
+
+.quickDescSecond {
+  white-space: nowrap;
 }
 
 .backButtonAvatarinfo {
@@ -412,6 +432,14 @@
     inline-size: min(var(--fs-canvas-width), 760px);
     block-size: auto;
     padding-inline: 0;
+  }
+
+  .scanDescSecond {
+    display: block;
+  }
+
+  .scanDescSecond::before {
+    content: none;
   }
 
   .canvasContent {
