@@ -22,6 +22,7 @@ import useIsMobile from '../hooks/useIsMobile'
 import { useAuthData } from '../hooks/useAuthData'
 
 const MOBILE_DESIGN_WIDTH = 393
+const FIGMA_REFERENCE_WIDTH = 430
 const HEADER_DESIGN_HEIGHT = 71.31
 const MOBILE_DESIGN_HEIGHT = 586.69
 const MOBILE_SAFE_HEIGHT = MOBILE_DESIGN_HEIGHT + HEADER_DESIGN_HEIGHT
@@ -33,6 +34,7 @@ const KEYBOARD_MIN_HEIGHT_DELTA = 150
 const KEYBOARD_MAX_VISIBLE_RATIO = 0.72
 const PINCH_ZOOM_EPSILON = 0.02
 const MOBILE_ROUNDING_EPSILON = 0.75
+const MIN_BOTTOM_PADDING = 12
 
 interface ViewportSize {
   width: number
@@ -55,7 +57,7 @@ type AvatarInfoPageCssVars = CSSProperties & {
   '--fs-canvas-width'?: string
   '--fs-canvas-height'?: string
   '--fs-page-max-height'?: string
-  '--fs-extra-bottom-padding'?: string
+  '--fs-bottom-padding'?: string
 }
 
 function readViewportSize(): ViewportSize {
@@ -282,8 +284,17 @@ export default function AvatarInfoPage() {
     )
     const canvasWidth = MOBILE_DESIGN_WIDTH * viewportScaleWidth
     const canvasHeight = MOBILE_DESIGN_HEIGHT * viewportScaleHeight
-    const extraBottomPadding = Math.max(availableHeight - canvasHeight, 0)
-    const pageHeight = headerHeight + canvasHeight + extraBottomPadding
+    const extraViewportSpace = Math.max(availableHeight - canvasHeight, 0)
+    const widthRatioToFigma = MOBILE_DESIGN_WIDTH / FIGMA_REFERENCE_WIDTH
+    const desiredBottomPadding = Math.min(
+      45,
+      45 * viewportScaleWidth * widthRatioToFigma
+    )
+    const bottomPadding = Math.max(
+      desiredBottomPadding - extraViewportSpace,
+      MIN_BOTTOM_PADDING
+    )
+    const pageHeight = headerHeight + canvasHeight
     const pageMaxHeight = Math.max(pageHeight, viewportHeightForLayout)
 
     const cssVars: AvatarInfoPageCssVars = {
@@ -298,7 +309,7 @@ export default function AvatarInfoPage() {
       '--fs-canvas-width': `${canvasWidth.toFixed(3)}px`,
       '--fs-canvas-height': `${canvasHeight.toFixed(3)}px`,
       '--fs-page-max-height': `${pageMaxHeight.toFixed(3)}px`,
-      '--fs-extra-bottom-padding': `${extraBottomPadding.toFixed(3)}px`,
+      '--fs-bottom-padding': `${bottomPadding.toFixed(3)}px`,
     }
 
     return { cssVars, pageHeight }
@@ -638,10 +649,10 @@ export default function AvatarInfoPage() {
                 </button>
                 <div className={styles.quickDesc}>
                   <span className={styles.quickDescFirst}>
-                    Fastest, but may not be as accurate.
+                    Fastest, but may not be as accurate. 
                   </span>
                   <span className={styles.quickDescSecond}>
-                    Enter main body measurements and choose your body type.
+                     Enter main body measurements and choose your body type.
                   </span>
                 </div>
               </div>

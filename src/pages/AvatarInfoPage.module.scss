@@ -83,7 +83,7 @@
   --avatar-gap-action-desc: calc(var(--avatar-scale-y) * 15px * var(--avatar-height-coeff));
   --avatar-gap-desc-back: calc(var(--avatar-scale-y) * 18.84px * var(--avatar-height-coeff));
   --avatar-actions-width: var(--avatar-input-width);
-  --avatar-extra-padding-bottom: var(--fs-extra-bottom-padding, 0px);
+  --avatar-padding-bottom-target: var(--fs-bottom-padding, var(--avatar-padding-bottom));
   inline-size: var(--fs-design-width);
   block-size: var(--fs-design-height);
   position: relative;
@@ -110,10 +110,22 @@
   max-inline-size: var(--avatar-design-width);
   margin-inline: auto;
   padding-top: var(--avatar-padding-top);
-  padding-bottom: calc(
-    var(--avatar-padding-bottom) +
-    env(safe-area-inset-bottom, 0px) / var(--avatar-scale-y-safe) +
-    var(--avatar-extra-padding-bottom) / var(--avatar-scale-y-safe)
+  --avatar-padding-bottom-base: calc(
+    var(--avatar-padding-bottom-target) +
+    env(safe-area-inset-bottom, 0px) / var(--avatar-scale-y-safe)
+  );
+  --avatar-padding-bottom-min-raw: clamp(
+    0px,
+    calc(var(--avatar-scale) * var(--avatar-width-coeff) * 45px),
+    45px
+  );
+  --avatar-padding-bottom-min: calc(
+    var(--avatar-padding-bottom-min-raw) +
+    env(safe-area-inset-bottom, 0px) / var(--avatar-scale-y-safe)
+  );
+  padding-bottom: max(
+    var(--avatar-padding-bottom-base),
+    var(--avatar-padding-bottom-min)
   );
   display: flex;
   flex-direction: column;
@@ -394,7 +406,7 @@
   cursor: pointer;
 }
 
-@include s.respond('tablet-xxl') {
+@include s.respond('tablet-sd') {
   .page {
     overflow-y: auto;
   }

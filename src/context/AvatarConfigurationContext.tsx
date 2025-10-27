@@ -107,6 +107,18 @@ export interface AvatarConfiguration {
   lastUpdated: Date;
 }
 
+export type AvatarConfigurationDirtySection =
+  | 'morphs'
+  | 'quickMode.measurements'
+  | 'quickMode.skin'
+  | 'quickMode.hair'
+  | 'quickMode.extras';
+
+export interface QuickModeMeasurementUpdateOptions {
+  section?: AvatarConfigurationDirtySection;
+  markDirty?: boolean;
+}
+
 export interface AvatarConfigurationContextType {
   // Current avatar state
   currentAvatar: AvatarConfiguration | null;
@@ -128,6 +140,12 @@ export interface AvatarConfigurationContextType {
   updateMorphValue: (morphId: number, value: number) => void;
   updateQuickModeMeasurements: (
     patch: Record<string, number | null | undefined>,
+    options?: QuickModeMeasurementUpdateOptions,
+  ) => void;
+  updateQuickModeMeasurement: (
+    key: string,
+    value: number | null | undefined,
+    options?: QuickModeMeasurementUpdateOptions,
   ) => void;
   resetAvatar: () => void;
 
@@ -137,9 +155,16 @@ export interface AvatarConfigurationContextType {
   getMorphByName: (morphName: string) => MorphAttribute | undefined;
   getMorphById: (morphId: number) => MorphAttribute | undefined;
   getMorphsByCategory: (category: string) => MorphAttribute[];
-  
+
   // Export current configuration
   getAvatarConfiguration: () => AvatarConfiguration | null;
+
+  // Dirty state helpers
+  dirtySections: ReadonlySet<AvatarConfigurationDirtySection>;
+  isSectionDirty: (section: AvatarConfigurationDirtySection) => boolean;
+  markSectionDirty: (section: AvatarConfigurationDirtySection) => void;
+  clearSectionDirty: (section: AvatarConfigurationDirtySection) => void;
+  clearAllDirtySections: () => void;
 }
 
 const AvatarConfigurationContext = createContext<AvatarConfigurationContextType | undefined>(undefined);
@@ -173,10 +198,42 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
   const [error, setError] = useState<string | null>(null);
   const [isSavingPendingChanges, setIsSavingPendingChanges] = useState(false);
   const [savePendingChangesError, setSavePendingChangesError] = useState<string | null>(null);
+  const [dirtySections, setDirtySections] = useState<Set<AvatarConfigurationDirtySection>>(new Set());
   const saveInFlightRef = useRef(false);
 
   const { isAuthenticated } = useAuthData();
   const { fetchAvatarById, updateAvatarMeasurements } = useAvatarApi();
+
+  const markSectionDirty = useCallback((section: AvatarConfigurationDirtySection) => {
+    setDirtySections(prev => {
+      if (prev.has(section)) {
+        return prev;
+      }
+      const next = new Set(prev);
+      next.add(section);
+      return next;
+    });
+  }, []);
+
+  const clearSectionDirty = useCallback((section: AvatarConfigurationDirtySection) => {
+    setDirtySections(prev => {
+      if (!prev.has(section)) {
+        return prev;
+      }
+      const next = new Set(prev);
+      next.delete(section);
+      return next;
+    });
+  }, []);
+
+  const clearAllDirtySections = useCallback(() => {
+    setDirtySections(new Set());
+  }, []);
+
+  const isSectionDirty = useCallback(
+    (section: AvatarConfigurationDirtySection) => dirtySections.has(section),
+    [dirtySections],
+  );
 
   // Initialize default morph values (all at neutral 50)
   const initializeDefaultMorphs = useCallback((): MorphAttribute[] => {
@@ -275,10 +332,11 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
       };
 
       setCurrentAvatar(nextAvatarConfig);
+      clearAllDirtySections();
       console.log('Avatar loaded successfully:', nextAvatarConfig);
 
       return nextAvatarConfig; // Return the config for immediate use
-      
+
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load avatar';
       setError(errorMessage);
@@ -287,12 +345,20 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
     } finally {
       setIsLoading(false);
     }
-  }, [initializeDefaultMorphs]);
+  }, [clearAllDirtySections, initializeDefaultMorphs]);
 
   // Update individual morph value
   const updateMorphValue = useCallback((morphId: number, value: number) => {
+    let didChange = false;
     setCurrentAvatar(prev => {
       if (!prev) return prev;
+
+      const existing = prev.morphValues.find(m => m.morphId === morphId);
+      if (!existing || existing.value === value) {
+        return prev;
+      }
+
+      didChange = true;
 
       const updatedMorphValues = prev.morphValues.map(m =>
         m.morphId === morphId ? { ...m, value } : m
@@ -347,33 +413,39 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
         lastUpdated: new Date(),
       };
     });
-  }, []);
+    if (didChange) {
+      markSectionDirty('morphs');
+    }
+  }, [markSectionDirty]);
 
-  const updateQuickModeMeasurements = useCallback((patch: Record<string, number | null | undefined>) => {
+  const updateQuickModeMeasurements = useCallback((
+    patch: Record<string, number | null | undefined>,
+    options?: QuickModeMeasurementUpdateOptions,
+  ) => {
+    let didChange = false;
     setCurrentAvatar(prev => {
       if (!prev) return prev;
 
       const previousSettings = prev.quickModeSettings ?? {};
       const previousMeasurements = previousSettings.measurements ?? {};
       const nextMeasurements = { ...previousMeasurements } as Record<string, number>;
-      let changed = false;
 
       for (const [key, rawValue] of Object.entries(patch)) {
         if (rawValue == null) {
           if (key in nextMeasurements) {
             delete nextMeasurements[key];
-            changed = true;
+            didChange = true;
           }
           continue;
         }
 
         if (nextMeasurements[key] !== rawValue) {
           nextMeasurements[key] = rawValue;
-          changed = true;
+          didChange = true;
         }
       }
 
-      if (!changed) {
+      if (!didChange) {
         return prev;
       }
 
@@ -389,14 +461,28 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
         lastUpdated: new Date(),
       };
     });
-  }, []);
+
+    if (didChange && (options?.markDirty ?? true)) {
+      const section = options?.section ?? 'quickMode.measurements';
+      markSectionDirty(section);
+    }
+  }, [markSectionDirty]);
+
+  const updateQuickModeMeasurement = useCallback((
+    key: string,
+    value: number | null | undefined,
+    options?: QuickModeMeasurementUpdateOptions,
+  ) => {
+    updateQuickModeMeasurements({ [key]: value }, options);
+  }, [updateQuickModeMeasurements]);
 
   // Reset avatar to defaults
   const resetAvatar = useCallback(() => {
     setCurrentAvatar(null);
     setError(null);
+    clearAllDirtySections();
     console.log('Avatar reset to default state');
-  }, []);
+  }, [clearAllDirtySections]);
 
   // Utility functions
   const getMorphByName = useCallback((morphName: string): MorphAttribute | undefined => {
@@ -422,6 +508,11 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
       const message = 'No avatar available to save pending changes';
       setSavePendingChangesError(message);
       return { success: false, error: message };
+    }
+
+    if (dirtySections.size === 0) {
+      setSavePendingChangesError(null);
+      return { success: true, error: null, avatarId: currentAvatar.avatarId ?? null };
     }
 
     if (saveInFlightRef.current) {
@@ -590,6 +681,7 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
         }
       }
 
+      clearAllDirtySections();
       return { success: true, error: null, avatarId: persistedAvatarId ?? null };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save avatar changes';
@@ -601,13 +693,20 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
     }
   }, [
     currentAvatar,
+    dirtySections,
     fetchAvatarById,
     isAuthenticated,
     loadAvatarFromBackend,
+    clearAllDirtySections,
     updateAvatarMeasurements,
   ]);
 
   // Context value
+  const dirtySectionsSnapshot = useMemo(
+    () => new Set(dirtySections) as ReadonlySet<AvatarConfigurationDirtySection>,
+    [dirtySections],
+  );
+
   const value = useMemo(() => ({
     currentAvatar,
     isLoading,
@@ -617,12 +716,18 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
     loadAvatarFromBackend,
     updateMorphValue,
     updateQuickModeMeasurements,
+    updateQuickModeMeasurement,
     resetAvatar,
     savePendingChanges,
     getMorphByName,
     getMorphById,
     getMorphsByCategory,
     getAvatarConfiguration,
+    dirtySections: dirtySectionsSnapshot,
+    isSectionDirty,
+    markSectionDirty,
+    clearSectionDirty,
+    clearAllDirtySections,
   }), [
     currentAvatar,
     isLoading,
@@ -632,12 +737,18 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
     loadAvatarFromBackend,
     updateMorphValue,
     updateQuickModeMeasurements,
+    updateQuickModeMeasurement,
     resetAvatar,
     savePendingChanges,
     getMorphByName,
     getMorphById,
     getMorphsByCategory,
     getAvatarConfiguration,
+    dirtySectionsSnapshot,
+    isSectionDirty,
+    markSectionDirty,
+    clearSectionDirty,
+    clearAllDirtySections,
   ]);
 
   return (

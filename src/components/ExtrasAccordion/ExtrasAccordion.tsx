@@ -134,7 +134,11 @@ const PACKED_KEY_BY_TYPE: Record<ExtraType, keyof typeof EXTRA_KEYS> = {
 }
 
 export default function ExtrasAccordion() {
-  const { currentAvatar, updateQuickModeMeasurements } = useAvatarConfiguration()
+  const {
+    currentAvatar,
+    updateQuickModeMeasurement,
+    updateQuickModeMeasurements,
+  } = useAvatarConfiguration()
 
   // Pixel Streaming
   const { sendFitSpaceCommand, connectionState } = usePixelStreaming()
@@ -249,7 +253,7 @@ export default function ExtrasAccordion() {
       [EXTRA_KEYS[STYLE_KEY_BY_TYPE[type]]]: styleIdx,
       [EXTRA_KEYS[COLOR_KEY_BY_TYPE[type]]]: colorIdx,
       [EXTRA_KEYS[PACKED_KEY_BY_TYPE[type]]]: packed,
-    })
+    }, { section: 'quickMode.extras' })
   }, [updateQuickModeMeasurements])
 
   const applyTypeIndex = useCallback((nextIndex: number) => {
@@ -258,7 +262,7 @@ export default function ExtrasAccordion() {
 
     const nextType = EXTRA_TYPES[normalized]
     setTypeIndex(normalized)
-    updateQuickModeMeasurements({ [EXTRA_KEYS.typeIndex]: normalized })
+    updateQuickModeMeasurement(EXTRA_KEYS.typeIndex, normalized, { section: 'quickMode.extras' })
 
     const nextStyle = styleByType[nextType]
     const nextColor = colorByType[nextType]
@@ -272,7 +276,7 @@ export default function ExtrasAccordion() {
     colorByType,
     styleByType,
     typeIndex,
-    updateQuickModeMeasurements,
+    updateQuickModeMeasurement,
     sendExtrasStyle,
     sendExtrasColor,
     updateMeasurementsForType,
@@ -295,7 +299,7 @@ export default function ExtrasAccordion() {
     updateQuickModeMeasurements({
       [EXTRA_KEYS[STYLE_KEY_BY_TYPE[activeType]]]: normalized,
       [EXTRA_KEYS[PACKED_KEY_BY_TYPE[activeType]]]: packed,
-    })
+    }, { section: 'quickMode.extras' })
   }, [
     activeType,
     colorByType,
@@ -322,7 +326,7 @@ export default function ExtrasAccordion() {
     updateQuickModeMeasurements({
       [EXTRA_KEYS[COLOR_KEY_BY_TYPE[activeType]]]: normalized,
       [EXTRA_KEYS[PACKED_KEY_BY_TYPE[activeType]]]: packed,
-    })
+    }, { section: 'quickMode.extras' })
   }, [
     activeType,
     colorByType,

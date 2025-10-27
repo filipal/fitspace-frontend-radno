@@ -49,7 +49,10 @@ const mapToBrightness = (tonePercent: number) => {
 }
 
 export default function SkinAccordion({ defaultRightExpanded = false }: SkinAccordionProps) {
-  const { currentAvatar, updateQuickModeMeasurements } = useAvatarConfiguration()
+  const {
+    currentAvatar,
+    updateQuickModeMeasurements,
+  } = useAvatarConfiguration()
 
   const { sendFitSpaceCommand, connectionState } = usePixelStreaming();
   const simpleState = useMemo<'connected' | 'connecting' | 'disconnected'>(() => {
@@ -178,7 +181,7 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
       [SKIN_KEYS.baseIndex]: nextBase,
       [SKIN_KEYS.tonePercent]: nextTone,
       [SKIN_KEYS.variantIndex]: nextFocused,
-    })
+    }, { section: 'quickMode.skin' })
   }, [
     baseIndex,
     tonePct,

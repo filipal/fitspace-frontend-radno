@@ -34,7 +34,11 @@ const HAIR_KEYS = {
 } as const
 
 export default function HairAccordion() {
-  const { currentAvatar, updateQuickModeMeasurements } = useAvatarConfiguration()
+  const {
+    currentAvatar,
+    updateQuickModeMeasurement,
+    updateQuickModeMeasurements,
+  } = useAvatarConfiguration()
 
   // Pixel Streaming
   const { sendFitSpaceCommand, connectionState } = usePixelStreaming()
@@ -109,10 +113,10 @@ export default function HairAccordion() {
 
     setStyleIndex(normalized)
     sendHairStyle(normalized)
-    updateQuickModeMeasurements({
-      [HAIR_KEYS.styleIndex]: normalized,
+    updateQuickModeMeasurement(HAIR_KEYS.styleIndex, normalized, {
+      section: 'quickMode.hair',
     })
-  }, [styleIndex, sendHairStyle, updateQuickModeMeasurements])
+  }, [styleIndex, sendHairStyle, updateQuickModeMeasurement])
 
   const applyHairColor = useCallback((nextIndex: number) => {
     const total = HAIR_COLORS.length
@@ -127,7 +131,7 @@ export default function HairAccordion() {
     updateQuickModeMeasurements({
       [HAIR_KEYS.colorIndex]: normalized,
       hairColorPacked: Number.isFinite(colorPacked) ? colorPacked : 0,
-    })
+    }, { section: 'quickMode.hair' })
   }, [colorIndex, sendHairColor, updateQuickModeMeasurements])
 
   const prevStyle = () => applyHairStyle(styleIndex - 1)
