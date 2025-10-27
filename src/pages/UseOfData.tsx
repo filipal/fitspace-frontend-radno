@@ -56,7 +56,13 @@ export default function UseOfData() {
           <li>No sharing:We never share your data or images with third parties without your explicit consent.</li>
         </ul>
       </div>
-      <button className={styles.backButtonUseofdata} onClick={() => navigate('/avatar-info')}>Back</button>
+      <button
+        className={styles.backButtonUseofdata}
+        type="button"
+        onClick={() => navigate('/avatar-info')}
+      >
+        Back
+      </button>
     </div>
   )
 }

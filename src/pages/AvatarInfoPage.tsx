@@ -30,7 +30,9 @@ const DESKTOP_BREAKPOINT = 768
 const DESKTOP_DESIGN_WIDTH = 1440
 const DESKTOP_DESIGN_HEIGHT = 1024
 const KEYBOARD_MIN_HEIGHT_DELTA = 150
+const KEYBOARD_MAX_VISIBLE_RATIO = 0.72
 const PINCH_ZOOM_EPSILON = 0.02
+const MOBILE_ROUNDING_EPSILON = 0.75
 
 interface ViewportSize {
   width: number
@@ -53,6 +55,7 @@ type AvatarInfoPageCssVars = CSSProperties & {
   '--fs-canvas-width'?: string
   '--fs-canvas-height'?: string
   '--fs-page-max-height'?: string
+  '--fs-extra-bottom-padding'?: string
 }
 
 function readViewportSize(): ViewportSize {
@@ -160,6 +163,19 @@ export default function AvatarInfoPage() {
       return
     }
 
+    const stableHeight = stableViewportHeightRef.current
+    const heightDrop = stableHeight - viewportHeight
+    const visibleRatio = stableHeight > 0 ? viewportHeight / stableHeight : 1
+
+    if (
+      !pinchZoomActive &&
+      heightDrop > KEYBOARD_MIN_HEIGHT_DELTA &&
+      visibleRatio > KEYBOARD_MAX_VISIBLE_RATIO
+    ) {
+      stableViewportHeightRef.current = viewportHeight
+      return
+    }
+
     if (viewportHeight > stableViewportHeightRef.current) {
       stableViewportHeightRef.current = viewportHeight
     }
@@ -187,8 +203,13 @@ export default function AvatarInfoPage() {
   const pinchZoomActive = Math.abs(viewportScale - 1) > PINCH_ZOOM_EPSILON
   const widthDelta = Math.abs(viewportWidth - stableViewportWidthRef.current)
   const heightDelta = stableViewportHeight - viewportHeight
+  const keyboardVisibleRatio =
+    stableViewportHeight > 0 ? viewportHeight / stableViewportHeight : 1
   const keyboardLikelyOpen =
-    !pinchZoomActive && heightDelta > KEYBOARD_MIN_HEIGHT_DELTA && widthDelta < 24
+    !pinchZoomActive &&
+    heightDelta > KEYBOARD_MIN_HEIGHT_DELTA &&
+    widthDelta < 24 &&
+    keyboardVisibleRatio <= KEYBOARD_MAX_VISIBLE_RATIO
   const effectiveViewportWidth = pinchZoomActive
     ? stableViewportWidth
     : keyboardLikelyOpen
@@ -248,37 +269,35 @@ export default function AvatarInfoPage() {
     const headerScale = clamp(scaleHeightSafe, HEADER_MIN_SCALE, 1)
     const headerHeight = HEADER_DESIGN_HEIGHT * headerScale
     const availableHeight = Math.max(viewportHeightForLayout - headerHeight, 0)
-    const rawScaleHeightContent = clamp(
-      availableHeight / MOBILE_DESIGN_HEIGHT,
+    const availableHeightForContent = Math.max(availableHeight - MOBILE_ROUNDING_EPSILON, 0)
+    const scaleHeightContent = clamp(
+      availableHeightForContent / MOBILE_DESIGN_HEIGHT,
       0,
       Number.POSITIVE_INFINITY
     )
-    const minContentScale = Math.min(scaleWidth, 1)
-    const canFitMinContentScale =
-      availableHeight + 0.5 >= MOBILE_DESIGN_HEIGHT * minContentScale
-    const contentScaleAbsolute = canFitMinContentScale
-      ? Math.max(rawScaleHeightContent, minContentScale)
-      : rawScaleHeightContent
-    const safeScaleWidth = scaleWidth > 0 ? scaleWidth : 1
-    const contentScaleRelative = contentScaleAbsolute / safeScaleWidth
-    const canvasWidth = MOBILE_DESIGN_WIDTH * scaleWidth
-    const canvasHeight = MOBILE_DESIGN_HEIGHT * contentScaleAbsolute
-    const designHeight = MOBILE_DESIGN_HEIGHT * contentScaleRelative
-    const pageMaxHeight = Math.max(canvasHeight, availableHeight)
+    const viewportScaleWidth = scaleWidth
+    const viewportScaleHeight = Math.min(
+      scaleHeightContent,
+      Math.max(viewportScaleWidth, 1)
+    )
+    const canvasWidth = MOBILE_DESIGN_WIDTH * viewportScaleWidth
+    const canvasHeight = MOBILE_DESIGN_HEIGHT * viewportScaleHeight
+    const extraBottomPadding = Math.max(availableHeight - canvasHeight, 0)
+    const pageMaxHeight = Math.max(canvasHeight + extraBottomPadding, availableHeight)
 
     const cssVars: AvatarInfoPageCssVars = {
       '--fs-design-width': `${MOBILE_DESIGN_WIDTH}px`,
-      '--fs-design-height': `${designHeight.toFixed(3)}px`,
+      '--fs-design-height': `${MOBILE_DESIGN_HEIGHT}px`,
       '--fs-design-safe-height': `${MOBILE_SAFE_HEIGHT}px`,
       '--fs-viewport-height': `${viewportHeightForLayout.toFixed(3)}px`,
       '--fs-scale-width': scaleWidth.toFixed(5),
       '--fs-scale-height': scaleHeightSafe.toFixed(5),
-      
-      '--fs-scale-height-content': contentScaleRelative.toFixed(5),
-      '--fs-scale': scaleWidth.toFixed(5),
+      '--fs-scale-height-content': viewportScaleHeight.toFixed(5),
+      '--fs-scale': viewportScaleWidth.toFixed(5),
       '--fs-canvas-width': `${canvasWidth.toFixed(3)}px`,
       '--fs-canvas-height': `${canvasHeight.toFixed(3)}px`,
       '--fs-page-max-height': `${pageMaxHeight.toFixed(3)}px`,
+      '--fs-extra-bottom-padding': `${extraBottomPadding.toFixed(3)}px`,
     }
 
     return { cssVars, canvasHeight }
