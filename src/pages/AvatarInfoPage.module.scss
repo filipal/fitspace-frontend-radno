@@ -73,6 +73,7 @@
   --avatar-gap-action-desc: calc(var(--avatar-scale-y) * 10.59px);
   --avatar-gap-desc-back: calc(var(--avatar-scale-y) * 13.3px);
   --avatar-actions-width: var(--avatar-input-width);
+  --avatar-extra-padding-bottom: var(--fs-extra-bottom-padding, 0px);
   inline-size: var(--fs-design-width);
   block-size: var(--fs-design-height);
   position: relative;

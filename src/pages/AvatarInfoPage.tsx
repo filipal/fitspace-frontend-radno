@@ -221,7 +221,7 @@ export default function AvatarInfoPage() {
       ? stableViewportHeight
       : viewportHeight
 
-  const { cssVars: layoutVars, canvasHeight } = useMemo(() => {
+  const { cssVars: layoutVars, pageHeight } = useMemo(() => {
     if (effectiveViewportWidth >= DESKTOP_BREAKPOINT) {
       const designWidth = Math.min(DESKTOP_DESIGN_WIDTH, effectiveViewportWidth)
       const designHeight = DESKTOP_DESIGN_HEIGHT
@@ -253,7 +253,7 @@ export default function AvatarInfoPage() {
         '--fs-page-max-height': `${pageMaxHeight.toFixed(3)}px`,
       }
 
-      return { cssVars, canvasHeight }
+      return { cssVars, pageHeight: canvasHeight }
     }
 
     const scaleWidth = clamp(
@@ -283,7 +283,8 @@ export default function AvatarInfoPage() {
     const canvasWidth = MOBILE_DESIGN_WIDTH * viewportScaleWidth
     const canvasHeight = MOBILE_DESIGN_HEIGHT * viewportScaleHeight
     const extraBottomPadding = Math.max(availableHeight - canvasHeight, 0)
-    const pageMaxHeight = Math.max(canvasHeight + extraBottomPadding, availableHeight)
+    const pageHeight = headerHeight + canvasHeight + extraBottomPadding
+    const pageMaxHeight = Math.max(pageHeight, viewportHeightForLayout)
 
     const cssVars: AvatarInfoPageCssVars = {
       '--fs-design-width': `${MOBILE_DESIGN_WIDTH}px`,
@@ -300,11 +301,11 @@ export default function AvatarInfoPage() {
       '--fs-extra-bottom-padding': `${extraBottomPadding.toFixed(3)}px`,
     }
 
-    return { cssVars, canvasHeight }
+    return { cssVars, pageHeight }
   }, [effectiveViewportWidth, viewportHeightForLayout])
 
   const needsScroll =
-    viewportWidth >= DESKTOP_BREAKPOINT || canvasHeight > stableViewportHeight + 0.5
+    viewportWidth >= DESKTOP_BREAKPOINT || pageHeight > viewportHeightForLayout + 0.5
   const pageClassName = needsScroll
     ? `${styles.page} ${styles.pageScrollable}`
     : styles.page
