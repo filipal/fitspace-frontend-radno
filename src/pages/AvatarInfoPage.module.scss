@@ -101,7 +101,8 @@
   padding-top: var(--avatar-padding-top);
   padding-bottom: calc(
     var(--avatar-padding-bottom) +
-    env(safe-area-inset-bottom, 0px) / var(--avatar-scale-safe)
+    env(safe-area-inset-bottom, 0px) / var(--avatar-scale-y-safe) +
+    var(--avatar-extra-padding-bottom) / var(--avatar-scale-y-safe)
   );
   display: flex;
   flex-direction: column;

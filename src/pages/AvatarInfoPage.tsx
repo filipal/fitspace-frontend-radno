@@ -66,10 +66,24 @@ function readViewportSize(): ViewportSize {
 
   const viewport = window.visualViewport
   if (viewport) {
+    const viewportScale = viewport.scale ?? 1
+    const docWidth = typeof document !== 'undefined'
+      ? document.documentElement?.clientWidth ?? 0
+      : 0
+    const layoutViewportWidth = Math.max(0, window.innerWidth || 0, docWidth || 0)
+    const measuredWidth = layoutViewportWidth > 0
+      ? layoutViewportWidth
+      : Math.max(
+        viewport.width,
+        Number.isFinite(viewport.width * viewportScale)
+          ? viewport.width * viewportScale
+          : 0,
+      )
+
     return {
-      width: window.innerWidth,
+      width: measuredWidth || window.innerWidth,
       height: viewport.height,
-      scale: viewport.scale ?? 1,
+      scale: viewportScale,
     }
   }
 
@@ -259,6 +273,7 @@ export default function AvatarInfoPage() {
       '--fs-viewport-height': `${viewportHeightForLayout.toFixed(3)}px`,
       '--fs-scale-width': scaleWidth.toFixed(5),
       '--fs-scale-height': scaleHeightSafe.toFixed(5),
+      
       '--fs-scale-height-content': contentScaleRelative.toFixed(5),
       '--fs-scale': scaleWidth.toFixed(5),
       '--fs-canvas-width': `${canvasWidth.toFixed(3)}px`,
