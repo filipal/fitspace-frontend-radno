@@ -7,11 +7,9 @@ import HairBig from '../../assets/woman-hair-beauty-b.svg?react'
 import Skin1Icon from '../../assets/skin1.svg?react'
 import { darkenHex, lightenHex } from '../../utils/color'
 import styles from './HairAccordion.module.scss'
-import { useAvatarApi } from '../../services/avatarApi'
 import { useAvatarConfiguration } from '../../context/AvatarConfigurationContext'
 import { usePixelStreaming } from '../../context/PixelStreamingContext'
 import { useQueuedUnreal } from '../../services/queuedUnreal'
-import { getAvatarDisplayName } from '../../utils/avatarName'
 import TriToneSelector from '../TriToneSelector/TriToneSelector'
 
 // Paleta boja kose (ograničena na dopuštenih 0-7 ID-eva)
@@ -36,8 +34,7 @@ const HAIR_KEYS = {
 } as const
 
 export default function HairAccordion() {
-  const { currentAvatar } = useAvatarConfiguration()
-  const { updateAvatarMeasurements } = useAvatarApi()
+  const { currentAvatar, updateQuickModeMeasurements } = useAvatarConfiguration()
 
   // Pixel Streaming
   const { sendFitSpaceCommand, connectionState } = usePixelStreaming()
@@ -80,95 +77,78 @@ export default function HairAccordion() {
   const dark = useMemo(() => darkenHex(base), [base])
 
   // Carousel (stvarni preview-ovi bi bili različiti po stilu)
-  const prevStyle = () =>
-    setStyleIndex(i => (i + HAIR_STYLE_PRESETS.length - 1) % HAIR_STYLE_PRESETS.length)
-  const nextStyle = () =>
-    setStyleIndex(i => (i + 1) % HAIR_STYLE_PRESETS.length)
-
-  const prevColor = useCallback(
-    () => setColorIndex(i => (i + HAIR_COLORS.length - 1) % HAIR_COLORS.length),
-    [],
-  )
-  const nextColor = useCallback(
-    () => setColorIndex(i => (i + 1) % HAIR_COLORS.length),
-    [],
-  )
-
-  // --- Debounced spremanje u backend ---
-  const saveTimerRef = useRef<number | null>(null)
-  const batchRef = useRef<Record<string, number>>({})
-
-  const flushSave = useCallback(async () => {
-    const pending = batchRef.current
-    batchRef.current = {}
-
-    const avatarId = currentAvatar?.avatarId
-    if (!avatarId) return
-
-    const safeName = getAvatarDisplayName(currentAvatar)
-    const safeAgeRange = currentAvatar?.ageRange ?? ''
-
-    try {
-      await updateAvatarMeasurements(avatarId, {
-        name: safeName,
-        gender: currentAvatar!.gender,
-        ageRange: safeAgeRange,
-        quickModeSettings: {
-          measurements: {
-            ...(currentAvatar?.quickModeSettings?.measurements ?? {}),
-            ...pending, // ⬅️ samo brojevi!
-          },
-        },
-      })
-    } catch (err) {
-      console.error('Saving hair settings failed', err)
-    }
-  }, [currentAvatar, updateAvatarMeasurements])
-
-  const scheduleSave = useCallback((patch: Record<string, number>) => {
-    batchRef.current = { ...batchRef.current, ...patch }
-    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current)
-    saveTimerRef.current = window.setTimeout(flushSave, 500)
-  }, [flushSave])
-
-  // --- Slanje u Unreal (queued + throttled kroz useQueuedUnreal) ---
-  const styleId = useMemo(() => HAIR_STYLE_PRESETS[styleIndex] ?? HAIR_STYLE_PRESETS[0], [styleIndex])
-
-  // Svaka promjena ide i u UE i u backend (debounce)
-  useEffect(() => {
-    if (styleId === undefined) return
+  const sendHairStyle = useCallback((styleIdx: number) => {
+    const styleId = HAIR_STYLE_PRESETS[styleIdx] ?? HAIR_STYLE_PRESETS[0]
     sendQueued(
       'updateHair',
       {
         mode: 'style',
         id: styleId,
       },
-      'hair style update'
+      'hair style update',
     )
-  }, [sendQueued, styleId])
+  }, [sendQueued])
 
-  const { id: colorId } = colorOption
-
-  useEffect(() => {
+    const sendHairColor = useCallback((colorIdx: number, hex: string) => {
+    const { id: colorId } = HAIR_COLORS[colorIdx] ?? HAIR_COLORS[0]
     sendQueued(
       'updateHair',
       {
         mode: 'color',
         id: colorId,
-        hex: base,
+        hex,
       },
-      'hair color update'
+      'hair color update',
     )
-  }, [base, colorId, sendQueued])
+  }, [sendQueued])
 
-  useEffect(() => {
-    const colorPacked = parseInt(base.slice(1), 16) // 0xRRGGBB kao broj
-    scheduleSave({
-      [HAIR_KEYS.styleIndex]: styleIndex,
-      [HAIR_KEYS.colorIndex]: colorIndex,
+  const applyHairStyle = useCallback((nextIndex: number) => {
+    const total = HAIR_STYLE_PRESETS.length
+    const normalized = ((nextIndex % total) + total) % total
+    if (normalized === styleIndex) return
+
+    setStyleIndex(normalized)
+    sendHairStyle(normalized)
+    updateQuickModeMeasurements({
+      [HAIR_KEYS.styleIndex]: normalized,
+    })
+  }, [styleIndex, sendHairStyle, updateQuickModeMeasurements])
+
+  const applyHairColor = useCallback((nextIndex: number) => {
+    const total = HAIR_COLORS.length
+    const normalized = ((nextIndex % total) + total) % total
+    if (normalized === colorIndex) return
+
+    const nextOption = HAIR_COLORS[normalized] ?? HAIR_COLORS[0]
+    setColorIndex(normalized)
+    sendHairColor(normalized, nextOption.hex)
+
+    const colorPacked = parseInt(nextOption.hex.slice(1), 16)
+    updateQuickModeMeasurements({
+      [HAIR_KEYS.colorIndex]: normalized,
       hairColorPacked: Number.isFinite(colorPacked) ? colorPacked : 0,
     })
-  }, [styleIndex, colorIndex, base, scheduleSave])
+  }, [colorIndex, sendHairColor, updateQuickModeMeasurements])
+
+  const prevStyle = () => applyHairStyle(styleIndex - 1)
+  const nextStyle = () => applyHairStyle(styleIndex + 1)
+
+  const prevColor = useCallback(() => {
+    applyHairColor(colorIndex - 1)
+  }, [applyHairColor, colorIndex])
+
+  const nextColor = useCallback(() => {
+    applyHairColor(colorIndex + 1)
+  }, [applyHairColor, colorIndex])
+
+  const initialSyncRef = useRef(false)
+
+  useEffect(() => {
+    if (initialSyncRef.current) return
+    initialSyncRef.current = true
+    sendHairStyle(styleIndex)
+    sendHairColor(colorIndex, colorOption.hex)
+  }, [styleIndex, colorIndex, colorOption.hex, sendHairStyle, sendHairColor])
 
   // --- Render ---
   const prevIdx = (styleIndex + HAIR_STYLE_PRESETS.length - 1) % HAIR_STYLE_PRESETS.length

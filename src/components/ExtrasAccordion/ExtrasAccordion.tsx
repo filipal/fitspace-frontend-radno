@@ -7,11 +7,9 @@ import GlassesBig from '../../assets/glasses-b.svg?react' // placeholder i za os
 import Skin1Icon from '../../assets/skin1.svg?react'
 import styles from './ExtrasAccordion.module.scss'
 
-import { useAvatarApi } from '../../services/avatarApi'
 import { useAvatarConfiguration } from '../../context/AvatarConfigurationContext'
 import { usePixelStreaming } from '../../context/PixelStreamingContext'
 import { useQueuedUnreal } from '../../services/queuedUnreal'
-import { getAvatarDisplayName } from '../../utils/avatarName'
 import TriToneSelector from '../TriToneSelector/TriToneSelector'
 
 // Tipovi “extra” itema
@@ -117,9 +115,26 @@ const mapColorIndexToUnreal = (index: number): number => {
   return safeIndex < NEUTRAL_COLOR_COUNT ? COLOR_ID_RANGE.min : COLOR_ID_RANGE.max
 }
 
+const STYLE_KEY_BY_TYPE: Record<ExtraType, keyof typeof EXTRA_KEYS> = {
+  Glasses: 'glassesStyleIndex',
+  Earrings: 'earringsStyleIndex',
+  Hats: 'hatsStyleIndex',
+}
+
+const COLOR_KEY_BY_TYPE: Record<ExtraType, keyof typeof EXTRA_KEYS> = {
+  Glasses: 'glassesColorIndex',
+  Earrings: 'earringsColorIndex',
+  Hats: 'hatsColorIndex',
+}
+
+const PACKED_KEY_BY_TYPE: Record<ExtraType, keyof typeof EXTRA_KEYS> = {
+  Glasses: 'glassesColorPacked',
+  Earrings: 'earringsColorPacked',
+  Hats: 'hatsColorPacked',
+}
+
 export default function ExtrasAccordion() {
-  const { currentAvatar } = useAvatarConfiguration()
-  const { updateAvatarMeasurements } = useAvatarApi()
+  const { currentAvatar, updateQuickModeMeasurements } = useAvatarConfiguration()
 
   // Pixel Streaming
   const { sendFitSpaceCommand, connectionState } = usePixelStreaming()
@@ -189,14 +204,6 @@ export default function ExtrasAccordion() {
   const totalForActive = STYLE_COUNTS[activeType]
   const styleIndex = styleByType[activeType]
   const colorIndex = colorByType[activeType]
-  const unrealStyleId = useMemo(
-    () => mapStyleIndexToUnreal(styleIndex, totalForActive),
-    [styleIndex, totalForActive],
-  )
-  const unrealColorId = useMemo(
-    () => mapColorIndexToUnreal(colorIndex),
-    [colorIndex],
-  )
   const isNoneSelected = useMemo(
     () => totalForActive > 0 && styleIndex === totalForActive - 1,
     [styleIndex, totalForActive],
@@ -211,128 +218,143 @@ export default function ExtrasAccordion() {
     [colorIndex]
   )
 
-  // UI helpers
-  const shiftType = (dir: 1 | -1) =>
-    setTypeIndex(i => (i + dir + EXTRA_TYPES.length) % EXTRA_TYPES.length)
-
-  const prevStyle = () =>
-    setStyleByType(prev => ({ ...prev, [activeType]: (styleIndex + totalForActive - 1) % totalForActive }))
-  const nextStyle = () =>
-    setStyleByType(prev => ({ ...prev, [activeType]: (styleIndex + 1) % totalForActive }))
-
-  const prevColor = useCallback(
-    () =>
-      setColorByType(prev => ({
-        ...prev,
-        [activeType]: (colorIndex + PALETTE.length - 1) % PALETTE.length,
-      })),
-    [activeType, colorIndex],
-  )
-  const nextColor = useCallback(
-    () =>
-      setColorByType(prev => ({
-        ...prev,
-        [activeType]: (colorIndex + 1) % PALETTE.length,
-      })),
-    [activeType, colorIndex],
-  )
-
-  // --- Debounced spremanje u backend ---
-  const saveTimerRef = useRef<number | null>(null)
-  const batchRef = useRef<Record<string, number>>({})
-
-  const flushSave = useCallback(async () => {
-    const pending = batchRef.current
-    batchRef.current = {}
-
-    const avatarId = currentAvatar?.avatarId
-    if (!avatarId) return
-
-    const safeName = getAvatarDisplayName(currentAvatar)
-    const safeAgeRange = currentAvatar?.ageRange ?? ''
-
-    try {
-      await updateAvatarMeasurements(avatarId, {
-        name: safeName,
-        gender: currentAvatar!.gender,
-        ageRange: safeAgeRange,
-        quickModeSettings: {
-          measurements: {
-            ...(currentAvatar?.quickModeSettings?.measurements ?? {}),
-            ...pending, // samo brojevi!
-          },
-        },
-      })
-    } catch (err) {
-      console.error('Saving extras settings failed', err)
-    }
-  }, [currentAvatar, updateAvatarMeasurements])
-
-  const scheduleSave = useCallback((patch: Record<string, number>) => {
-    batchRef.current = { ...batchRef.current, ...patch }
-    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current)
-    saveTimerRef.current = window.setTimeout(flushSave, 500)
-  }, [flushSave])
-
-  // helper za packed boju (0xRRGGBB)
-  const colorPacked = useMemo(
-    () => (isNoneSelected ? 0 : parseInt(base.slice(1), 16) || 0),
-    [base, isNoneSelected],
-  )
-
-  // --- Slanje u Unreal (queued) ---
-  const pushToUnreal = useCallback(() => {
-    const typeForCommand = activeType.toLowerCase() as Lowercase<ExtraType>
+  const sendExtrasStyle = useCallback((type: ExtraType, styleIdx: number) => {
+    const typeForCommand = type.toLowerCase() as Lowercase<ExtraType>
+    const id = mapStyleIndexToUnreal(styleIdx, STYLE_COUNTS[type])
 
     sendQueued(
       'updateExtras',
       {
         type: typeForCommand,
-        id: unrealStyleId,
+        id,
       },
-      'extras style update'
+      'extras style update',
     )
+  }, [sendQueued])
 
+  const sendExtrasColor = useCallback((colorIdx: number) => {
+    const id = mapColorIndexToUnreal(colorIdx)
     sendQueued(
       'updateExtras',
       {
         type: 'color',
-        id: unrealColorId,
+        id,
       },
-      'extras color update'
+      'extras color update',
     )
-  }, [activeType, unrealStyleId, unrealColorId, sendQueued])
+  }, [sendQueued])
 
-  // Svaka promjena (tip, stil, boja) -> UE + backend (debounce)
-  useEffect(() => {
-    // spremi koji je tip aktivan (da UI može vratiti kontekst po reloadu)
-    scheduleSave({ [EXTRA_KEYS.typeIndex]: typeIndex })
+  const updateMeasurementsForType = useCallback((type: ExtraType, styleIdx: number, colorIdx: number, packed: number) => {
+    updateQuickModeMeasurements({
+      [EXTRA_KEYS[STYLE_KEY_BY_TYPE[type]]]: styleIdx,
+      [EXTRA_KEYS[COLOR_KEY_BY_TYPE[type]]]: colorIdx,
+      [EXTRA_KEYS[PACKED_KEY_BY_TYPE[type]]]: packed,
+    })
+  }, [updateQuickModeMeasurements])
 
-    // spremi/stisni per-tip vrijednosti
-    const patches: Record<string, number> = {
-      // style
-      [EXTRA_KEYS.glassesStyleIndex]: styleByType.Glasses,
-      [EXTRA_KEYS.earringsStyleIndex]: styleByType.Earrings,
-      [EXTRA_KEYS.hatsStyleIndex]: styleByType.Hats,
-      // color index
-      [EXTRA_KEYS.glassesColorIndex]: colorByType.Glasses,
-      [EXTRA_KEYS.earringsColorIndex]: colorByType.Earrings,
-      [EXTRA_KEYS.hatsColorIndex]: colorByType.Hats,
-    }
+  const applyTypeIndex = useCallback((nextIndex: number) => {
+    const normalized = ((nextIndex % EXTRA_TYPES.length) + EXTRA_TYPES.length) % EXTRA_TYPES.length
+    if (normalized === typeIndex) return
 
-    // packed boje – samo za aktivni tip ovdje (možeš i za sva tri, ali nije nužno)
-    if (activeType === 'Glasses') patches[EXTRA_KEYS.glassesColorPacked] = colorPacked
-    if (activeType === 'Earrings') patches[EXTRA_KEYS.earringsColorPacked] = colorPacked
-    if (activeType === 'Hats') patches[EXTRA_KEYS.hatsColorPacked] = colorPacked
+    const nextType = EXTRA_TYPES[normalized]
+    setTypeIndex(normalized)
+    updateQuickModeMeasurements({ [EXTRA_KEYS.typeIndex]: normalized })
 
-    scheduleSave(patches)
-    pushToUnreal()
+    const nextStyle = styleByType[nextType]
+    const nextColor = colorByType[nextType]
+    const nextColorHex = PALETTE[nextColor] ?? '#000000'
+    const packed = nextStyle === STYLE_COUNTS[nextType] - 1 ? 0 : parseInt(nextColorHex.slice(1), 16) || 0
+
+    sendExtrasStyle(nextType, nextStyle)
+    sendExtrasColor(nextColor)
+    updateMeasurementsForType(nextType, nextStyle, nextColor, packed)
   }, [
+    colorByType,
+    styleByType,
     typeIndex,
-    styleByType, colorByType,
-    activeType, colorPacked,
-    scheduleSave, pushToUnreal,
+    updateQuickModeMeasurements,
+    sendExtrasStyle,
+    sendExtrasColor,
+    updateMeasurementsForType,
   ])
+
+  const applyStyleForActiveType = useCallback((nextIndex: number) => {
+    const total = STYLE_COUNTS[activeType]
+    if (total <= 0) return
+
+    const normalized = ((nextIndex % total) + total) % total
+    if (normalized === styleByType[activeType]) return
+
+    setStyleByType(prev => ({ ...prev, [activeType]: normalized }))
+
+    const activeColorHex = PALETTE[colorByType[activeType]] ?? '#000000'
+    const packed = normalized === total - 1 ? 0 : parseInt(activeColorHex.slice(1), 16) || 0
+
+    sendExtrasStyle(activeType, normalized)
+    sendExtrasColor(colorByType[activeType])
+    updateQuickModeMeasurements({
+      [EXTRA_KEYS[STYLE_KEY_BY_TYPE[activeType]]]: normalized,
+      [EXTRA_KEYS[PACKED_KEY_BY_TYPE[activeType]]]: packed,
+    })
+  }, [
+    activeType,
+    colorByType,
+    sendExtrasColor,
+    sendExtrasStyle,
+    styleByType,
+    updateQuickModeMeasurements,
+  ])
+
+  const applyColorForActiveType = useCallback((nextIndex: number) => {
+    const total = PALETTE.length
+    if (total === 0) return
+
+    const normalized = ((nextIndex % total) + total) % total
+    if (normalized === colorByType[activeType]) return
+
+    setColorByType(prev => ({ ...prev, [activeType]: normalized }))
+
+    const nextHex = PALETTE[normalized] ?? '#000000'
+    const packed = isNoneSelected ? 0 : parseInt(nextHex.slice(1), 16) || 0
+
+    sendExtrasStyle(activeType, styleByType[activeType])
+    sendExtrasColor(normalized)
+    updateQuickModeMeasurements({
+      [EXTRA_KEYS[COLOR_KEY_BY_TYPE[activeType]]]: normalized,
+      [EXTRA_KEYS[PACKED_KEY_BY_TYPE[activeType]]]: packed,
+    })
+  }, [
+    activeType,
+    colorByType,
+    isNoneSelected,
+    sendExtrasColor,
+    sendExtrasStyle,
+    styleByType,
+    updateQuickModeMeasurements,
+  ])
+
+  // UI helpers
+  const shiftType = (dir: 1 | -1) => applyTypeIndex(typeIndex + dir)
+
+  const prevStyle = () => applyStyleForActiveType(styleIndex - 1)
+  const nextStyle = () => applyStyleForActiveType(styleIndex + 1)
+
+  const prevColor = useCallback(() => {
+    applyColorForActiveType(colorIndex - 1)
+  }, [applyColorForActiveType, colorIndex])
+
+  const nextColor = useCallback(() => {
+    applyColorForActiveType(colorIndex + 1)
+  }, [applyColorForActiveType, colorIndex])
+
+  const initialSyncRef = useRef(false)
+
+  useEffect(() => {
+    if (initialSyncRef.current) return
+    initialSyncRef.current = true
+    sendExtrasStyle(activeType, styleIndex)
+    sendExtrasColor(colorIndex)
+  }, [activeType, styleIndex, colorIndex, sendExtrasStyle, sendExtrasColor])
 
   // --- Render ---
   const at = (offset: number) => EXTRA_TYPES[(typeIndex + offset + EXTRA_TYPES.length) % EXTRA_TYPES.length]

@@ -97,11 +97,11 @@ export interface AvatarConfiguration {
 export interface AvatarConfigurationContextType {
   // Current avatar state
   currentAvatar: AvatarConfiguration | null;
-  
+
   // Loading states
   isLoading: boolean;
   error: string | null;
-  
+
   // Avatar management
   loadAvatarFromBackend: (
     backendData: BackendAvatarData,
@@ -109,6 +109,9 @@ export interface AvatarConfigurationContextType {
     avatarId?: string
   ) => Promise<AvatarConfiguration>;
   updateMorphValue: (morphId: number, value: number) => void;
+  updateQuickModeMeasurements: (
+    patch: Record<string, number | null | undefined>,
+  ) => void;
   resetAvatar: () => void;
   
   // Utility functions
@@ -310,6 +313,48 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
     });
   }, []);
 
+  const updateQuickModeMeasurements = useCallback((patch: Record<string, number | null | undefined>) => {
+    setCurrentAvatar(prev => {
+      if (!prev) return prev;
+
+      const previousSettings = prev.quickModeSettings ?? {};
+      const previousMeasurements = previousSettings.measurements ?? {};
+      const nextMeasurements = { ...previousMeasurements } as Record<string, number>;
+      let changed = false;
+
+      for (const [key, rawValue] of Object.entries(patch)) {
+        if (rawValue == null) {
+          if (key in nextMeasurements) {
+            delete nextMeasurements[key];
+            changed = true;
+          }
+          continue;
+        }
+
+        if (nextMeasurements[key] !== rawValue) {
+          nextMeasurements[key] = rawValue;
+          changed = true;
+        }
+      }
+
+      if (!changed) {
+        return prev;
+      }
+
+      const updatedQuickModeSettings: QuickModeSettings = {
+        ...previousSettings,
+        measurements: nextMeasurements,
+        updatedAt: new Date().toISOString(),
+      };
+
+      return {
+        ...prev,
+        quickModeSettings: updatedQuickModeSettings,
+        lastUpdated: new Date(),
+      };
+    });
+  }, []);
+
   // Reset avatar to defaults
   const resetAvatar = useCallback(() => {
     setCurrentAvatar(null);
@@ -341,6 +386,7 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
     error,
     loadAvatarFromBackend,
     updateMorphValue,
+    updateQuickModeMeasurements,
     resetAvatar,
     getMorphByName,
     getMorphById,
@@ -352,6 +398,7 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
     error,
     loadAvatarFromBackend,
     updateMorphValue,
+    updateQuickModeMeasurements,
     resetAvatar,
     getMorphByName,
     getMorphById,

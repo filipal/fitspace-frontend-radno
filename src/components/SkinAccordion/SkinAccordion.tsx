@@ -6,11 +6,9 @@ import Skin2 from '../../assets/skin2.svg?react'
 import Skin3 from '../../assets/skin3.svg?react'
 import { darkenHex, lightenHex } from '../../utils/color'
 import styles from './SkinAccordion.module.scss'
-import { useAvatarApi } from '../../services/avatarApi'
 import { useAvatarConfiguration } from '../../context/AvatarConfigurationContext'
 import { usePixelStreaming } from '../../context/PixelStreamingContext'
 import { useQueuedUnreal } from '../../services/queuedUnreal'
-import { getAvatarDisplayName } from '../../utils/avatarName'
 
 interface SkinAccordionProps {
   defaultRightExpanded?: boolean
@@ -51,8 +49,7 @@ const mapToBrightness = (tonePercent: number) => {
 }
 
 export default function SkinAccordion({ defaultRightExpanded = false }: SkinAccordionProps) {
-  const { currentAvatar } = useAvatarConfiguration()
-  const { updateAvatarMeasurements } = useAvatarApi()
+  const { currentAvatar, updateQuickModeMeasurements } = useAvatarConfiguration()
 
   const { sendFitSpaceCommand, connectionState } = usePixelStreaming();
   const simpleState = useMemo<'connected' | 'connecting' | 'disconnected'>(() => {
@@ -133,103 +130,98 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
     return () => ro.disconnect()
   }, [recalcPosFromPercent])
 
-  // --- Debounced spremanje u backend (quickModeSettings.measurements) ---
-  const saveTimerRef = useRef<number | null>(null)
-  const batchRef = useRef<Record<string, number>>({})
+  const emitSkinCommands = useCallback((base: number, tone: number, variant: number | null) => {
+    const nextSkinTone = mapToSkinTone(base, variant)
+    const nextBrightness = mapToBrightness(tone)
 
-  const flushSave = useCallback(async () => {
-    const pending = batchRef.current
-    batchRef.current = {}
-
-    // GUARD: avatarId mora postojati i biti string/number
-    const avatarId = currentAvatar?.avatarId
-    if (!avatarId) return
-
-    // Siguran payload (fallbackovi za TS)
-    const safeName = getAvatarDisplayName(currentAvatar)
-    const safeAgeRange = currentAvatar?.ageRange ?? ''
-
-    try {
-      await updateAvatarMeasurements(avatarId, {
-        name: safeName,
-        gender: currentAvatar!.gender,
-        ageRange: safeAgeRange,
-        quickModeSettings: {
-          // uključujemo postojeće mjere (koliko ih imamo u memoriji) + patch
-          measurements: {
-            ...(currentAvatar?.quickModeSettings?.measurements ?? {}),
-            ...pending,
-          },
-        },
-      })
-    } catch (err) {
-      console.error('Saving skin settings failed', err)
-    }
-  }, [currentAvatar, updateAvatarMeasurements])
-
-  const scheduleSave = useCallback((patch: Record<string, number>) => {
-    // merge u batch
-    batchRef.current = { ...batchRef.current, ...patch }
-    if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current)
-    saveTimerRef.current = window.setTimeout(flushSave, 500)
-  }, [flushSave])
-
-  const skinTone = useMemo(() => mapToSkinTone(baseIndex, focusedIndex), [baseIndex, focusedIndex])
-  const brightness = useMemo(() => mapToBrightness(tonePct), [tonePct])
-
-  // Svaka promjena statea šalje u UE + sprema u backend (debounce)
-  useEffect(() => {
     sendQueued(
       'updateSkin',
       {
-        skin_tone: skinTone,
+        skin_tone: nextSkinTone,
       },
-      'skin update'
+      'skin update',
     )
     sendQueued(
       'updateSkinBrightness',
       {
-        brightness,
+        brightness: nextBrightness,
       },
-      'skin brightness'
+      'skin brightness',
     )
-    // ne spremamo variant kad je null; bazu/tone spremamo uvijek
-    scheduleSave({
-      [SKIN_KEYS.baseIndex]: baseIndex,
-      [SKIN_KEYS.tonePercent]: tonePct,
-      ...(focusedIndex !== null ? { [SKIN_KEYS.variantIndex]: focusedIndex } : {}),
+  }, [sendQueued])
+
+  const applySkinState = useCallback((changes: {
+    baseIndex?: number
+    tonePct?: number
+    focusedIndex?: number | null
+  }) => {
+    const nextBase = changes.baseIndex ?? baseIndex
+    const nextTone = changes.tonePct ?? tonePct
+    const hasFocusedIndex = Object.prototype.hasOwnProperty.call(changes, 'focusedIndex')
+    const nextFocused = hasFocusedIndex ? changes.focusedIndex ?? null : focusedIndex
+
+    const baseChanged = nextBase !== baseIndex
+    const toneChanged = nextTone !== tonePct
+    const focusedChanged = nextFocused !== focusedIndex
+
+    if (baseChanged) setBaseIndex(nextBase)
+    if (toneChanged) setTonePct(nextTone)
+    if (focusedChanged) setFocusedIndex(nextFocused)
+
+    if (!baseChanged && !toneChanged && !focusedChanged) {
+      return
+    }
+
+    emitSkinCommands(nextBase, nextTone, nextFocused)
+
+    updateQuickModeMeasurements({
+      [SKIN_KEYS.baseIndex]: nextBase,
+      [SKIN_KEYS.tonePercent]: nextTone,
+      [SKIN_KEYS.variantIndex]: nextFocused,
     })
   }, [
     baseIndex,
     tonePct,
     focusedIndex,
-    sendQueued,
-    scheduleSave,
-    skinTone,
-    brightness,
+    emitSkinCommands,
+    updateQuickModeMeasurements,
   ])
+
+  const initialSyncRef = useRef(false)
+
+  useEffect(() => {
+    if (initialSyncRef.current) return
+    initialSyncRef.current = true
+    emitSkinCommands(baseIndex, tonePct, focusedIndex)
+  }, [baseIndex, tonePct, focusedIndex, emitSkinCommands])
 
   // --- Handleri za promjene UI-a + spremanje ---
   const handlePrev = () => {
-    if (focusedIndex !== null) {
-      const nextVar = (focusedIndex + SKIN_VARIANT_COUNT - 1) % SKIN_VARIANT_COUNT
-      setFocusedIndex(nextVar)
-    }
     const nextBase = (baseIndex + basePalette.length - 1) % basePalette.length
-    setBaseIndex(nextBase)
+    const nextFocused =
+      focusedIndex !== null
+        ? (focusedIndex + SKIN_VARIANT_COUNT - 1) % SKIN_VARIANT_COUNT
+        : focusedIndex
+    applySkinState({
+      baseIndex: nextBase,
+      ...(focusedIndex !== null ? { focusedIndex: nextFocused } : {}),
+    })
   }
 
   const handleNext = () => {
-    if (focusedIndex !== null) {
-      const nextVar = (focusedIndex + 1) % SKIN_VARIANT_COUNT
-      setFocusedIndex(nextVar)
-    }
     const nextBase = (baseIndex + 1) % basePalette.length
-    setBaseIndex(nextBase)
+    const nextFocused =
+      focusedIndex !== null
+        ? (focusedIndex + 1) % SKIN_VARIANT_COUNT
+        : focusedIndex
+    applySkinState({
+      baseIndex: nextBase,
+      ...(focusedIndex !== null ? { focusedIndex: nextFocused } : {}),
+    })
   }
 
   const onSelectIcon = (idx: number) => {
-    setFocusedIndex(idx)
+    applySkinState({ focusedIndex: idx })
   }
 
   const onStartDrag = (startEvent: PointerEvent) => {
@@ -244,7 +236,7 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
       const clampedPx = Math.max(0, Math.min(length, raw))
       setPosPx(clampedPx)
       const pct = Math.round((clampedPx / length) * 100)
-      setTonePct(pct)
+      applySkinState({ tonePct: pct })
     }
 
     updateFromCoords(startEvent.clientX, startEvent.clientY)
@@ -279,7 +271,7 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
             </div>
           ) : (
             <div className={styles.iconOne}>
-              <button type="button" className={styles.iconBtn} onClick={() => setFocusedIndex(null)}>
+              <button type="button" className={styles.iconBtn} onClick={() => applySkinState({ focusedIndex: null })}>
                 {focusedIndex === 0 && <Skin1 className={styles.iconLarge} style={{ color: light }} />}
                 {focusedIndex === 1 && <Skin2 className={styles.iconLarge} style={{ color: base }} />}
                 {focusedIndex === 2 && <Skin3 className={styles.iconLarge} style={{ color: dark }} />}

@@ -4,10 +4,8 @@ import { morphAttributes } from '../../data/morphAttributes';
 import type { MorphAttribute } from '../../data/morphAttributes';
 import styles from './BodyAccordion.module.scss'
 
-import { useAvatarApi } from '../../services/avatarApi';
-import { getBackendKeyForMorphId } from '../../services/avatarTransformationService';
 import type { BasicMeasurements, BodyMeasurements } from '../../context/AvatarConfigurationContext';
-import { getAvatarDisplayName } from '../../utils/avatarName';
+import { useAvatarConfiguration } from '../../context/AvatarConfigurationContext';
 
 export type Avatar = {
   avatarId: string;
@@ -21,170 +19,22 @@ export type Avatar = {
 
 const EMPTY_MORPH_VALUES: { morphId: number; value: number }[] = []
 
-const parseMeasurementValue = (value: unknown): number | undefined => {
-  if (typeof value === 'number' && Number.isFinite(value)) return value
-  if (typeof value === 'string') {
-    const parsed = Number(value.replace(',', '.'))
-    if (Number.isFinite(parsed)) return parsed
-  }
-  return undefined
-}
-
-const sanitizeBasicMeasurements = (
-  source: Partial<BasicMeasurements> | null | undefined,
-): Partial<BasicMeasurements> | undefined => {
-  if (!source) return undefined
-  const { creationMode: _ignore, ...rest } = source
-  const entries = Object.entries(rest).reduce<Partial<BasicMeasurements>>((acc, [key, value]) => {
-    const numeric = parseMeasurementValue(value)
-    if (numeric == null) return acc
-    acc[key as keyof BasicMeasurements] = numeric
-    return acc
-  }, {})
-  return Object.keys(entries).length ? entries : undefined
-}
-
-const sanitizeBodyMeasurements = (
-  source: Partial<BodyMeasurements> | null | undefined,
-): Partial<BodyMeasurements> | undefined => {
-  if (!source) return undefined
-  const entries = Object.entries(source).reduce<Partial<BodyMeasurements>>((acc, [key, value]) => {
-    const numeric = parseMeasurementValue(value)
-    if (numeric == null) return acc
-    acc[key as keyof BodyMeasurements] = numeric
-    return acc
-  }, {})
-  return Object.keys(entries).length ? entries : undefined
-}
-
 export interface BodyAccordionProps {
   avatar: Avatar | null; // ⬅️ BodyAccordion sada prima avatar kroz prop
   updateMorph?: (morphId: number, morphName: string, percentage: number) => void
 }
 
 export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProps) {
-  const { updateAvatarMeasurements } = useAvatarApi()
+  const { updateMorphValue } = useAvatarConfiguration()
 
-  const pendingSaveRef = useRef<{
-    avatarId: string
-    morphs: Record<string, number>
-    name: string
-    gender: 'male' | 'female'
-    ageRange: string
-  } | null>(null)
-
-  const saveTimerRef = useRef<number | null>(null)
-
-  const flushPending = useCallback(async () => {
-    const pending = pendingSaveRef.current
-    if (!pending) return
-
-    const { avatarId, morphs: pendingMorphs, name, gender, ageRange } = pending
-    pendingSaveRef.current = null
-
-    if (!avatarId) {
+  const emitMorphChange = useCallback((morphId: number, morphName: string, percent: number) => {
+    if (updateMorph) {
+      updateMorph(morphId, morphName, percent)
       return
     }
 
-    const combinedMorphTargets: Record<string, number> = {}
-
-    // Uključi sve poznate vrijednosti morphova za avatara kako backend ne bi resetirao ostale na 50%
-    if (avatar?.morphValues?.length) {
-      for (const morph of avatar.morphValues) {
-        const backendKey = getBackendKeyForMorphId(morph.morphId)
-        if (!backendKey) continue
-
-        const rawValue = typeof morph.value === 'number' ? morph.value : 50
-        const clampedValue = Math.max(0, Math.min(100, Math.round(rawValue)))
-        combinedMorphTargets[backendKey] = clampedValue
-      }
-    }
-
-    for (const [backendKey, value] of Object.entries(pendingMorphs)) {
-      const clampedValue = Math.max(0, Math.min(100, Math.round(value)))
-      combinedMorphTargets[backendKey] = clampedValue
-    }
-
-    if (!Object.keys(combinedMorphTargets).length) {
-      return
-    }
-
-    const basicMeasurements = sanitizeBasicMeasurements(avatar?.basicMeasurements)
-    const bodyMeasurements = sanitizeBodyMeasurements(avatar?.bodyMeasurements)
-
-    try {
-      await updateAvatarMeasurements(avatarId, {
-        name,
-        gender,
-        ageRange,
-        morphTargets: combinedMorphTargets,
-        ...(basicMeasurements ? { basicMeasurements } : {}),
-        ...(bodyMeasurements ? { bodyMeasurements } : {}),
-      })
-    } catch (e) {
-      console.error('Saving morphs failed', e)
-    }
-  }, [avatar, updateAvatarMeasurements])
-
-  const queueMorphSave = useCallback((morphId: number, percent: number) => {
-    const backendKey = getBackendKeyForMorphId(morphId)
-    if (!backendKey) return
-
-    if (!avatar?.avatarId) return
-
-    const v = Math.max(0, Math.min(100, Math.round(percent)))
-
-    const safeName = getAvatarDisplayName(avatar)
-
-    const safeAgeRange = avatar?.ageRange ?? ''
-
-    const safeGender: 'male' | 'female' =
-      avatar?.gender === 'female' ? 'female' : 'male'
-
-    const current = pendingSaveRef.current
-    if (current && current.avatarId !== avatar.avatarId) {
-      void flushPending()
-    }
-
-    const next = pendingSaveRef.current
-    const merged =
-      !next || next.avatarId !== avatar.avatarId
-        ? {
-            avatarId: avatar.avatarId,
-            morphs: { [backendKey]: v },
-            name: safeName,
-            gender: safeGender,
-            ageRange: safeAgeRange,
-          }
-        : {
-            ...next,
-            name: safeName,
-            gender: safeGender,
-            ageRange: safeAgeRange,
-            morphs: { ...next.morphs, [backendKey]: v },
-          }
-
-    pendingSaveRef.current = merged
-
-    if (typeof window !== 'undefined' && saveTimerRef.current) {
-      window.clearTimeout(saveTimerRef.current)
-    }
-
-    if (typeof window !== 'undefined') {
-      saveTimerRef.current = window.setTimeout(() => {
-        void flushPending()
-      }, 600)
-    }
-  }, [avatar, flushPending])
-
-  useEffect(() => {
-    return () => {
-      if (typeof window !== 'undefined' && saveTimerRef.current) {
-        window.clearTimeout(saveTimerRef.current)
-      }
-      void flushPending()
-    }
-  }, [flushPending])
+    updateMorphValue(morphId, percent)
+  }, [updateMorph, updateMorphValue])
 
   // Categories grouped for body editing; values wiring will come later
   const categories = useMemo(
@@ -419,8 +269,7 @@ export default function BodyAccordion({ avatar, updateMorph }: BodyAccordionProp
 
         if (pct !== lastEmittedRef.current) {
           lastEmittedRef.current = pct;
-          updateMorph?.(attr.morphId, attr.morphName, pct);
-          queueMorphSave(attr.morphId, pct);
+          emitMorphChange(attr.morphId, attr.morphName, pct);
         }
 
         clearSelection();
