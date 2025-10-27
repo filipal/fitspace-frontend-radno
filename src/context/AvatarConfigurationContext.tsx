@@ -1,4 +1,4 @@
-import React, { createContext, useState, useCallback, useMemo, useRef } from 'react';
+import React, { createContext, useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { morphAttributes, type MorphAttribute } from '../data/morphAttributes';
 import {
   convertMorphValueToBackendValue,
@@ -18,7 +18,12 @@ import {
   type AvatarPayload,
   LAST_LOADED_AVATAR_STORAGE_KEY,
   LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
+  persistAvatarDraftToStorage,
+  clearAvatarDraftFromStorage,
+  type PersistAvatarDraftParams,
+  type AvatarApiMeasurements,
 } from '../services/avatarApi';
+import type { CreateAvatarCommand } from '../types/provisioning';
 import { useAuthData } from '../hooks/useAuthData';
 
 export type AvatarCreationMode = 'manual' | 'scan' | 'preset' | 'import' | 'quickMode';
@@ -162,7 +167,10 @@ export interface AvatarConfigurationContextType {
   // Dirty state helpers
   dirtySections: ReadonlySet<AvatarConfigurationDirtySection>;
   isSectionDirty: (section: AvatarConfigurationDirtySection) => boolean;
-  markSectionDirty: (section: AvatarConfigurationDirtySection) => void;
+  markSectionDirty: (
+    section: AvatarConfigurationDirtySection,
+    avatar?: AvatarConfiguration | null,
+  ) => void;
   clearSectionDirty: (section: AvatarConfigurationDirtySection) => void;
   clearAllDirtySections: () => void;
 }
@@ -200,20 +208,215 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
   const [savePendingChangesError, setSavePendingChangesError] = useState<string | null>(null);
   const [dirtySections, setDirtySections] = useState<Set<AvatarConfigurationDirtySection>>(new Set());
   const saveInFlightRef = useRef(false);
+  const latestAvatarRef = useRef<AvatarConfiguration | null>(null);
 
   const { isAuthenticated } = useAuthData();
   const { fetchAvatarById, updateAvatarMeasurements } = useAvatarApi();
 
-  const markSectionDirty = useCallback((section: AvatarConfigurationDirtySection) => {
-    setDirtySections(prev => {
-      if (prev.has(section)) {
-        return prev;
+  useEffect(() => {
+    latestAvatarRef.current = currentAvatar;
+  }, [currentAvatar]);
+
+  const buildDraftPersistencePayload = useCallback(
+    (avatar: AvatarConfiguration): PersistAvatarDraftParams | null => {
+      if (!avatar) {
+        return null;
       }
-      const next = new Set(prev);
-      next.add(section);
-      return next;
-    });
-  }, []);
+
+      const resolvedId = avatar.avatarId && avatar.avatarId.trim().length ? avatar.avatarId : 'guest';
+      const normalizedId = String(resolvedId);
+      const trimmedName = avatar.avatarName?.trim() || avatar.name?.trim();
+      const resolvedName = trimmedName && trimmedName.length > 0 ? trimmedName : 'Avatar';
+      const gender = avatar.gender;
+      const ageRange = avatar.ageRange ?? '20-29';
+      const resolvedCreationMode =
+        avatar.creationMode ?? avatar.basicMeasurements?.creationMode ?? null;
+      const resolvedQuickMode =
+        typeof avatar.quickMode === 'boolean'
+          ? avatar.quickMode
+          : resolvedCreationMode === 'quickMode'
+            ? true
+            : null;
+      const resolvedSource = avatar.source ?? (isAuthenticated ? 'web' : 'guest');
+
+      const sanitizeDraftMeasurementRecord = (
+        source?: Partial<Record<string, unknown>> | null,
+      ): Record<string, number | string | null> | undefined => {
+        if (!source) {
+          return undefined;
+        }
+
+        const entries = Object.entries(source).reduce<
+          Record<string, number | string | null>
+        >((acc, [key, value]) => {
+          if (!key || value === undefined) {
+            return acc;
+          }
+
+          if (value === null) {
+            acc[key] = null;
+            return acc;
+          }
+
+          if (typeof value === 'number') {
+            if (Number.isFinite(value)) {
+              acc[key] = value;
+            }
+            return acc;
+          }
+
+          if (typeof value === 'string') {
+            const trimmed = value.trim();
+            if (!trimmed) {
+              return acc;
+            }
+
+            const numericValue = Number(trimmed.replace(',', '.'));
+            acc[key] = Number.isFinite(numericValue) ? numericValue : trimmed;
+            return acc;
+          }
+
+          const numericValue = Number(value);
+          if (Number.isFinite(numericValue)) {
+            acc[key] = numericValue;
+          }
+
+          return acc;
+        }, {});
+
+        return Object.keys(entries).length ? entries : undefined;
+      };
+
+      const basicMeasurementsRecord = sanitizeDraftMeasurementRecord(
+        avatar.basicMeasurements ?? null,
+      );
+
+      if (resolvedCreationMode && basicMeasurementsRecord && !('creationMode' in basicMeasurementsRecord)) {
+        basicMeasurementsRecord.creationMode = resolvedCreationMode;
+      }
+
+      const basicMeasurementsMetadata = basicMeasurementsRecord
+        ? (basicMeasurementsRecord as Partial<BasicMeasurements>)
+        : null;
+
+      const bodyMeasurementsRecord = sanitizeDraftMeasurementRecord(
+        avatar.bodyMeasurements ?? null,
+      );
+
+      const bodyMeasurementsMetadata = bodyMeasurementsRecord
+        ? (bodyMeasurementsRecord as AvatarApiMeasurements)
+        : null;
+
+      const quickModeSettings = avatar.quickModeSettings
+        ? {
+            ...avatar.quickModeSettings,
+            ...(avatar.quickModeSettings.measurements
+              ? { measurements: { ...avatar.quickModeSettings.measurements } }
+              : {}),
+          }
+        : null;
+
+      const morphTargetsRecord = avatar.morphValues.reduce<Record<string, number>>(
+        (acc, morph) => {
+          const backendKey = getBackendKeyForMorphId(morph.morphId);
+          if (!backendKey) {
+            return acc;
+          }
+
+          const backendValue = convertMorphValueToBackendValue(morph.value, morph);
+          if (!Number.isFinite(backendValue)) {
+            return acc;
+          }
+
+          acc[backendKey] = Number(backendValue);
+          return acc;
+        },
+        {},
+      );
+
+      const morphTargets = Object.keys(morphTargetsRecord).length
+        ? morphTargetsRecord
+        : undefined;
+
+      const command: CreateAvatarCommand = {
+        type: 'createAvatar',
+        data: {
+          avatarName: resolvedName,
+          gender,
+          ageRange,
+          ...(basicMeasurementsRecord ? { basicMeasurements: basicMeasurementsRecord } : {}),
+          ...(bodyMeasurementsRecord ? { bodyMeasurements: bodyMeasurementsRecord } : {}),
+          ...(morphTargets ? { morphTargets } : {}),
+          quickModeSettings: quickModeSettings ?? null,
+        },
+      };
+
+      const storageMorphTargets = morphTargets
+        ? Object.entries(morphTargets).reduce<BackendAvatarMorphTarget[]>(
+            (acc, [key, value]) => {
+              if (!key) {
+                return acc;
+              }
+
+              const numericValue = Number(value);
+              if (!Number.isFinite(numericValue)) {
+                return acc;
+              }
+
+              acc.push({ name: key, value: numericValue });
+              return acc;
+            },
+            [],
+          )
+        : null;
+
+      return {
+        resolvedId: normalizedId,
+        command,
+        metadata: {
+          avatarId: normalizedId === 'guest' ? null : normalizedId,
+          name: resolvedName,
+          avatarName: resolvedName,
+          gender,
+          ageRange,
+          basicMeasurements: basicMeasurementsMetadata,
+          bodyMeasurements: bodyMeasurementsMetadata,
+          morphTargets: storageMorphTargets ?? null,
+          quickMode: resolvedQuickMode,
+          creationMode: resolvedCreationMode ?? null,
+          quickModeSettings: quickModeSettings ?? null,
+          source: resolvedSource,
+        },
+      };
+    },
+    [isAuthenticated],
+  );
+
+  const markSectionDirty = useCallback(
+    (section: AvatarConfigurationDirtySection, avatar?: AvatarConfiguration | null) => {
+      setDirtySections(prev => {
+        if (prev.has(section)) {
+          return prev;
+        }
+        const next = new Set(prev);
+        next.add(section);
+        return next;
+      });
+
+      const avatarForDraft =
+        avatar === undefined ? latestAvatarRef.current : avatar;
+
+      if (avatarForDraft) {
+        const draftParams = buildDraftPersistencePayload(avatarForDraft);
+        if (draftParams) {
+          persistAvatarDraftToStorage(draftParams);
+        }
+      } else if (avatar === null) {
+        clearAvatarDraftFromStorage();
+      }
+    },
+    [buildDraftPersistencePayload],
+  );
 
   const clearSectionDirty = useCallback((section: AvatarConfigurationDirtySection) => {
     setDirtySections(prev => {
@@ -331,8 +534,9 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
           : undefined,
       };
 
-      setCurrentAvatar(nextAvatarConfig);
-      clearAllDirtySections();
+        setCurrentAvatar(nextAvatarConfig);
+        clearAvatarDraftFromStorage();
+        clearAllDirtySections();
       console.log('Avatar loaded successfully:', nextAvatarConfig);
 
       return nextAvatarConfig; // Return the config for immediate use
@@ -348,125 +552,141 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
   }, [clearAllDirtySections, initializeDefaultMorphs]);
 
   // Update individual morph value
-  const updateMorphValue = useCallback((morphId: number, value: number) => {
-    let didChange = false;
-    setCurrentAvatar(prev => {
-      if (!prev) return prev;
+  const updateMorphValue = useCallback(
+    (morphId: number, value: number) => {
+      let didChange = false;
+      let nextAvatar: AvatarConfiguration | null = null;
+      setCurrentAvatar(prev => {
+        if (!prev) return prev;
 
-      const existing = prev.morphValues.find(m => m.morphId === morphId);
-      if (!existing || existing.value === value) {
-        return prev;
-      }
+        const existing = prev.morphValues.find(m => m.morphId === morphId);
+        if (!existing || existing.value === value) {
+          return prev;
+        }
 
-      didChange = true;
+        didChange = true;
 
-      const updatedMorphValues = prev.morphValues.map(m =>
-        m.morphId === morphId ? { ...m, value } : m
-      );
-
-      const targetMorph =
-        prev.morphValues.find(m => m.morphId === morphId) ??
-        morphAttributes.find(m => m.morphId === morphId);
-
-      const measurementKey = targetMorph ? inferMeasurementKeyFromMorph(targetMorph) : null;
-      const isQuickModeAvatar =
-        prev.quickMode ||
-        prev.creationMode === 'quickMode' ||
-        prev.basicMeasurements?.creationMode === 'quickMode';
-
-      let updatedBodyMeasurements = prev.bodyMeasurements;
-      let updatedQuickModeSettings = prev.quickModeSettings ?? null;
-
-      if (isQuickModeAvatar && measurementKey) {
-        const baselineValue = prev.baselineMeasurements?.[measurementKey];
-        const previousMeasurement = prev.bodyMeasurements?.[measurementKey];
-        const recalculatedMeasurement = calculateMeasurementFromMorphs(
-          updatedMorphValues,
-          measurementKey,
-          baselineValue,
-          previousMeasurement,
+        const updatedMorphValues = prev.morphValues.map(m =>
+          m.morphId === morphId ? { ...m, value } : m
         );
 
-        if (recalculatedMeasurement != null) {
-          updatedBodyMeasurements = {
-            ...(prev.bodyMeasurements ?? {}),
-            [measurementKey]: recalculatedMeasurement,
-          };
+        const targetMorph =
+          prev.morphValues.find(m => m.morphId === morphId) ??
+          morphAttributes.find(m => m.morphId === morphId);
 
-          const previousSettings = prev.quickModeSettings ?? undefined;
-          updatedQuickModeSettings = {
-            ...(previousSettings ?? {}),
-            measurements: {
-              ...(previousSettings?.measurements ?? {}),
+        const measurementKey = targetMorph ? inferMeasurementKeyFromMorph(targetMorph) : null;
+        const isQuickModeAvatar =
+          prev.quickMode ||
+          prev.creationMode === 'quickMode' ||
+          prev.basicMeasurements?.creationMode === 'quickMode';
+
+        let updatedBodyMeasurements = prev.bodyMeasurements;
+        let updatedQuickModeSettings = prev.quickModeSettings ?? null;
+
+        if (isQuickModeAvatar && measurementKey) {
+          const baselineValue = prev.baselineMeasurements?.[measurementKey];
+          const previousMeasurement = prev.bodyMeasurements?.[measurementKey];
+          const recalculatedMeasurement = calculateMeasurementFromMorphs(
+            updatedMorphValues,
+            measurementKey,
+            baselineValue,
+            previousMeasurement,
+          );
+
+          if (recalculatedMeasurement != null) {
+            updatedBodyMeasurements = {
+              ...(prev.bodyMeasurements ?? {}),
               [measurementKey]: recalculatedMeasurement,
-            },
-            updatedAt: new Date().toISOString(),
-          };
+            };
+
+            const previousSettings = prev.quickModeSettings ?? undefined;
+            updatedQuickModeSettings = {
+              ...(previousSettings ?? {}),
+              measurements: {
+                ...(previousSettings?.measurements ?? {}),
+                [measurementKey]: recalculatedMeasurement,
+              },
+              updatedAt: new Date().toISOString(),
+            };
+          }
         }
+
+        const updatedAvatar: AvatarConfiguration = {
+          ...prev,
+          morphValues: updatedMorphValues,
+          bodyMeasurements: updatedBodyMeasurements,
+          quickModeSettings: updatedQuickModeSettings,
+          lastUpdated: new Date(),
+        };
+
+        nextAvatar = updatedAvatar;
+        return updatedAvatar;
+      });
+      if (didChange && nextAvatar) {
+        latestAvatarRef.current = nextAvatar;
+        markSectionDirty('morphs', nextAvatar);
       }
+    },
+    [markSectionDirty],
+  );
 
-      return {
-        ...prev,
-        morphValues: updatedMorphValues,
-        bodyMeasurements: updatedBodyMeasurements,
-        quickModeSettings: updatedQuickModeSettings,
-        lastUpdated: new Date(),
-      };
-    });
-    if (didChange) {
-      markSectionDirty('morphs');
-    }
-  }, [markSectionDirty]);
+  const updateQuickModeMeasurements = useCallback(
+    (
+      patch: Record<string, number | null | undefined>,
+      options?: QuickModeMeasurementUpdateOptions,
+    ) => {
+      let didChange = false;
+      let nextAvatar: AvatarConfiguration | null = null;
+      setCurrentAvatar(prev => {
+        if (!prev) return prev;
 
-  const updateQuickModeMeasurements = useCallback((
-    patch: Record<string, number | null | undefined>,
-    options?: QuickModeMeasurementUpdateOptions,
-  ) => {
-    let didChange = false;
-    setCurrentAvatar(prev => {
-      if (!prev) return prev;
+        const previousSettings = prev.quickModeSettings ?? {};
+        const previousMeasurements = previousSettings.measurements ?? {};
+        const nextMeasurements = { ...previousMeasurements } as Record<string, number>;
 
-      const previousSettings = prev.quickModeSettings ?? {};
-      const previousMeasurements = previousSettings.measurements ?? {};
-      const nextMeasurements = { ...previousMeasurements } as Record<string, number>;
+        for (const [key, rawValue] of Object.entries(patch)) {
+          if (rawValue == null) {
+            if (key in nextMeasurements) {
+              delete nextMeasurements[key];
+              didChange = true;
+            }
+            continue;
+          }
 
-      for (const [key, rawValue] of Object.entries(patch)) {
-        if (rawValue == null) {
-          if (key in nextMeasurements) {
-            delete nextMeasurements[key];
+          if (nextMeasurements[key] !== rawValue) {
+            nextMeasurements[key] = rawValue;
             didChange = true;
           }
-          continue;
         }
 
-        if (nextMeasurements[key] !== rawValue) {
-          nextMeasurements[key] = rawValue;
-          didChange = true;
+        if (!didChange) {
+          return prev;
         }
+
+        const updatedQuickModeSettings: QuickModeSettings = {
+          ...previousSettings,
+          measurements: nextMeasurements,
+          updatedAt: new Date().toISOString(),
+        };
+
+        const updatedAvatar: AvatarConfiguration = {
+          ...prev,
+          quickModeSettings: updatedQuickModeSettings,
+          lastUpdated: new Date(),
+        };
+
+        nextAvatar = updatedAvatar;
+        return updatedAvatar;
+      });
+
+      if (didChange && nextAvatar && (options?.markDirty ?? true)) {
+        const section = options?.section ?? 'quickMode.measurements';
+        latestAvatarRef.current = nextAvatar;
+        markSectionDirty(section, nextAvatar);
       }
-
-      if (!didChange) {
-        return prev;
-      }
-
-      const updatedQuickModeSettings: QuickModeSettings = {
-        ...previousSettings,
-        measurements: nextMeasurements,
-        updatedAt: new Date().toISOString(),
-      };
-
-      return {
-        ...prev,
-        quickModeSettings: updatedQuickModeSettings,
-        lastUpdated: new Date(),
-      };
-    });
-
-    if (didChange && (options?.markDirty ?? true)) {
-      const section = options?.section ?? 'quickMode.measurements';
-      markSectionDirty(section);
-    }
-  }, [markSectionDirty]);
+    },
+    [markSectionDirty],
+  );
 
   const updateQuickModeMeasurement = useCallback((
     key: string,
@@ -681,6 +901,7 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
         }
       }
 
+      clearAvatarDraftFromStorage();
       clearAllDirtySections();
       return { success: true, error: null, avatarId: persistedAvatarId ?? null };
     } catch (err) {

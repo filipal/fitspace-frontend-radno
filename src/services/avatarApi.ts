@@ -20,6 +20,70 @@ export const LAST_LOADED_AVATAR_STORAGE_KEY = 'fitspace:lastAvatarId';
 export const LAST_CREATED_AVATAR_METADATA_STORAGE_KEY =
   'fitspace:lastAvatarMetadata';
 
+export interface AvatarDraftMetadata {
+  avatarId: string | null;
+  name: string;
+  avatarName: string;
+  gender: 'male' | 'female';
+  ageRange: string;
+  basicMeasurements: Partial<BasicMeasurements> | null;
+  bodyMeasurements: AvatarApiMeasurements | null;
+  morphTargets: BackendAvatarMorphTarget[] | null;
+  quickMode: boolean | null;
+  creationMode: AvatarCreationMode | null;
+  quickModeSettings: QuickModeSettings | null;
+  source: string | null;
+}
+
+export interface PersistAvatarDraftParams {
+  resolvedId: string;
+  command: CreateAvatarCommand;
+  metadata: AvatarDraftMetadata;
+}
+
+export const persistAvatarDraftToStorage = ({
+  resolvedId,
+  command,
+  metadata,
+}: PersistAvatarDraftParams): void => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem('pendingAvatarData', JSON.stringify(command));
+  } catch (error) {
+    console.warn('Failed to persist avatar draft command', error);
+  }
+
+  try {
+    window.sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, resolvedId);
+  } catch (error) {
+    console.warn('Failed to persist avatar draft id', error);
+  }
+
+  try {
+    window.sessionStorage.setItem(
+      LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
+      JSON.stringify(metadata),
+    );
+  } catch (error) {
+    console.warn('Failed to persist avatar draft metadata', error);
+  }
+};
+
+export const clearAvatarDraftFromStorage = (): void => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem('pendingAvatarData');
+  } catch (error) {
+    console.warn('Failed to clear avatar draft command', error);
+  }
+};
+
 export type AvatarApiMeasurements = Partial<BodyMeasurements>;
 
 // Removed session storage constants as we're bypassing token authentication
@@ -593,55 +657,38 @@ const persistGuestAvatarUpdate = (
 
   const resolvedId = avatarId != null ? String(avatarId) : 'guest';
 
-  if (typeof window !== 'undefined') {
-    try {
-      window.localStorage.setItem('pendingAvatarData', JSON.stringify(command));
-    } catch (error) {
-      console.warn('Failed to persist guest avatar command', error);
-    }
-
-    try {
-      window.sessionStorage.setItem(LAST_LOADED_AVATAR_STORAGE_KEY, resolvedId);
-    } catch (error) {
-      console.warn('Failed to persist guest avatar id', error);
-    }
-
-    const storageMorphTargets = morphTargets
-      ? Object.entries(morphTargets).reduce<BackendAvatarMorphTarget[]>((acc, [key, value]) => {
-          if (!key) {
-            return acc;
-          }
-          const numericValue = toFiniteNumber(value);
-          if (numericValue === undefined) {
-            return acc;
-          }
-          acc.push({ name: key, value: numericValue });
+  const storageMorphTargets = morphTargets
+    ? Object.entries(morphTargets).reduce<BackendAvatarMorphTarget[]>((acc, [key, value]) => {
+        if (!key) {
           return acc;
-        }, [])
-      : null;
+        }
+        const numericValue = toFiniteNumber(value);
+        if (numericValue === undefined) {
+          return acc;
+        }
+        acc.push({ name: key, value: numericValue });
+        return acc;
+      }, [])
+    : null;
 
-    try {
-      window.sessionStorage.setItem(
-        LAST_CREATED_AVATAR_METADATA_STORAGE_KEY,
-        JSON.stringify({
-          avatarId: resolvedId === 'guest' ? null : resolvedId,
-          name: resolvedName,
-          avatarName: resolvedName,
-          gender,
-          ageRange,
-          basicMeasurements: basicMeasurements ?? null,
-          bodyMeasurements: bodyMeasurements ?? null,
-          morphTargets: storageMorphTargets ?? null,
-          quickMode: quickMode,
-          creationMode,
-          quickModeSettings: quickModeSettings ?? null,
-          source,
-        }),
-      );
-    } catch (error) {
-      console.warn('Failed to persist guest avatar metadata', error);
-    }
-  }
+  persistAvatarDraftToStorage({
+    resolvedId,
+    command,
+    metadata: {
+      avatarId: resolvedId === 'guest' ? null : resolvedId,
+      name: resolvedName,
+      avatarName: resolvedName,
+      gender,
+      ageRange,
+      basicMeasurements: (basicMeasurements ?? null) as Partial<BasicMeasurements> | null,
+      bodyMeasurements: (bodyMeasurements ?? null) as AvatarApiMeasurements | null,
+      morphTargets: storageMorphTargets ?? null,
+      quickMode: quickMode,
+      creationMode,
+      quickModeSettings: quickModeSettings ?? null,
+      source,
+    },
+  });
 
   return {
     avatarId: resolvedId,
