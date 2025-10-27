@@ -53,25 +53,35 @@
   --avatar-design-width: 393px;
   --avatar-design-height: 586.69px;
 
-  --avatar-input-width: calc(var(--avatar-scale) * 292.47px);
-  --avatar-panel-width: calc(var(--avatar-scale) * 329.02px);
-  --avatar-choice-gap: calc(var(--avatar-scale) * 18.28px);
-  --avatar-button-height: calc(var(--avatar-scale-y) * 35.3px);
-  --avatar-control-height: calc(var(--avatar-scale-y) * 28.24px);
-  --avatar-arrow-width: calc(var(--avatar-scale) * 27.92px);
-  --avatar-arrow-icon-width: calc(var(--avatar-scale) * 17.65px);
+  /*
+    Koeficijenti pretvaraju originalni Figma layout (430×932 px, 831 px sadržaj)
+    u našu “sigurnu” površinu (393×586.69 px). Tako svi razmaci ostaju
+    proporcionalni bez ručnog preračunavanja svake vrijednosti.
+  */
+  --avatar-figma-width: 430px;
+  --avatar-figma-content-height: 831px;
+  --avatar-width-coeff: calc(var(--fs-design-width) / var(--avatar-figma-width));
+  --avatar-height-coeff: calc(var(--fs-design-height) / var(--avatar-figma-content-height));
 
-  --avatar-padding-top: calc(var(--avatar-scale-y) * 17.65px);
-  --avatar-padding-bottom: calc(var(--avatar-scale-y) * 31.77px);
+  --avatar-input-width: calc(var(--avatar-scale) * 320px * var(--avatar-width-coeff));
+  --avatar-panel-width: calc(var(--avatar-scale) * 360px * var(--avatar-width-coeff));
+  --avatar-choice-gap: calc(var(--avatar-scale) * 20px * var(--avatar-width-coeff));
+  --avatar-button-height: calc(var(--avatar-scale-y) * 50px * var(--avatar-height-coeff));
+  --avatar-control-height: calc(var(--avatar-scale-y) * 40px * var(--avatar-height-coeff));
+  --avatar-arrow-width: calc(var(--avatar-scale) * 30.55px * var(--avatar-width-coeff));
+  --avatar-arrow-icon-width: calc(var(--avatar-scale) * 19.32px * var(--avatar-width-coeff));
 
-  --avatar-gap-form-items: calc(var(--avatar-scale-y) * 14.12px);
-  --avatar-gap-form-panel: calc(var(--avatar-scale-y) * 24px);
-  --avatar-gap-pickers: calc(var(--avatar-scale-y) * 26.64px);
-  --avatar-gap-weight-how: calc(var(--avatar-scale-y) * 25.22px);
-  --avatar-gap-how-actions: calc(var(--avatar-scale-y) * 8.3px);
-  --avatar-gap-between-actions: calc(var(--avatar-scale-y) * 11.89px);
-  --avatar-gap-action-desc: calc(var(--avatar-scale-y) * 10.59px);
-  --avatar-gap-desc-back: calc(var(--avatar-scale-y) * 13.3px);
+  --avatar-padding-top: calc(var(--avatar-scale-y) * 25px * var(--avatar-height-coeff));
+  --avatar-padding-bottom: calc(var(--avatar-scale-y) * 45px * var(--avatar-height-coeff));
+
+  --avatar-gap-form-items: calc(var(--avatar-scale-y) * 20px * var(--avatar-height-coeff));
+  --avatar-gap-form-panel: calc(var(--avatar-scale-y) * 34px * var(--avatar-height-coeff));
+  --avatar-gap-pickers: calc(var(--avatar-scale-y) * 37.73px * var(--avatar-height-coeff));
+  --avatar-gap-weight-how: calc(var(--avatar-scale-y) * 35.72px * var(--avatar-height-coeff));
+  --avatar-gap-how-actions: calc(var(--avatar-scale-y) * 9.08px * var(--avatar-height-coeff));
+  --avatar-gap-between-actions: calc(var(--avatar-scale) * 13px * var(--avatar-width-coeff));
+  --avatar-gap-action-desc: calc(var(--avatar-scale-y) * 15px * var(--avatar-height-coeff));
+  --avatar-gap-desc-back: calc(var(--avatar-scale-y) * 18.84px * var(--avatar-height-coeff));
   --avatar-actions-width: var(--avatar-input-width);
   --avatar-extra-padding-bottom: var(--fs-extra-bottom-padding, 0px);
   inline-size: var(--fs-design-width);
