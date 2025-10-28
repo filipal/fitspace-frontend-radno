@@ -1,14 +1,35 @@
-/* header file */
 .appHeader {
-  --header-scale: clamp(0.65, var(--fs-scale-height, 1), 1);
-  --header-padding-start: clamp(18px, calc(35px * var(--header-scale)), 35px);
-  --header-padding-end: clamp(12px, calc(16px * var(--header-scale)), 16px);
-  --header-gap: clamp(10px, calc(16px * var(--header-scale)), 16px);
-  --header-padding-bottom: clamp(8px, calc(15px * var(--header-scale)), 15px);
+  --header-scale-raw: var(--fs-scale-height, 1);
+  --header-scale-max: var(--fs-header-scale-max, 1);
+  --header-scale: clamp(0.65, var(--header-scale-raw), var(--header-scale-max));
+  --header-padding-start: clamp(
+    18px,
+    calc(35px * var(--header-scale)),
+    calc(35px * var(--header-scale-max))
+  );
+  --header-padding-end: clamp(
+    12px,
+    calc(16px * var(--header-scale)),
+    calc(16px * var(--header-scale-max))
+  );
+  --header-gap: clamp(
+    10px,
+    calc(16px * var(--header-scale)),
+    calc(16px * var(--header-scale-max))
+  );
+  --header-padding-bottom: clamp(
+    8px,
+    calc(15px * var(--header-scale)),
+    calc(15px * var(--header-scale-max))
+  );
 
   width: 100%;
   max-width: var(--page-max-width);
-  height: clamp(40px, calc(71.31px * var(--header-scale)), 71.31px);
+  height: clamp(
+    40px,
+    calc(71.31px * var(--header-scale)),
+    calc(71.31px * var(--header-scale-max))
+  );
   margin: 0 auto;
   position: relative;
   container-type: inline-size;
@@ -47,8 +68,16 @@
 }
 .exitButton img,
 .infoButton img {
-  width: clamp(16px, calc(20px * var(--header-scale)), 20px);
-  height: clamp(16px, calc(20px * var(--header-scale)), 20px);
+  width: clamp(
+    16px,
+    calc(20px * var(--header-scale)),
+    calc(20px * var(--header-scale-max))
+  );
+  height: clamp(
+    16px,
+    calc(20px * var(--header-scale)),
+    calc(20px * var(--header-scale-max))
+  );
   display: block;
 }
 .light {
@@ -83,9 +112,22 @@
 }
 
 .exitButton { grid-column: 1; justify-self: start; }
-.rightBox   { grid-column: 3; justify-self: end; display: inline-flex; gap: clamp(8px, calc(12px * var(--header-scale)), 12px); }
+.rightBox {
+  grid-column: 3;
+  justify-self: end;
+  display: inline-flex;
+  gap: clamp(
+    8px,
+    calc(12px * var(--header-scale)),
+    calc(12px * var(--header-scale-max))
+  );
+}
 .rightBox > *:last-child {
-  margin-inline-end: clamp(8px, calc(14px * var(--header-scale)), 14px);
+  margin-inline-end: clamp(
+    8px,
+    calc(14px * var(--header-scale)),
+    calc(14px * var(--header-scale-max))
+  );
 } /* 16 + 14 = 30px do ruba */
 
 .exitButton:focus,
