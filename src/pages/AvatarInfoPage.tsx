@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import cn from 'classnames'
 import { useNavigate } from 'react-router-dom'
 import leftArrow from '../assets/arrow-left.svg'
@@ -23,29 +23,19 @@ import { useAuthData } from '../hooks/useAuthData'
 
 const MOBILE_DESIGN_WIDTH = 393
 const FIGMA_REFERENCE_WIDTH = 430
-const FIGMA_REFERENCE_HEIGHT = 932
-const FIGMA_HEADER_HEIGHT = 101
-const FIGMA_CONTENT_HEIGHT = FIGMA_REFERENCE_HEIGHT - FIGMA_HEADER_HEIGHT
 const HEADER_DESIGN_HEIGHT = 71.31
 const MOBILE_DESIGN_HEIGHT = 586.69
 const MOBILE_SAFE_HEIGHT = MOBILE_DESIGN_HEIGHT + HEADER_DESIGN_HEIGHT
 const HEADER_MIN_SCALE = 0.65
-const HEADER_MAX_SCALE = FIGMA_HEADER_HEIGHT / HEADER_DESIGN_HEIGHT
-const CONTENT_MAX_SCALE = FIGMA_CONTENT_HEIGHT / MOBILE_DESIGN_HEIGHT
+const CONTENT_MIN_SCALE = 0.6
 const DESKTOP_BREAKPOINT = 768
 const DESKTOP_DESIGN_WIDTH = 1440
 const DESKTOP_DESIGN_HEIGHT = 1024
-const KEYBOARD_MIN_HEIGHT_DELTA = 150
-const KEYBOARD_MAX_VISIBLE_RATIO = 0.72
-const PINCH_ZOOM_EPSILON = 0.02
-const MOBILE_ROUNDING_EPSILON = 0.75
 const MIN_BOTTOM_PADDING = 12
 
 interface ViewportSize {
   width: number
   height: number
-  visualHeight: number
-  scale: number
 }
 
 const clamp = (value: number, min: number, max: number) =>
@@ -70,62 +60,16 @@ function readViewportSize(): ViewportSize {
   if (typeof window === 'undefined') {
     return {
       width: MOBILE_DESIGN_WIDTH,
-      height: MOBILE_DESIGN_HEIGHT + HEADER_DESIGN_HEIGHT,
-      visualHeight: MOBILE_DESIGN_HEIGHT + HEADER_DESIGN_HEIGHT,
-      scale: 1,
+      height: MOBILE_SAFE_HEIGHT,
     }
   }
 
   const viewport = window.visualViewport
   if (viewport) {
-    const viewportScale = viewport.scale ?? 1
-    const docWidth = typeof document !== 'undefined'
-      ? document.documentElement?.clientWidth ?? 0
-      : 0
-    const layoutViewportWidth = Math.max(0, window.innerWidth || 0, docWidth || 0)
-    const measuredWidth = layoutViewportWidth > 0
-      ? layoutViewportWidth
-      : Math.max(
-        viewport.width,
-        Number.isFinite(viewport.width * viewportScale)
-          ? viewport.width * viewportScale
-          : 0,
-      )
-
-    const docHeight = typeof document !== 'undefined'
-      ? document.documentElement?.clientHeight ?? 0
-      : 0
-    const layoutViewportHeight = Math.max(0, window.innerHeight || 0, docHeight || 0)
-    const visualViewportHeight = Math.max(
-      viewport.height - (viewport.offsetTop ?? 0),
-      0
-    )
-    const measuredLayoutHeight = layoutViewportHeight > 0
-      ? layoutViewportHeight
-      : window.innerHeight || 0
-    const measuredVisualHeight = visualViewportHeight > 0
-      ? visualViewportHeight
-      : measuredLayoutHeight
-    const finalHeight = Math.max(measuredLayoutHeight, measuredVisualHeight)
-    const finalVisualHeight = measuredVisualHeight > 0
-      ? measuredVisualHeight
-      : finalHeight
-
-    return {
-      width: measuredWidth || window.innerWidth,
-      height: finalHeight,
-      visualHeight: finalVisualHeight,
-      scale: viewportScale,
-    }
+    return { width: viewport.width, height: viewport.height }
   }
 
-  const fallbackHeight = window.innerHeight
-  return {
-    width: window.innerWidth,
-    height: fallbackHeight,
-    visualHeight: fallbackHeight,
-    scale: 1,
-  }
+  return { width: window.innerWidth, height: window.innerHeight }
 }
 
 const ages = ['15-19', ...Array.from({ length: 8 }, (_, i) => {
@@ -153,14 +97,7 @@ export default function AvatarInfoPage() {
   const {
     width: viewportWidth,
     height: viewportHeight,
-    visualHeight: viewportVisualHeight,
-    scale: viewportScale,
   } = viewportSize
-  const stableViewportHeightRef = useRef(viewportHeight)
-  const stableVisualViewportHeightRef = useRef(viewportVisualHeight)
-  const stableViewportWidthRef = useRef(viewportWidth)
-  const previousViewportWidthRef = useRef(viewportWidth)
-  const previousViewportScaleRef = useRef(viewportScale)
   const age = usePicker(1, ages)
   const height = usePicker(2, heights)
   const weight = usePicker(2, weights)
@@ -189,117 +126,29 @@ export default function AvatarInfoPage() {
     }
   }, [])
 
-  useEffect(() => {
-    const pinchZoomActive = Math.abs(viewportScale - 1) > PINCH_ZOOM_EPSILON
-
-    if (
-      viewportWidth !== previousViewportWidthRef.current ||
-      Math.abs(viewportScale - previousViewportScaleRef.current) > PINCH_ZOOM_EPSILON
-    ) {
-      previousViewportWidthRef.current = viewportWidth
-      previousViewportScaleRef.current = viewportScale
-      if (!pinchZoomActive) {
-        stableViewportHeightRef.current = viewportHeight
-        stableVisualViewportHeightRef.current = viewportVisualHeight
-      }
-      return
-    }
-
-    const stableVisualHeight = stableVisualViewportHeightRef.current
-    const visualHeightDrop = stableVisualHeight - viewportVisualHeight
-    const visibleRatio = stableVisualHeight > 0
-      ? viewportVisualHeight / stableVisualHeight
-      : 1
-
-    if (
-      !pinchZoomActive &&
-      visualHeightDrop > KEYBOARD_MIN_HEIGHT_DELTA &&
-      visibleRatio > KEYBOARD_MAX_VISIBLE_RATIO
-    ) {
-      stableViewportHeightRef.current = Math.max(
-        stableViewportHeightRef.current,
-        viewportHeight
-      )
-      stableVisualViewportHeightRef.current = viewportVisualHeight
-      return
-    }
-
-    if (viewportHeight > stableViewportHeightRef.current) {
-      stableViewportHeightRef.current = viewportHeight
-    }
-    if (viewportVisualHeight > stableVisualViewportHeightRef.current) {
-      stableVisualViewportHeightRef.current = viewportVisualHeight
-    }
-  }, [viewportHeight, viewportVisualHeight, viewportWidth, viewportScale])
-
-  useEffect(() => {
-    const stableHeight = stableViewportHeightRef.current
-    const pinchZoomActive = Math.abs(viewportScale - 1) > PINCH_ZOOM_EPSILON
-
-    if (viewportWidth > stableViewportWidthRef.current && !pinchZoomActive) {
-      stableViewportWidthRef.current = viewportWidth
-      return
-    }
-
-    if (viewportHeight >= stableHeight - 1 && !pinchZoomActive) {
-      stableViewportWidthRef.current = viewportWidth
-    }
-  }, [viewportHeight, viewportWidth, viewportScale])
-
-  const stableViewportHeight = Math.max(
-    viewportHeight,
-    stableViewportHeightRef.current
-  )
-  const stableVisualViewportHeight = Math.max(
-    viewportVisualHeight,
-    stableVisualViewportHeightRef.current
-  )
-  const stableViewportWidth = stableViewportWidthRef.current
-  const pinchZoomActive = Math.abs(viewportScale - 1) > PINCH_ZOOM_EPSILON
-  const widthDelta = Math.abs(viewportWidth - stableViewportWidthRef.current)
-  const heightDelta = stableVisualViewportHeight - viewportVisualHeight
-  const keyboardVisibleRatio = stableVisualViewportHeight > 0
-    ? viewportVisualHeight / stableVisualViewportHeight
-    : 1
-  const keyboardLikelyOpen =
-    !pinchZoomActive &&
-    heightDelta > KEYBOARD_MIN_HEIGHT_DELTA &&
-    widthDelta < 24 &&
-    keyboardVisibleRatio <= KEYBOARD_MAX_VISIBLE_RATIO
-  const effectiveViewportWidth = pinchZoomActive
-    ? stableViewportWidth
-    : keyboardLikelyOpen
-      ? stableViewportWidth
-      : viewportWidth
-  const viewportHeightForLayout = pinchZoomActive
-    ? stableViewportHeight
-    : keyboardLikelyOpen
-      ? stableViewportHeight
-      : viewportHeight
-
   const { cssVars: layoutVars, pageHeight } = useMemo(() => {
-    if (effectiveViewportWidth >= DESKTOP_BREAKPOINT) {
-      const designWidth = Math.min(DESKTOP_DESIGN_WIDTH, effectiveViewportWidth)
+    if (viewportWidth >= DESKTOP_BREAKPOINT) {
+      const designWidth = Math.min(DESKTOP_DESIGN_WIDTH, viewportWidth)
       const designHeight = DESKTOP_DESIGN_HEIGHT
       const scaleWidth = clamp(
-        effectiveViewportWidth / (designWidth || 1),
+        viewportWidth / (designWidth || 1),
         0,
         Number.POSITIVE_INFINITY
       )
       const scaleHeight = clamp(
-        viewportHeightForLayout / (designHeight || 1),
+        viewportHeight / (designHeight || 1),
         0,
         Number.POSITIVE_INFINITY
       )
       const canvasWidth = designWidth
       const canvasHeight = designHeight
-      const pageMaxHeight = Math.max(canvasHeight, viewportHeightForLayout)
+      const pageMaxHeight = Math.max(canvasHeight, viewportHeight)
 
       const cssVars: AvatarInfoPageCssVars = {
         '--fs-design-width': `${designWidth}px`,
         '--fs-design-height': `${designHeight}px`,
         '--fs-design-safe-height': `${designHeight}px`,
-        '--fs-viewport-height': `${viewportHeightForLayout.toFixed(3)}px`,
+        '--fs-viewport-height': `${viewportHeight.toFixed(3)}px`,
         '--fs-scale-width': scaleWidth.toFixed(5),
         '--fs-scale-height': scaleHeight.toFixed(5),
         '--fs-scale-height-content': scaleHeight.toFixed(5),
@@ -308,73 +157,148 @@ export default function AvatarInfoPage() {
         '--fs-canvas-height': `${canvasHeight.toFixed(3)}px`,
         '--fs-page-max-height': `${pageMaxHeight.toFixed(3)}px`,
         '--fs-header-scale-max': '1',
+        '--fs-bottom-padding': `${MIN_BOTTOM_PADDING}px`,
       }
 
       return { cssVars, pageHeight: canvasHeight }
     }
 
     const scaleWidth = clamp(
-      effectiveViewportWidth / MOBILE_DESIGN_WIDTH,
+      viewportWidth / MOBILE_DESIGN_WIDTH,
       0,
       Number.POSITIVE_INFINITY
     )
-    const scaleHeightSafe = clamp(
-      viewportHeightForLayout / MOBILE_SAFE_HEIGHT,
+    const segments = [
+      { key: 'header' as const, base: HEADER_DESIGN_HEIGHT, minScale: HEADER_MIN_SCALE, weight: 0.9 },
+      { key: 'content' as const, base: MOBILE_DESIGN_HEIGHT, minScale: CONTENT_MIN_SCALE, weight: 1 },
+    ]
+
+    const fullFlexibleHeight = segments.reduce((sum, segment) => sum + segment.base, 0)
+    const minFlexibleHeight = segments.reduce(
+      (sum, segment) => sum + segment.base * segment.minScale,
       0,
-      Number.POSITIVE_INFINITY
     )
-    const headerScale = clamp(scaleHeightSafe, HEADER_MIN_SCALE, HEADER_MAX_SCALE)
-    const headerHeight = HEADER_DESIGN_HEIGHT * headerScale
-    const availableHeight = Math.max(viewportHeightForLayout - headerHeight, 0)
-    const availableHeightForContent = Math.max(availableHeight - MOBILE_ROUNDING_EPSILON, 0)
-    const scaleHeightContent = clamp(
-      availableHeightForContent / MOBILE_DESIGN_HEIGHT,
+    const targetHeight = clamp(
+      viewportHeight,
+      minFlexibleHeight,
+      fullFlexibleHeight,
+    )
+
+    const working = segments.map((segment) => ({ ...segment, scale: 1 }))
+    let currentHeight = fullFlexibleHeight
+
+    for (let iteration = 0; iteration < 6; iteration += 1) {
+      if (currentHeight <= targetHeight + 0.01) {
+        break
+      }
+
+      const shrinkable = working.filter(
+        (segment) => segment.scale > segment.minScale + 0.0001,
+      )
+
+      if (shrinkable.length === 0) {
+        break
+      }
+
+      const totalCapacity = shrinkable.reduce((sum, segment) => {
+        const capacity = (segment.scale - segment.minScale) * segment.base
+        return sum + capacity * segment.weight
+      }, 0)
+
+      if (totalCapacity <= 0) {
+        break
+      }
+
+      const excess = currentHeight - targetHeight
+      let consumed = 0
+
+      shrinkable.forEach((segment) => {
+        const capacity = (segment.scale - segment.minScale) * segment.base
+        if (capacity <= 0) {
+          return
+        }
+
+        const weightedCapacity = capacity * segment.weight
+        const shrinkHeight = Math.min(
+          capacity,
+          (excess * weightedCapacity) / totalCapacity,
+        )
+
+        if (shrinkHeight <= 0) {
+          return
+        }
+
+        segment.scale -= shrinkHeight / segment.base
+        consumed += shrinkHeight
+      })
+
+      if (consumed <= 0.001) {
+        break
+      }
+
+      currentHeight -= consumed
+    }
+
+    let headerScale = HEADER_MIN_SCALE
+    let contentScale = CONTENT_MIN_SCALE
+
+    working.forEach((segment) => {
+      const finalScale = clamp(segment.scale, segment.minScale, 1)
+      if (segment.key === 'header') {
+        headerScale = finalScale
+      } else {
+        contentScale = finalScale
+      }
+    })
+
+    const designHeight = headerScale * HEADER_DESIGN_HEIGHT + contentScale * MOBILE_DESIGN_HEIGHT
+    const heightScaleSafe = designHeight / MOBILE_SAFE_HEIGHT
+    const heightScaleContent = contentScale
+    const viewportScaleWidth = clamp(scaleWidth, 0, Number.POSITIVE_INFINITY)
+    const viewportScaleHeight = designHeight > 0
+      ? clamp(viewportHeight / designHeight, 0, Number.POSITIVE_INFINITY)
+      : 1
+    const viewportScale = clamp(
+      Math.min(viewportScaleWidth, viewportScaleHeight),
       0,
-      Number.POSITIVE_INFINITY
+      Number.POSITIVE_INFINITY,
     )
-    const viewportScaleWidth = scaleWidth
-    const minHeightScale = Math.min(viewportScaleWidth, CONTENT_MAX_SCALE)
-    const viewportScaleHeight = clamp(
-      scaleHeightContent,
-      minHeightScale,
-      CONTENT_MAX_SCALE
-    )
-    const canvasWidth = MOBILE_DESIGN_WIDTH * viewportScaleWidth
-    const canvasHeight = MOBILE_DESIGN_HEIGHT * viewportScaleHeight
-    const extraViewportSpace = Math.max(availableHeight - canvasHeight, 0)
+    const canvasWidth = MOBILE_DESIGN_WIDTH * viewportScale
+    const pageHeight = designHeight
+    const scaledPageHeight = pageHeight * viewportScale
+    const canvasHeight = MOBILE_DESIGN_HEIGHT * heightScaleContent * viewportScale
+    const pageMaxHeight = Math.max(scaledPageHeight, viewportHeight)
     const widthRatioToFigma = MOBILE_DESIGN_WIDTH / FIGMA_REFERENCE_WIDTH
     const desiredBottomPadding = Math.min(
       45,
-      45 * viewportScaleWidth * widthRatioToFigma
+      45 * viewportScale * widthRatioToFigma,
     )
+    const extraSpace = Math.max(viewportHeight - scaledPageHeight, 0)
     const bottomPadding = Math.max(
-      desiredBottomPadding - extraViewportSpace,
-      MIN_BOTTOM_PADDING
+      desiredBottomPadding - extraSpace,
+      MIN_BOTTOM_PADDING,
     )
-    const pageHeight = headerHeight + canvasHeight
-    const pageMaxHeight = Math.max(pageHeight, viewportHeightForLayout)
 
     const cssVars: AvatarInfoPageCssVars = {
       '--fs-design-width': `${MOBILE_DESIGN_WIDTH}px`,
-      '--fs-design-height': `${MOBILE_DESIGN_HEIGHT}px`,
-      '--fs-design-safe-height': `${MOBILE_SAFE_HEIGHT}px`,
-      '--fs-viewport-height': `${viewportHeightForLayout.toFixed(3)}px`,
-      '--fs-scale-width': scaleWidth.toFixed(5),
-      '--fs-scale-height': scaleHeightSafe.toFixed(5),
-      '--fs-scale-height-content': viewportScaleHeight.toFixed(5),
-      '--fs-scale': viewportScaleWidth.toFixed(5),
+      '--fs-design-height': `${MOBILE_DESIGN_HEIGHT.toFixed(3)}px`,
+      '--fs-design-safe-height': `${MOBILE_SAFE_HEIGHT.toFixed(3)}px`,
+      '--fs-viewport-height': `${viewportHeight.toFixed(3)}px`,
+      '--fs-scale-width': viewportScaleWidth.toFixed(5),
+      '--fs-scale-height': heightScaleSafe.toFixed(5),
+      '--fs-scale-height-content': heightScaleContent.toFixed(5),
+      '--fs-scale': viewportScale.toFixed(5),
       '--fs-canvas-width': `${canvasWidth.toFixed(3)}px`,
       '--fs-canvas-height': `${canvasHeight.toFixed(3)}px`,
       '--fs-page-max-height': `${pageMaxHeight.toFixed(3)}px`,
-      '--fs-header-scale-max': HEADER_MAX_SCALE.toFixed(5),
       '--fs-bottom-padding': `${bottomPadding.toFixed(3)}px`,
     }
 
-    return { cssVars, pageHeight }
-  }, [effectiveViewportWidth, viewportHeightForLayout])
+    return { cssVars, pageHeight: scaledPageHeight }
+  }, [viewportHeight, viewportWidth])
 
   const needsScroll =
-    viewportWidth >= DESKTOP_BREAKPOINT || pageHeight > viewportHeightForLayout + 0.5
+    viewportWidth >= DESKTOP_BREAKPOINT || pageHeight > viewportHeight + 0.5
   const pageClassName = needsScroll
     ? `${styles.page} ${styles.pageScrollable}`
     : styles.page

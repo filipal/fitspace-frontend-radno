@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { useInstanceProvisioning } from '../hooks/useInstanceProvisioning'
 import { usePixelStreamingConnection } from '../hooks/usePixelStreamingConnection'
@@ -10,6 +10,11 @@ import { useAuthData } from '../hooks/useAuthData'
 export default function LoadingScreen() {
   const navigate = useNavigate()
   const location = useLocation()
+  const locationState = location.state
+  const skipProvisioning = useMemo(
+    () => locationState?.skipProvisioning === true,
+    [locationState]
+  )
   const [searchParams] = useSearchParams()
   const destination = searchParams.get('destination') || 'unreal-measurements' // Default to unreal-measurements
   // const [progress, setProgress] = useState(0)
@@ -57,6 +62,31 @@ export default function LoadingScreen() {
     setAllowGuestFlow(true)
   }, [authData.isAuthenticated, navigate, location])
 
+  useEffect(() => {
+    if (authData.isAuthenticated) {
+      return
+    }
+
+    if (allowGuestFlow === null) {
+      console.log('⏳ LoadingScreen: Waiting for guest flow eligibility check before redirecting')
+      return
+    }
+
+    if (allowGuestFlow !== true) {
+      return
+    }
+
+    if (hasStartedProvisioning.current) {
+      return
+    }
+
+    console.log(`🧑‍🤝‍🧑 LoadingScreen: Guest flow ready, redirecting to ${resolvedDestination}`)
+    hasStartedProvisioning.current = true
+    setTimeout(() => {
+      navigate(resolvedDestination)
+    }, 1500)
+  }, [allowGuestFlow, authData.isAuthenticated, navigate, resolvedDestination])
+
   // Spinner and loading messages
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
   const loadingMessages = [
@@ -98,21 +128,18 @@ export default function LoadingScreen() {
         return
       }
       
-      hasStartedProvisioning.current = true
-      
       console.log('🔍 LoadingScreen: Initialization debug info:', {
         isAuthenticated: authData.isAuthenticated,
         allowGuestFlow,
         devMode,
-        skipProvisioning: location.state?.skipProvisioning,
-        locationState: location.state,
+        skipProvisioning,
+        locationState,
         destination: resolvedDestination
       })
       
       // Check for explicit skipProvisioning flag from navigation state (for debug/dev purposes)
-      const skipProvisioning = location.state?.skipProvisioning === true
-      
       if (skipProvisioning) {
+        hasStartedProvisioning.current = true
         console.log(`🔧 LoadingScreen: skipProvisioning flag detected, redirecting to ${resolvedDestination}`)
         setTimeout(() => {
           navigate(resolvedDestination)
@@ -121,18 +148,10 @@ export default function LoadingScreen() {
       }
 
       if (!authData.isAuthenticated) {
-        console.log('🔒 LoadingScreen: User not authenticated, checking guest flow...')
-        if (allowGuestFlow !== true) {
-          if (allowGuestFlow === false) {
-            console.warn('Guest user attempted to load without pending avatar data; staying on login flow')
-          }
-          return
+        console.log('🔒 LoadingScreen: User not authenticated, waiting for guest redirect logic...')
+        if (allowGuestFlow === false) {
+          console.warn('Guest user attempted to load without pending avatar data; staying on login flow')
         }
-
-        console.log(`🧑‍🤝‍🧑 Guest flow detected, skipping provisioning and redirecting to ${resolvedDestination}`)
-        setTimeout(() => {
-          navigate(resolvedDestination)
-        }, 1500)
         return
       }
       
@@ -142,8 +161,9 @@ export default function LoadingScreen() {
       if (devMode === 'localhost') {
         console.log(`🔧 LoadingScreen: Localhost mode enabled, skipping lambda calls and redirecting to ${resolvedDestination}`)
         // setProgress(100)
-        
+
         // Simulate loading for visual feedback
+        hasStartedProvisioning.current = true
         setTimeout(() => {
           navigate(resolvedDestination)
         }, 1500)
@@ -154,9 +174,11 @@ export default function LoadingScreen() {
       
       // Clear intentional disconnect flag before starting new provisioning
       // This allows auto-reconnect when instance is ready
+      hasStartedProvisioning.current = true
+
       clearIntentionalDisconnect()
       console.log('🔓 Cleared intentional disconnect flag for new provisioning workflow')
-      
+
       try {
         await startProvisioningWorkflow()
         console.log('✅ LoadingScreen: startProvisioningWorkflow completed')
@@ -177,16 +199,18 @@ export default function LoadingScreen() {
   }, [
     allowGuestFlow,
     authData.isAuthenticated,
+    clearIntentionalDisconnect,
     devMode,
+    locationState,
     navigate,
     resolvedDestination,
+    skipProvisioning,
     startProvisioningWorkflow
   ]) // Added devMode, navigate and destination to dependencies
   
   // Update progress based on provisioning status
   useEffect(() => {
     // Skip normal progress updates only if explicit skipProvisioning or localhost mode
-    const skipProvisioning = location.state?.skipProvisioning === true
     if (skipProvisioning || devMode === 'localhost') {
       return
     }
@@ -200,7 +224,7 @@ export default function LoadingScreen() {
         navigate(resolvedDestination)
       }, 1000) // Small delay to show completion
     }
-  }, [location.state, devMode, isConnectedToInstance, connectionState, navigate, resolvedDestination])
+  }, [skipProvisioning, devMode, isConnectedToInstance, connectionState, navigate, resolvedDestination])
   
   // Auto-show debug messages on error
   useEffect(() => {

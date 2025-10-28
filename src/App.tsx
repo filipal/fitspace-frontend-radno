@@ -32,6 +32,7 @@ import { AvatarProvider } from './context/AvatarContext'
 import { InstanceManagementProvider } from './context/InstanceManagementContext'
 import ScrollToTop from './components/ScrollToTop'
 import { PixelStreamingContainer } from './components/PixelStreamingContainer/PixelStreamingContainer'
+import { ViewportOverlay } from './components/ViewportOverlay/ViewportOverlay'
 import './App.module.scss'
 
 export default function App() {
@@ -138,6 +139,7 @@ export default function App() {
                 <PixelStreamingContainer />
 
                 <DebugOverlay />
+                {import.meta.env.DEV && <ViewportOverlay />}
               </PixelStreamingProvider>
             </InstanceManagementProvider>
           </AvatarConfigurationProvider>
