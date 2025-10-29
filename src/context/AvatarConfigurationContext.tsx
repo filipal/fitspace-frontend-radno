@@ -735,6 +735,18 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
       return { success: true, error: null, avatarId: currentAvatar.avatarId ?? null };
     }
 
+    if (!isAuthenticated) {
+      const draftParams = buildDraftPersistencePayload(currentAvatar);
+      if (draftParams) {
+        persistAvatarDraftToStorage(draftParams);
+      }
+
+      clearAllDirtySections();
+      setSavePendingChangesError(null);
+
+      return { success: true, error: null, avatarId: currentAvatar.avatarId ?? null };
+    }
+
     if (saveInFlightRef.current) {
       return { success: false, error: null, avatarId: currentAvatar.avatarId ?? null };
     }
@@ -920,6 +932,7 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
     loadAvatarFromBackend,
     clearAllDirtySections,
     updateAvatarMeasurements,
+    buildDraftPersistencePayload,
   ]);
 
   // Context value
