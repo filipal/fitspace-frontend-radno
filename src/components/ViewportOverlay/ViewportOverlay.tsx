@@ -154,6 +154,105 @@ export function ViewportOverlay() {
       return `${sign}${rounded} px`
     }
 
+    let measurementProbe: HTMLDivElement | null = null
+    let measurementContext: HTMLElement | null = null
+
+    const ensureProbe = (context?: HTMLElement | null) => {
+      let desiredParent = context ?? measurementContext ?? document.querySelector<HTMLElement>('[data-fs-responsive-page]')
+        ?? document.body ?? document.documentElement
+
+      if (desiredParent === document.documentElement && document.body) {
+        desiredParent = document.body
+      }
+
+      if (!desiredParent) {
+        return null
+      }
+
+      if (
+        measurementProbe &&
+        measurementProbe.isConnected &&
+        measurementContext === desiredParent
+      ) {
+        return measurementProbe
+      }
+
+      if (measurementProbe?.parentNode) {
+        measurementProbe.parentNode.removeChild(measurementProbe)
+      }
+
+      const probe = document.createElement('div')
+      probe.setAttribute('data-viewport-overlay-probe', 'true')
+      probe.style.position = 'absolute'
+      probe.style.visibility = 'hidden'
+      probe.style.pointerEvents = 'none'
+      probe.style.border = '0'
+      probe.style.padding = '0'
+      probe.style.margin = '0'
+      probe.style.width = '0'
+      probe.style.setProperty('inline-size', '0')
+      probe.style.left = '0'
+      probe.style.top = '0'
+
+      desiredParent.appendChild(probe)
+      measurementProbe = probe
+      measurementContext = desiredParent
+      return probe
+    }
+
+    const resolveCssLength = (input: string, context?: HTMLElement | null): number | null => {
+      if (typeof window === 'undefined' || typeof document === 'undefined') {
+        return null
+      }
+
+      const trimmed = input.trim()
+      if (!trimmed) {
+        return null
+      }
+
+      const simplePxMatch = trimmed.match(/^(-?\d+(?:\.\d+)?)px$/)
+      if (simplePxMatch) {
+        const numeric = Number.parseFloat(simplePxMatch[1])
+        return Number.isFinite(numeric) ? numeric : null
+      }
+
+      const unitlessMatch = trimmed.match(/^(-?\d+(?:\.\d+)?)$/)
+      if (unitlessMatch) {
+        const numeric = Number.parseFloat(unitlessMatch[1])
+        return Number.isFinite(numeric) ? numeric : null
+      }
+
+      const probe = ensureProbe(context)
+      if (!probe) {
+        return null
+      }
+
+      probe.style.height = trimmed
+      probe.style.setProperty('block-size', trimmed)
+      const rect = probe.getBoundingClientRect()
+
+      const value = rect.height
+      return Number.isFinite(value) ? value : null
+    }
+
+    const formatCssVarValue = (raw: string, resolved: number | null) => {
+      const trimmed = raw.trim()
+      if (!trimmed) {
+        return '—'
+      }
+
+      if (resolved == null || Number.isNaN(resolved)) {
+        return trimmed
+      }
+
+      const approx = `${Math.round(resolved)} px`
+      if (/^-?\d+(?:\.\d+)?px$/.test(trimmed)) {
+        return approx
+      }
+
+      return `${trimmed} ≈ ${approx}`
+    }
+
     let rafId = 0
 
     const applyUpdate = () => {
@@ -186,18 +285,21 @@ export function ViewportOverlay() {
       root.style.setProperty('--app-visible-offset-top', offsetTop + 'px')
       root.style.setProperty('--app-visible-offset-left', offsetLeft + 'px')
 
-      const computed = getComputedStyle(root)
-      const fsViewportHeight = computed.getPropertyValue('--fs-viewport-height').trim()
-      const fsPageMaxHeight = computed.getPropertyValue('--fs-page-max-height').trim()
-      const fsScale = computed.getPropertyValue('--fs-scale').trim()
-      const fsCanvasHeight = computed.getPropertyValue('--fs-canvas-height').trim()
-      const fsDesignHeight = computed.getPropertyValue('--fs-design-height').trim()
-
-      const fsViewportHeightPx = parseFloat(fsViewportHeight)
-
       const pageElement = document.querySelector<HTMLElement>(
         '[data-fs-responsive-page]'
       )
+      const computedRoot = getComputedStyle(root)
+      const computedPage = pageElement ? getComputedStyle(pageElement) : computedRoot
+
+      const appVisibleHeightRaw = computedRoot.getPropertyValue('--app-visible-height')
+      const fsViewportHeightRaw = computedPage.getPropertyValue('--fs-viewport-height')
+      const fsPageMaxHeight = computedPage.getPropertyValue('--fs-page-max-height').trim()
+      const fsScale = computedPage.getPropertyValue('--fs-scale').trim()
+      const fsCanvasHeight = computedPage.getPropertyValue('--fs-canvas-height').trim()
+      const fsDesignHeight = computedPage.getPropertyValue('--fs-design-height').trim()
+
+      const appVisibleHeightPx = resolveCssLength(appVisibleHeightRaw, root)
+      const fsViewportHeightPx = resolveCssLength(fsViewportHeightRaw, pageElement ?? root)
       const pageRect = pageElement?.getBoundingClientRect() ?? null
 
       const pageScrollHeight = pageElement?.scrollHeight ?? null
@@ -207,9 +309,11 @@ export function ViewportOverlay() {
       const deltaVisibleVsPage =
         pageRect == null ? null : pageRect.height - visibleHeight
       const deltaVisibleVsVar =
-        Number.isFinite(fsViewportHeightPx) && fsViewportHeightPx
+        fsViewportHeightPx != null
           ? fsViewportHeightPx - visibleHeight
           : null
+      const deltaVisibleVsApp =
+        appVisibleHeightPx != null ? appVisibleHeightPx - visibleHeight : null
 
       setMetrics([
         {
@@ -244,10 +348,17 @@ export function ViewportOverlay() {
         },
         {
           label: '--fs-viewport-height',
-          value: fsViewportHeight || '—',
+          value: formatCssVarValue(fsViewportHeightRaw, fsViewportHeightPx),
           warn:
-            Number.isFinite(fsViewportHeightPx) &&
+            fsViewportHeightPx != null &&
             Math.abs(fsViewportHeightPx - visibleHeight) > 2,
+        },
+        {
+          label: '--app-visible-height',
+          value: formatCssVarValue(appVisibleHeightRaw, appVisibleHeightPx),
+          warn:
+            appVisibleHeightPx != null &&
+            Math.abs(appVisibleHeightPx - visibleHeight) > 2,
         },
         {
           label: '--fs-page-max-height',
@@ -292,6 +403,12 @@ export function ViewportOverlay() {
           warn:
             deltaVisibleVsVar != null && Math.abs(deltaVisibleVsVar) > 2,
         },
+        {
+          label: 'Δ app ↔︎ visible',
+          value: formatDelta(deltaVisibleVsApp),
+          warn:
+            deltaVisibleVsApp != null && Math.abs(deltaVisibleVsApp) > 2,
+        },
       ])
     }
 
@@ -329,6 +446,11 @@ export function ViewportOverlay() {
         vv.removeEventListener('scroll', scheduleUpdate)
       }
       pageObserver?.disconnect()
+      if (measurementProbe?.parentNode) {
+        measurementProbe.parentNode.removeChild(measurementProbe)
+      }
+      measurementProbe = null
+      measurementContext = null
     }
   }, [enabled])
 
