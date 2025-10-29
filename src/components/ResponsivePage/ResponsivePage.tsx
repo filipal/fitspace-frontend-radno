@@ -26,7 +26,7 @@ export default function ResponsivePage({
     : styles.canvasInner
 
   return (
-    <div className={outerClass} {...rest}>
+    <div {...rest} className={outerClass} data-fs-responsive-page="true">
       {header ? <div className={styles.header}>{header}</div> : null}
 
       <div className={bodyClass}>
