@@ -1,4 +1,4 @@
-import type { QuickModeSettings } from '../context/AvatarConfigurationContext';
+import type { AvatarClothingState, QuickModeSettings } from '../context/AvatarConfigurationContext';
 
 export interface CreateAvatarData {
   avatarName: string;
@@ -8,6 +8,7 @@ export interface CreateAvatarData {
   bodyMeasurements?: Record<string, number | string | null | undefined>;
   morphTargets?: Record<string, number>; // za Unreal je zgodan Record
   quickModeSettings?: QuickModeSettings | null;
+  clothingSelections?: AvatarClothingState | null;
 }
 
 // minimalno što nam treba za boot:
@@ -26,5 +27,6 @@ export interface CreateAvatarCommand {
       measurements?: Record<string, number>;
       updatedAt?: string | null;
     } | null;
+    clothingSelections?: AvatarClothingState | null;
   };
 }

@@ -25,6 +25,7 @@ import {
 } from '../services/avatarApi';
 import type { CreateAvatarCommand } from '../types/provisioning';
 import { useAuthData } from '../hooks/useAuthData';
+import type { ClothingCategory } from '../constants/clothing';
 
 export type AvatarCreationMode = 'manual' | 'scan' | 'preset' | 'import' | 'quickMode';
 
@@ -73,6 +74,15 @@ export interface BackendAvatarMorphTarget {
   value: number;
 }
 
+export interface AvatarClothingSelection {
+  itemId: number;
+  subCategory?: string | null;
+}
+
+export type AvatarClothingState = Partial<
+  Record<ClothingCategory, AvatarClothingSelection | null>
+>;
+
 export interface BackendAvatarData {
   type: 'createAvatar';
   id: string;
@@ -89,6 +99,7 @@ export interface BackendAvatarData {
   bodyMeasurements?: BodyMeasurements;
   morphTargets: BackendAvatarMorphTarget[];
   quickModeSettings?: QuickModeSettings | null;
+  clothingSelections?: AvatarClothingState | null;
 }
 
 // Current avatar state
@@ -108,6 +119,7 @@ export interface AvatarConfiguration {
   createdBySession?: string | null;
   quickModeSettings?: QuickModeSettings | null;
   baselineMeasurements?: Partial<BodyMeasurements>;
+  clothingSelections?: AvatarClothingState | null;
   morphValues: MorphAttribute[]; // Using your existing structure
   lastUpdated: Date;
 }
@@ -117,7 +129,8 @@ export type AvatarConfigurationDirtySection =
   | 'quickMode.measurements'
   | 'quickMode.skin'
   | 'quickMode.hair'
-  | 'quickMode.extras';
+  | 'quickMode.extras'
+  | 'clothing';
 
 export interface QuickModeMeasurementUpdateOptions {
   section?: AvatarConfigurationDirtySection;
@@ -151,6 +164,11 @@ export interface AvatarConfigurationContextType {
     key: string,
     value: number | null | undefined,
     options?: QuickModeMeasurementUpdateOptions,
+  ) => void;
+  updateClothingSelection: (
+    category: ClothingCategory,
+    selection: AvatarClothingSelection | null,
+    options?: { markDirty?: boolean },
   ) => void;
   resetAvatar: () => void;
 
@@ -187,6 +205,53 @@ export function useAvatarConfiguration(): AvatarConfigurationContextType {
   }
   return context;
 }
+
+const CLOTHING_CATEGORIES: ClothingCategory[] = ['top', 'bottom'];
+
+const sanitizeClothingSelection = (
+  value: AvatarClothingSelection | null | undefined,
+): AvatarClothingSelection | null => {
+  if (!value) {
+    return null;
+  }
+
+  const numericId = Number((value as { itemId?: unknown }).itemId);
+  if (!Number.isFinite(numericId)) {
+    return null;
+  }
+
+  const rawSubCategory = (value as { subCategory?: unknown }).subCategory;
+  const sanitizedSubCategory =
+    typeof rawSubCategory === 'string' && rawSubCategory.trim().length
+      ? rawSubCategory.trim()
+      : null;
+
+  return {
+    itemId: numericId,
+    ...(sanitizedSubCategory ? { subCategory: sanitizedSubCategory } : {}),
+  };
+};
+
+const sanitizeClothingSelections = (
+  source: AvatarClothingState | null | undefined,
+): AvatarClothingState | null => {
+  if (!source) {
+    return null;
+  }
+
+  let hasSelection = false;
+  const normalized: AvatarClothingState = {};
+
+  for (const category of CLOTHING_CATEGORIES) {
+    const selection = sanitizeClothingSelection(source[category] ?? null);
+    if (selection) {
+      normalized[category] = selection;
+      hasSelection = true;
+    }
+  }
+
+  return hasSelection ? normalized : null;
+};
 
 export interface SavePendingChangesOptions {
   activeAvatarId?: string | null;
@@ -316,6 +381,10 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
           }
         : null;
 
+      const clothingSelections = sanitizeClothingSelections(
+        avatar.clothingSelections ?? null,
+      );
+
       const morphTargetsRecord = avatar.morphValues.reduce<Record<string, number>>(
         (acc, morph) => {
           const backendKey = getBackendKeyForMorphId(morph.morphId);
@@ -348,6 +417,7 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
           ...(bodyMeasurementsRecord ? { bodyMeasurements: bodyMeasurementsRecord } : {}),
           ...(morphTargets ? { morphTargets } : {}),
           quickModeSettings: quickModeSettings ?? null,
+          ...(clothingSelections ? { clothingSelections } : {}),
         },
       };
 
@@ -386,6 +456,7 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
           creationMode: resolvedCreationMode ?? null,
           quickModeSettings: quickModeSettings ?? null,
           source: resolvedSource,
+          clothingSelections: clothingSelections ?? null,
         },
       };
     },
@@ -493,6 +564,10 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
             }
           : null;
 
+      const clothingSelections = sanitizeClothingSelections(
+        backendData.clothingSelections ?? null,
+      );
+
       const morphValues = deriveMorphTargetsFromMeasurements(
         initialMorphValues,
         {
@@ -521,17 +596,19 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
         updatedAt: backendData.updatedAt ?? null,
         createdBySession: backendData.createdBySession ?? null,
         quickModeSettings,
+        clothingSelections,
         baselineMeasurements,
         morphValues,
         lastUpdated: new Date(),
       };
-      
+
       const nextAvatarConfig: AvatarConfiguration = {
         ...avatarConfig,
         morphValues: avatarConfig.morphValues.map(m => ({ ...m })),
         baselineMeasurements: avatarConfig.baselineMeasurements
           ? { ...avatarConfig.baselineMeasurements }
           : undefined,
+        clothingSelections: clothingSelections ? { ...clothingSelections } : null,
       };
 
         setCurrentAvatar(nextAvatarConfig);
@@ -696,6 +773,67 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
     updateQuickModeMeasurements({ [key]: value }, options);
   }, [updateQuickModeMeasurements]);
 
+  const updateClothingSelection = useCallback(
+    (
+      category: ClothingCategory,
+      selection: AvatarClothingSelection | null,
+      options?: { markDirty?: boolean },
+    ) => {
+      let didChange = false;
+      let nextAvatar: AvatarConfiguration | null = null;
+
+      setCurrentAvatar(prev => {
+        if (!prev) {
+          return prev;
+        }
+
+        const normalizedSelection = sanitizeClothingSelection(selection);
+        const previousSelections = prev.clothingSelections ?? null;
+        const currentSelection = sanitizeClothingSelection(previousSelections?.[category] ?? null);
+
+        const sameSelection =
+          (!normalizedSelection && !currentSelection) ||
+          (normalizedSelection &&
+            currentSelection &&
+            normalizedSelection.itemId === currentSelection.itemId &&
+            (normalizedSelection.subCategory ?? null) === (currentSelection.subCategory ?? null));
+
+        if (sameSelection) {
+          return prev;
+        }
+
+        didChange = true;
+
+        const nextSelections: AvatarClothingState = {
+          ...(previousSelections ? { ...previousSelections } : {}),
+        };
+
+        if (normalizedSelection) {
+          nextSelections[category] = normalizedSelection;
+        } else {
+          delete nextSelections[category];
+        }
+
+        const sanitizedNextSelections = sanitizeClothingSelections(nextSelections);
+
+        const updatedAvatar: AvatarConfiguration = {
+          ...prev,
+          clothingSelections: sanitizedNextSelections,
+          lastUpdated: new Date(),
+        };
+
+        nextAvatar = updatedAvatar;
+        return updatedAvatar;
+      });
+
+      if (didChange && nextAvatar && (options?.markDirty ?? true)) {
+        latestAvatarRef.current = nextAvatar;
+        markSectionDirty('clothing', nextAvatar);
+      }
+    },
+    [markSectionDirty],
+  );
+
   // Reset avatar to defaults
   const resetAvatar = useCallback(() => {
     setCurrentAvatar(null);
@@ -796,6 +934,10 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
 
       const resolvedAvatarId = options?.activeAvatarId ?? currentAvatar.avatarId ?? 'guest';
 
+      const clothingSelections = sanitizeClothingSelections(
+        currentAvatar.clothingSelections ?? null,
+      );
+
       const basePayload: AvatarPayload = {
         name: currentAvatar.avatarName ?? 'Avatar',
         gender: currentAvatar.gender,
@@ -820,6 +962,7 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
             }
           : {}),
         morphTargets,
+        ...(clothingSelections ? { clothingSelections } : {}),
       };
 
       const morphs = buildBackendMorphPayload({ ...basePayload });
@@ -893,6 +1036,8 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
             quickModeSettings:
               result.backendAvatar?.quickModeSettings ?? basePayload.quickModeSettings ?? null,
             source: result.backendAvatar?.source ?? basePayload.source,
+            clothingSelections:
+              result.backendAvatar?.clothingSelections ?? clothingSelections ?? null,
           }),
         );
       }
@@ -951,6 +1096,7 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
     updateMorphValue,
     updateQuickModeMeasurements,
     updateQuickModeMeasurement,
+    updateClothingSelection,
     resetAvatar,
     savePendingChanges,
     getMorphByName,
@@ -972,6 +1118,7 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
     updateMorphValue,
     updateQuickModeMeasurements,
     updateQuickModeMeasurement,
+    updateClothingSelection,
     resetAvatar,
     savePendingChanges,
     getMorphByName,

@@ -10,6 +10,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import Header from '../Header/Header'
 import { usePixelStreaming } from '../../context/PixelStreamingContext'
+import { useAvatarConfiguration } from '../../context/AvatarConfigurationContext'
 import { PixelStreamingView } from '../PixelStreamingView/PixelStreamingView'
 // Using ?react variants for unified styling
 import avatarBg from '../../assets/male-avatar.png'
@@ -61,6 +62,10 @@ interface ControlButton {
   marginRight: number
 }
 
+const catalog = getClothingCatalog()
+const upperCategories = getClothingSubCategoryList('top')
+const lowerCategories = getClothingSubCategoryList('bottom')
+
 const DESIGN_WIDTH = 430
 const toCqw = (px: number) => (px === 0 ? '0' : `calc(${px} / ${DESIGN_WIDTH} * 100cqw)`)
 
@@ -84,6 +89,7 @@ function VirtualTryOnPanel({
 }: VirtualTryOnPanelProps) {
   const navigate = useNavigate()
   const { isAuthenticated } = useAuthData()
+  const { updateClothingSelection, currentAvatar } = useAvatarConfiguration()
 
   const handleExit = useCallback(() => {
     if (embedded) {
@@ -115,6 +121,30 @@ function VirtualTryOnPanel({
 
   const sendQueued = useQueuedUnreal(sendFitSpaceCommand, simpleState)
 
+  const findClothingIndex = useCallback(
+    (
+      category: ClothingCategory,
+      selection: { itemId: number; subCategory?: string | null } | null,
+    ): number | null => {
+      if (!selection) return null
+      const items = catalog[category]
+      const normalizedSubCategory = selection.subCategory?.toLowerCase() ?? null
+      const preciseMatch = items.findIndex(item => {
+        const sameItem = Number(item.itemId) === Number(selection.itemId)
+        const sameSubCategory = normalizedSubCategory
+          ? item.subCategory.toLowerCase() === normalizedSubCategory
+          : true
+        return sameItem && sameSubCategory
+      })
+      if (preciseMatch >= 0) return preciseMatch
+      const fallbackMatch = items.findIndex(
+        item => Number(item.itemId) === Number(selection.itemId),
+      )
+      return fallbackMatch >= 0 ? fallbackMatch : null
+    },
+    [],
+  )
+
   // Connection is now managed by the persistent PixelStreamingContainer
   // No need for reconnection logic here - the container handles seamless transitions
   const [isDesktop, setIsDesktop] = useState(() =>
@@ -128,10 +158,20 @@ function VirtualTryOnPanel({
   const [bottomExpandedFooter, setBottomExpandedFooter] = useState(false)
   const [fullBodyMode, setFullBodyMode] = useState(false)
   const [fullBodyDetail, setFullBodyDetail] = useState(false)
-  const [topOptionIndex, setTopOptionIndex] = useState(0) // Option 1..5 => indices 0..4
+  const [topOptionIndex, setTopOptionIndex] = useState(() => {
+    const selection = currentAvatar?.clothingSelections?.top ?? null
+    const index = findClothingIndex('top', selection)
+    return index ?? 0
+  }) // Option 1..5 => indices 0..4
   const topOptions = ['with armor', 'option 2', 'option 3', 'option 4', 'option 5']
-  const [bottomOptionIndex, setBottomOptionIndex] = useState(0)
+  const [bottomOptionIndex, setBottomOptionIndex] = useState(() => {
+    const selection = currentAvatar?.clothingSelections?.bottom ?? null
+    const index = findClothingIndex('bottom', selection)
+    return index ?? 0
+  })
   const bottomOptions = ['tapered fit', 'regular fit', 'loose fit', 'boot cut', 'straight fit']
+  const topClothingSelection = currentAvatar?.clothingSelections?.top ?? null
+  const bottomClothingSelection = currentAvatar?.clothingSelections?.bottom ?? null
   useEffect(() => {
     if (typeof window === 'undefined') return
     const mediaQuery = window.matchMedia('(min-width: 1024px)')
@@ -162,6 +202,37 @@ function VirtualTryOnPanel({
       setSelectedControl(null)
     }
   }, [isDesktop])
+  useEffect(() => {
+    const resolvedTopIndex = findClothingIndex('top', topClothingSelection)
+    if (resolvedTopIndex != null) {
+      setTopOptionIndex(prev => (prev === resolvedTopIndex ? prev : resolvedTopIndex))
+      setJacketIndex(prev => (prev === resolvedTopIndex ? prev : resolvedTopIndex))
+    }
+    if (topClothingSelection?.subCategory) {
+      const normalizedTopSub = topClothingSelection.subCategory.toLowerCase()
+      const categoryIndex = upperCategories.findIndex(
+        entry => entry.toLowerCase() === normalizedTopSub,
+      )
+      if (categoryIndex >= 0) {
+        setUpperCenterIdx(prev => (prev === categoryIndex ? prev : categoryIndex))
+      }
+    }
+
+    const resolvedBottomIndex = findClothingIndex('bottom', bottomClothingSelection)
+    if (resolvedBottomIndex != null) {
+      setBottomOptionIndex(prev => (prev === resolvedBottomIndex ? prev : resolvedBottomIndex))
+      setPantsIndex(prev => (prev === resolvedBottomIndex ? prev : resolvedBottomIndex))
+    }
+    if (bottomClothingSelection?.subCategory) {
+      const normalizedBottomSub = bottomClothingSelection.subCategory.toLowerCase()
+      const categoryIndex = lowerCategories.findIndex(
+        entry => entry.toLowerCase() === normalizedBottomSub,
+      )
+      if (categoryIndex >= 0) {
+        setLowerCenterIdx(prev => (prev === categoryIndex ? prev : categoryIndex))
+      }
+    }
+  }, [topClothingSelection, bottomClothingSelection, findClothingIndex])
   const shouldShrinkCategoryText = (text: string) => text.trim().length >= 10
   const sendClothingSelection = useCallback(
     (category: ClothingCategory, itemIndex: number, overrideSubCategory?: string) => {
@@ -178,11 +249,15 @@ function VirtualTryOnPanel({
         },
         label,
       )
+      updateClothingSelection(category, {
+        itemId,
+        subCategory: effectiveSubCategory,
+      })
       console.log(
         `Queued selectClothing command: itemId=${itemId}, category=${category}, subCategory=${effectiveSubCategory}`,
       )
     },
-    [sendQueued],
+    [sendQueued, updateClothingSelection],
   )
   const cycleTopPrev = () => {
     setTopOptionIndex((i) => {
@@ -222,8 +297,6 @@ function VirtualTryOnPanel({
   const [activeShadeIndex, setActiveShadeIndex] = useState(1) // center default
 
   // Category selector groups (upper & lower) with cyclic scrolling via arrows
-  const upperCategories = getClothingSubCategoryList('top')
-  const lowerCategories = getClothingSubCategoryList('bottom')
   const [upperCenterIdx, setUpperCenterIdx] = useState(1) // 'Jackets'
   const [lowerCenterIdx, setLowerCenterIdx] = useState(1) // 'Jeans'
   const cycleUpper = (dir: 1 | -1) => {
@@ -283,17 +356,25 @@ function VirtualTryOnPanel({
 
   // Right-side image selectors (jackets & pants) single image display with arrows
   const { jacketImages, pantsImages } = useMemo(() => {
-    const catalog = getClothingCatalog()
-    const topAssets = catalog.top.map((item) => item.asset)
-    const bottomAssets = catalog.bottom.map((item) => item.asset)
+    const topAssets = catalog.top.map(item => item.asset)
+    const bottomAssets = catalog.bottom.map(item => item.asset)
 
     return {
       jacketImages: topAssets.length > 0 ? topAssets : [''],
       pantsImages: bottomAssets.length > 0 ? bottomAssets : [''],
     }
   }, [])
-  const [jacketIndex, setJacketIndex] = useState(0)
-  const [pantsIndex, setPantsIndex] = useState(0)
+
+  const [jacketIndex, setJacketIndex] = useState(() => {
+    const selection = currentAvatar?.clothingSelections?.top ?? null
+    const index = findClothingIndex('top', selection)
+    return index ?? 0
+  })
+  const [pantsIndex, setPantsIndex] = useState(() => {
+    const selection = currentAvatar?.clothingSelections?.bottom ?? null
+    const index = findClothingIndex('bottom', selection)
+    return index ?? 0
+  })
   const cycleJackets = (dir: 1 | -1) => {
     setJacketIndex((i) => {
       const newIndex = (i + dir + jacketImages.length) % jacketImages.length

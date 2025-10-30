@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useAuthData } from '../hooks/useAuthData';
 import type {
+  AvatarClothingState,
   AvatarCreationMode,
   BackendAvatarData,
   BackendAvatarMorphTarget,
@@ -8,6 +9,7 @@ import type {
   BodyMeasurements,
   QuickModeSettings,
 } from '../context/AvatarConfigurationContext';
+import type { ClothingCategory } from '../constants/clothing';
 import type { CreateAvatarCommand } from '../types/provisioning';
 
 // VITE_AVATAR_API_BASE_URL must be defined; otherwise resolveAvatarUrl throws an AvatarApiError.
@@ -33,6 +35,7 @@ export interface AvatarDraftMetadata {
   creationMode: AvatarCreationMode | null;
   quickModeSettings: QuickModeSettings | null;
   source: string | null;
+  clothingSelections: AvatarClothingState | null;
 }
 
 export interface PersistAvatarDraftParams {
@@ -86,6 +89,52 @@ export const clearAvatarDraftFromStorage = (): void => {
 
 export type AvatarApiMeasurements = Partial<BodyMeasurements>;
 
+const CLOTHING_CATEGORIES: ClothingCategory[] = ['top', 'bottom'];
+
+const sanitizeClothingSelectionPayload = (
+  value: unknown,
+): { itemId: number; subCategory?: string | null } | null => {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  const itemId = Number(record.itemId);
+  if (!Number.isFinite(itemId)) {
+    return null;
+  }
+
+  const rawSubCategory = record.subCategory;
+  const subCategory =
+    typeof rawSubCategory === 'string' && rawSubCategory.trim().length
+      ? rawSubCategory.trim()
+      : null;
+
+  return {
+    itemId,
+    ...(subCategory ? { subCategory } : {}),
+  };
+};
+
+const sanitizeClothingSelectionsPayload = (
+  source: AvatarClothingState | null | undefined,
+): AvatarClothingState | undefined => {
+  if (!source) {
+    return undefined;
+  }
+
+  const normalized: AvatarClothingState = {};
+
+  for (const category of CLOTHING_CATEGORIES) {
+    const selection = sanitizeClothingSelectionPayload((source as Record<string, unknown>)[category]);
+    if (selection) {
+      normalized[category] = selection;
+    }
+  }
+
+  return Object.keys(normalized).length ? normalized : undefined;
+};
+
 // Removed session storage constants as we're bypassing token authentication
 const AVATAR_API_KEY = import.meta.env.VITE_AVATAR_API_KEY as string | undefined;
 
@@ -115,6 +164,7 @@ export interface AvatarPayload {
   morphTargets?: Record<string, number>;
   morphs?: AvatarMorphPayload[];
   quickModeSettings?: QuickModeSettingsPayload | null;
+  clothingSelections?: AvatarClothingState | null;
 }
 
 interface AvatarApiAuth {
@@ -641,6 +691,9 @@ const persistGuestAvatarUpdate = (
   const bodyMeasurements = sanitizeGuestMeasurementRecord(payload.bodyMeasurements ?? undefined);
   const morphTargets = mergeGuestMorphTargets(payload, options);
   const quickModeSettings = sanitizeGuestQuickModeSettings(payload.quickModeSettings);
+  const clothingSelections = sanitizeClothingSelectionsPayload(
+    payload.clothingSelections ?? undefined,
+  );
 
   const command: CreateAvatarCommand = {
     type: 'createAvatar',
@@ -652,6 +705,7 @@ const persistGuestAvatarUpdate = (
       ...(bodyMeasurements ? { bodyMeasurements } : {}),
       ...(morphTargets ? { morphTargets } : {}),
       quickModeSettings: quickModeSettings ?? null,
+      ...(clothingSelections ? { clothingSelections } : {}),
     },
   };
 
@@ -687,6 +741,7 @@ const persistGuestAvatarUpdate = (
       creationMode,
       quickModeSettings: quickModeSettings ?? null,
       source,
+      clothingSelections: clothingSelections ?? null,
     },
   });
 
@@ -937,6 +992,13 @@ const buildBackendAvatarRequestPayload = (
     request.quickModeSettings = quickModeSettings;
   }
 
+  const clothingSelections = sanitizeClothingSelectionsPayload(
+    payload.clothingSelections ?? undefined,
+  );
+  if (clothingSelections) {
+    request.clothingSelections = clothingSelections;
+  }
+
   return request;
 };
 
@@ -1058,6 +1120,28 @@ const normalizeQuickModeSettingsResponse = (
   return Object.keys(normalized).length ? normalized : null;
 };
 
+const normalizeClothingSelectionsResponse = (
+  payload: unknown,
+): AvatarClothingState | null => {
+  if (!payload || typeof payload !== 'object') {
+    return null;
+  }
+
+  const source = payload as Record<string, unknown>;
+  let hasSelection = false;
+  const normalized: AvatarClothingState = {};
+
+  for (const category of CLOTHING_CATEGORIES) {
+    const selection = sanitizeClothingSelectionPayload(source[category]);
+    if (selection) {
+      normalized[category] = selection;
+      hasSelection = true;
+    }
+  }
+
+  return hasSelection ? normalized : null;
+};
+
 const findAvatarCandidate = (payload: unknown): Record<string, unknown> | undefined => {
   if (!isRecord(payload)) {
     return undefined;
@@ -1130,6 +1214,9 @@ const normalizeBackendAvatar = (payload: unknown): BackendAvatarData | undefined
   const quickModeSettings = normalizeQuickModeSettingsResponse(
     candidate.quickModeSettings,
   );
+  const clothingSelections = normalizeClothingSelectionsResponse(
+    (candidate as { clothingSelections?: unknown }).clothingSelections,
+  );
 
   return {
     type: 'createAvatar',
@@ -1147,6 +1234,7 @@ const normalizeBackendAvatar = (payload: unknown): BackendAvatarData | undefined
     bodyMeasurements,
     morphTargets,
     quickModeSettings,
+    clothingSelections,
   };
 };
 

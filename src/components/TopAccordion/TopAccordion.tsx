@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { usePixelStreaming } from '../../context/PixelStreamingContext'
+import { useAvatarConfiguration } from '../../context/AvatarConfigurationContext'
 import styles from './TopAccordion.module.scss'
 import ArrowLeft from '../../assets/arrow-left.svg'
 import ArrowRight from '../../assets/arrow-right.svg'
@@ -11,8 +12,10 @@ import {
 } from '../../constants/clothing'
 import { useQueuedUnreal } from '../../services/queuedUnreal'
 
+const catalog = getClothingCatalog()
+
 // Čuvamo lokalni popis asseta preko centralizirane konfiguracije
-const carouselItems = getClothingCatalog().top.map((item) => item.asset)
+const carouselItems = catalog.top.map((item) => item.asset)
 
 interface TopAccordionProps {
   variant?: 'mobile' | 'desktop'
@@ -20,6 +23,7 @@ interface TopAccordionProps {
 
 export default function TopAccordion({ variant = 'mobile' }: TopAccordionProps) {
   const { sendFitSpaceCommand, connectionState } = usePixelStreaming()
+  const { updateClothingSelection, currentAvatar } = useAvatarConfiguration()
   const simpleState = useMemo<'connected' | 'connecting' | 'disconnected'>(() => {
     return connectionState === 'connected'
       ? 'connected'
@@ -28,7 +32,24 @@ export default function TopAccordion({ variant = 'mobile' }: TopAccordionProps) 
         : 'disconnected'
   }, [connectionState])
   const sendQueued = useQueuedUnreal(sendFitSpaceCommand, simpleState)
-  const [index, setIndex] = useState(0)
+  const initialIndex = useMemo(() => {
+    const selection = currentAvatar?.clothingSelections?.top
+    if (!selection) return 0
+    const items = catalog.top
+    const normalizedSub = selection.subCategory?.toLowerCase() ?? null
+    const matchIndex = items.findIndex(item => {
+      const sameItem = Number(item.itemId) === Number(selection.itemId)
+      const sameSub = normalizedSub ? item.subCategory.toLowerCase() === normalizedSub : true
+      return sameItem && sameSub
+    })
+    if (matchIndex >= 0) return matchIndex
+    const fallback = items.findIndex(item => Number(item.itemId) === Number(selection.itemId))
+    return fallback >= 0 ? fallback : 0
+  }, [currentAvatar?.clothingSelections])
+  const [index, setIndex] = useState(initialIndex)
+  useEffect(() => {
+    setIndex(prev => (prev === initialIndex ? prev : initialIndex))
+  }, [initialIndex])
   const sendClothingSelection = (itemIndex: number) => {
     const identifier = getClothingIdentifierForIndex('top', itemIndex)
 
@@ -41,6 +62,11 @@ export default function TopAccordion({ variant = 'mobile' }: TopAccordionProps) 
       },
       `selectClothing/top/${identifier.subCategory ?? identifier.itemId}`,
     )
+
+    updateClothingSelection('top', {
+      itemId: identifier.itemId,
+      subCategory: identifier.subCategory,
+    })
 
     return identifier
   }
