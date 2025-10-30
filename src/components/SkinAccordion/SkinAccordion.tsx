@@ -5,6 +5,7 @@ import Skin1 from '../../assets/skin1.svg?react'
 import Skin2 from '../../assets/skin2.svg?react'
 import Skin3 from '../../assets/skin3.svg?react'
 import { darkenHex, lightenHex } from '../../utils/color'
+import { SKIN_TONE_BASE_HEXES } from '../../constants/avatarColors'
 import styles from './SkinAccordion.module.scss'
 import { useAvatarConfiguration } from '../../context/AvatarConfigurationContext'
 import { usePixelStreaming } from '../../context/PixelStreamingContext'
@@ -67,10 +68,7 @@ export default function SkinAccordion({ defaultRightExpanded = false }: SkinAcco
 
 
   // Paleta baza (svjetlije ←→ tamnije)
-  const basePalette = useMemo(
-    () => ['#f5e0d0', '#eac3a6', '#d7a381', '#b47b57', '#8a573b', '#5d3b2a'],
-    [],
-  )
+  const basePalette = SKIN_TONE_BASE_HEXES
 
   // Učitaj spremljene vrijednosti
   const savedMeas = (currentAvatar?.quickModeSettings?.measurements ?? {}) as Record<string, unknown>

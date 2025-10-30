@@ -557,6 +557,36 @@ export function ViewportOverlay() {
           ? headerRect.height - fsHeaderHeightPhysicalPx
           : null
 
+      const designDeltaExplainedByHeader =
+        deltaVisibleVsDesign != null &&
+        deltaPageVsDesign != null &&
+        fsDesignSafeHeightPx != null &&
+        Math.abs(fsDesignSafeHeightPx - visibleHeight) <= 2 &&
+        Math.abs(deltaVisibleVsDesign + deltaPageVsDesign) <= 2
+
+      const designDeltaValue = formatDelta(deltaVisibleVsDesign)
+      const pageDesignDeltaValue = formatDelta(deltaPageVsDesign)
+
+      const decoratedDesignDeltaValue =
+        designDeltaExplainedByHeader && designDeltaValue !== '—'
+          ? `${designDeltaValue} · content-only var`
+          : designDeltaValue
+
+      const decoratedPageDesignDeltaValue =
+        designDeltaExplainedByHeader && pageDesignDeltaValue !== '—'
+          ? `${pageDesignDeltaValue} · header allocation`
+          : pageDesignDeltaValue
+
+      const designDeltaWarn =
+        deltaVisibleVsDesign != null &&
+        Math.abs(deltaVisibleVsDesign) > 2 &&
+        !designDeltaExplainedByHeader
+
+      const pageDesignDeltaWarn =
+        deltaPageVsDesign != null &&
+        Math.abs(deltaPageVsDesign) > 2 &&
+        !designDeltaExplainedByHeader
+
       const screen = window.screen
 
       setMetrics([
@@ -690,15 +720,13 @@ export function ViewportOverlay() {
         },
         {
           label: 'Δ design ↔︎ visible',
-          value: formatDelta(deltaVisibleVsDesign),
-          warn:
-            deltaVisibleVsDesign != null && Math.abs(deltaVisibleVsDesign) > 2,
+          value: decoratedDesignDeltaValue,
+          warn: designDeltaWarn,
         },
         {
           label: 'Δ page ↔︎ design',
-          value: formatDelta(deltaPageVsDesign),
-          warn:
-            deltaPageVsDesign != null && Math.abs(deltaPageVsDesign) > 2,
+          value: decoratedPageDesignDeltaValue,
+          warn: pageDesignDeltaWarn,
         },
         {
           label: 'header rect',

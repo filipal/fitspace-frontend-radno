@@ -1,5 +1,5 @@
 .appHeader {
-  --header-scale-raw: var(--fs-scale-height, 1);
+  --header-scale-raw: var(--fs-header-scale, var(--fs-scale-height, 1));
   --header-scale-max: var(--fs-header-scale-max, 1);
   --header-scale: clamp(0.65, var(--header-scale-raw), var(--header-scale-max));
   --header-padding-start: clamp(

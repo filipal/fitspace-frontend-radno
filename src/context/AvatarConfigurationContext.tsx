@@ -26,6 +26,12 @@ import {
 import type { CreateAvatarCommand } from '../types/provisioning';
 import { useAuthData } from '../hooks/useAuthData';
 import type { ClothingCategory } from '../constants/clothing';
+import {
+  matchAvatarColorShade,
+  normalizeAvatarColorHex,
+  resolveAvatarColorById,
+  resolveAvatarColorShade,
+} from '../constants/avatarColors';
 
 export type AvatarCreationMode = 'manual' | 'scan' | 'preset' | 'import' | 'quickMode';
 
@@ -77,6 +83,10 @@ export interface BackendAvatarMorphTarget {
 export interface AvatarClothingSelection {
   itemId: number;
   subCategory?: string | null;
+  colorHex?: string | null;
+  colorPaletteIndex?: number | null;
+  colorShadeIndex?: number | null;
+  colorId?: number | null;
 }
 
 export type AvatarClothingState = Partial<
@@ -208,6 +218,22 @@ export function useAvatarConfiguration(): AvatarConfigurationContextType {
 
 const CLOTHING_CATEGORIES: ClothingCategory[] = ['top', 'bottom'];
 
+
+const toFiniteIndex = (value: unknown): number | null => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.trunc(value);
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return Math.trunc(parsed);
+    }
+  }
+
+  return null;
+};
+
 const sanitizeClothingSelection = (
   value: AvatarClothingSelection | null | undefined,
 ): AvatarClothingSelection | null => {
@@ -226,10 +252,54 @@ const sanitizeClothingSelection = (
       ? rawSubCategory.trim()
       : null;
 
-  return {
+  let paletteIndex = toFiniteIndex((value as { colorPaletteIndex?: unknown }).colorPaletteIndex);
+  let shadeIndex = toFiniteIndex((value as { colorShadeIndex?: unknown }).colorShadeIndex);
+  let colorId = toFiniteIndex((value as { colorId?: unknown }).colorId);
+  let colorHex = normalizeAvatarColorHex((value as { colorHex?: unknown }).colorHex);
+
+  if (!colorHex && paletteIndex != null && shadeIndex != null) {
+    const resolved = resolveAvatarColorShade(paletteIndex, shadeIndex);
+    colorHex = resolved.colorHex;
+    paletteIndex = resolved.paletteIndex;
+    shadeIndex = resolved.shadeIndex;
+    colorId = colorId ?? resolved.colorId;
+  }
+
+  if (!colorHex && colorId != null) {
+    const resolved = resolveAvatarColorById(colorId);
+    if (resolved) {
+      colorHex = resolved.colorHex;
+      paletteIndex = resolved.paletteIndex;
+      shadeIndex = resolved.shadeIndex;
+      colorId = resolved.colorId;
+    }
+  }
+
+  if (colorHex) {
+    const matched = matchAvatarColorShade(colorHex);
+    if (matched) {
+      if (paletteIndex == null) {
+        paletteIndex = matched.paletteIndex;
+      }
+      if (shadeIndex == null) {
+        shadeIndex = matched.shadeIndex;
+      }
+      if (colorId == null) {
+        colorId = matched.colorId;
+      }
+      colorHex = matched.colorHex;
+    }
+  }
+
+  const selection: AvatarClothingSelection = {
     itemId: numericId,
     ...(sanitizedSubCategory ? { subCategory: sanitizedSubCategory } : {}),
+    ...(colorHex ? { colorHex } : {}),
+    ...(paletteIndex != null ? { colorPaletteIndex: paletteIndex } : {}),
+    ...(shadeIndex != null ? { colorShadeIndex: shadeIndex } : {}),
+    ...(colorId != null ? { colorId } : {}),
   };
+  return selection;
 };
 
 const sanitizeClothingSelections = (
@@ -796,7 +866,9 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
           (normalizedSelection &&
             currentSelection &&
             normalizedSelection.itemId === currentSelection.itemId &&
-            (normalizedSelection.subCategory ?? null) === (currentSelection.subCategory ?? null));
+            (normalizedSelection.subCategory ?? null) ===
+              (currentSelection.subCategory ?? null) &&
+            (normalizedSelection.colorHex ?? null) === (currentSelection.colorHex ?? null));
 
         if (sameSelection) {
           return prev;

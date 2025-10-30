@@ -47,6 +47,7 @@ type AvatarInfoPageCssVars = CSSProperties & {
   '--fs-design-safe-height'?: string
   '--fs-viewport-height'?: string
   '--fs-header-scale'?: string
+  '--fs-header-scale-max'?: string
   '--fs-header-height'?: string
   '--fs-header-height-physical'?: string
   '--fs-scale-width'?: string
@@ -190,6 +191,10 @@ export default function AvatarInfoPage() {
       fullFlexibleHeight,
     )
 
+    const expansionFactor = viewportHeight > fullFlexibleHeight
+      ? viewportHeight / fullFlexibleHeight
+      : 1
+
     const working = segments.map((segment) => ({ ...segment, scale: 1 }))
     let currentHeight = fullFlexibleHeight
 
@@ -249,7 +254,8 @@ export default function AvatarInfoPage() {
     let contentScale = CONTENT_MIN_SCALE
 
     working.forEach((segment) => {
-      const finalScale = clamp(segment.scale, segment.minScale, 1)
+      const constrainedScale = clamp(segment.scale, segment.minScale, 1)
+      const finalScale = constrainedScale * expansionFactor
       if (segment.key === 'header') {
         headerScale = finalScale
       } else {
@@ -287,12 +293,13 @@ export default function AvatarInfoPage() {
 
     const cssVars: AvatarInfoPageCssVars = {
       '--fs-design-width': `${MOBILE_DESIGN_WIDTH}px`,
-      '--fs-design-height': `${MOBILE_DESIGN_HEIGHT.toFixed(3)}px`,
-      '--fs-design-safe-height': `${MOBILE_SAFE_HEIGHT.toFixed(3)}px`,
+      '--fs-design-height': `${(contentScale * MOBILE_DESIGN_HEIGHT).toFixed(3)}px`,
+      '--fs-design-safe-height': `${designHeight.toFixed(3)}px`,
       '--fs-viewport-height': `${viewportHeight.toFixed(3)}px`,
       '--fs-header-scale': headerScale.toFixed(5),
+      '--fs-header-scale-max': Math.max(headerScale, 1).toFixed(5),
       '--fs-header-height': `${(headerScale * HEADER_DESIGN_HEIGHT).toFixed(3)}px`,
-      '--fs-header-height-physical': `${(headerScale * HEADER_DESIGN_HEIGHT).toFixed(3)}px`,
+      '--fs-header-height-physical': `${(headerScale * HEADER_DESIGN_HEIGHT * viewportScale).toFixed(3)}px`,
       '--fs-scale-width': viewportScaleWidth.toFixed(5),
       '--fs-scale-height': heightScaleSafe.toFixed(5),
       '--fs-scale-height-content': heightScaleContent.toFixed(5),

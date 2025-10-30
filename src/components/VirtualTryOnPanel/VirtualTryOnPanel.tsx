@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom'
 import Header from '../Header/Header'
 import { usePixelStreaming } from '../../context/PixelStreamingContext'
 import { useAvatarConfiguration } from '../../context/AvatarConfigurationContext'
+import type { AvatarClothingSelection } from '../../context/AvatarConfigurationContext'
 import { PixelStreamingView } from '../PixelStreamingView/PixelStreamingView'
 // Using ?react variants for unified styling
 import avatarBg from '../../assets/male-avatar.png'
@@ -18,7 +19,6 @@ import avatarsButton from '../../assets/avatar-button.svg'
 import ArrowLeft from '../../assets/arrow-left.svg'
 import ArrowRight from '../../assets/arrow-right.svg'
 import styles from './VirtualTryOnPanel.module.scss'
-import { lightenHex, darkenHex } from '../../utils/color'
 import ColorBtn from '../ColorBtn/ColorBtn'
 import RLeft from '../../assets/r-left.svg?react'
 import RRight from '../../assets/r-right.svg?react'
@@ -48,6 +48,12 @@ import ArrowUp from '../../assets/arrow-up.svg'
 import ArrowDown from '../../assets/arrow-down.svg'
 import { useQueuedUnreal } from '../../services/queuedUnreal'
 import { useAuthData } from '../../hooks/useAuthData'
+import {
+  getAvatarColorShades,
+  matchAvatarColorShade,
+  resolveAvatarColorById,
+  resolveAvatarColorShade,
+} from '../../constants/avatarColors'
 
 // View state structure
 interface ViewState {
@@ -68,6 +74,41 @@ const lowerCategories = getClothingSubCategoryList('bottom')
 
 const DESIGN_WIDTH = 430
 const toCqw = (px: number) => (px === 0 ? '0' : `calc(${px} / ${DESIGN_WIDTH} * 100cqw)`)
+
+const DEFAULT_COLOR_STATE = { paletteIndex: 2, shadeIndex: 1 } as const
+
+const resolveInitialColorState = (
+  selection: AvatarClothingSelection | null | undefined,
+): { paletteIndex: number; shadeIndex: number } => {
+  if (!selection) {
+    return { ...DEFAULT_COLOR_STATE }
+  }
+
+  if (
+    selection.colorPaletteIndex != null &&
+    selection.colorShadeIndex != null
+  ) {
+    const resolved = resolveAvatarColorShade(
+      selection.colorPaletteIndex,
+      selection.colorShadeIndex,
+    )
+    return { paletteIndex: resolved.paletteIndex, shadeIndex: resolved.shadeIndex }
+  }
+
+  if (selection.colorId != null) {
+    const resolvedById = resolveAvatarColorById(selection.colorId)
+    if (resolvedById) {
+      return { paletteIndex: resolvedById.paletteIndex, shadeIndex: resolvedById.shadeIndex }
+    }
+  }
+
+  const matched = matchAvatarColorShade(selection.colorHex ?? null)
+  if (matched) {
+    return { paletteIndex: matched.paletteIndex, shadeIndex: matched.shadeIndex }
+  }
+
+  return { ...DEFAULT_COLOR_STATE }
+}
 
 export interface VirtualTryOnHeaderState {
   title: string
@@ -90,6 +131,7 @@ function VirtualTryOnPanel({
   const navigate = useNavigate()
   const { isAuthenticated } = useAuthData()
   const { updateClothingSelection, currentAvatar } = useAvatarConfiguration()
+  const clothingSelections = currentAvatar?.clothingSelections ?? null
 
   const handleExit = useCallback(() => {
     if (embedded) {
@@ -233,6 +275,17 @@ function VirtualTryOnPanel({
       }
     }
   }, [topClothingSelection, bottomClothingSelection, findClothingIndex])
+
+  useEffect(() => {
+    const state = resolveInitialColorState(topClothingSelection)
+    setBaseColorIndex((prev) => (prev === state.paletteIndex ? prev : state.paletteIndex))
+    setActiveShadeIndex((prev) => (prev === state.shadeIndex ? prev : state.shadeIndex))
+  }, [
+    topClothingSelection?.colorHex,
+    topClothingSelection?.colorPaletteIndex,
+    topClothingSelection?.colorShadeIndex,
+    topClothingSelection?.colorId,
+  ])
   const shouldShrinkCategoryText = (text: string) => text.trim().length >= 10
   const sendClothingSelection = useCallback(
     (category: ClothingCategory, itemIndex: number, overrideSubCategory?: string) => {
@@ -259,6 +312,84 @@ function VirtualTryOnPanel({
     },
     [sendQueued, updateClothingSelection],
   )
+
+  const getSelectionIdentifier = useCallback(
+    (category: ClothingCategory) => {
+      const existingSelection = clothingSelections?.[category] ?? null
+      const selectionIndex = findClothingIndex(category, existingSelection)
+      const fallbackIndex =
+        selectionIndex != null
+          ? selectionIndex
+          : category === 'top'
+            ? topOptionIndex
+            : bottomOptionIndex
+
+      return getClothingIdentifierForIndex(category, fallbackIndex)
+    },
+    [bottomOptionIndex, clothingSelections, findClothingIndex, topOptionIndex],
+  )
+
+  const applyClothingColor = useCallback(
+    (category: ClothingCategory, paletteIndex: number, shadeIndex: number) => {
+      const resolved = resolveAvatarColorShade(paletteIndex, shadeIndex)
+      const { itemId, subCategory } = getSelectionIdentifier(category)
+
+      sendQueued(
+        'selectClothing',
+        {
+          category,
+          subCategory,
+          itemId,
+          colorHex: resolved.colorHex,
+        },
+        `selectClothing/${category}/${subCategory ?? itemId}/color`,
+      )
+
+      updateClothingSelection(category, {
+        itemId,
+        subCategory,
+        colorHex: resolved.colorHex,
+        colorPaletteIndex: resolved.paletteIndex,
+        colorShadeIndex: resolved.shadeIndex,
+        colorId: resolved.colorId,
+      })
+
+      console.log(
+        `Queued selectClothing color: itemId=${itemId}, category=${category}, palette=${resolved.paletteIndex}, shade=${resolved.shadeIndex}, color=${resolved.colorHex}`,
+      )
+
+      return resolved
+    },
+    [getSelectionIdentifier, sendQueued, updateClothingSelection],
+  )
+
+  const handlePaletteShift = useCallback(
+    (category: ClothingCategory, direction: 1 | -1) => {
+      const resolved = applyClothingColor(category, baseColorIndex + direction, activeShadeIndex)
+      setBaseColorIndex(resolved.paletteIndex)
+      setActiveShadeIndex(resolved.shadeIndex)
+    },
+    [activeShadeIndex, applyClothingColor, baseColorIndex],
+  )
+
+  const handleShadeSelect = useCallback(
+    (category: ClothingCategory, shadeIdx: number) => {
+      const resolved = applyClothingColor(category, baseColorIndex, shadeIdx)
+      setBaseColorIndex(resolved.paletteIndex)
+      setActiveShadeIndex(resolved.shadeIndex)
+    },
+    [applyClothingColor, baseColorIndex],
+  )
+
+  const cycleShade = useCallback(
+    (category: ClothingCategory) => {
+      const resolved = applyClothingColor(category, baseColorIndex, activeShadeIndex + 1)
+      setBaseColorIndex(resolved.paletteIndex)
+      setActiveShadeIndex(resolved.shadeIndex)
+    },
+    [activeShadeIndex, applyClothingColor, baseColorIndex],
+  )
+
   const cycleTopPrev = () => {
     setTopOptionIndex((i) => {
       const newIndex = (i + 5 - 1) % 5
@@ -288,13 +419,11 @@ function VirtualTryOnPanel({
     })
   }
   // Color group behaves like SkinAccordion iconsThree (light/base/dark) with center selectable enlargement
-  const basePalette = ['#f5e0d0', '#eac3a6', '#d7a381', '#b47b57', '#8a573b', '#5d3b2a']
-  const [baseColorIndex, setBaseColorIndex] = useState(2)
-  const baseColor = basePalette[baseColorIndex]
-  const lightShade = lightenHex(baseColor)
-  const darkShade = darkenHex(baseColor)
-  const shades = [lightShade, baseColor, darkShade]
-  const [activeShadeIndex, setActiveShadeIndex] = useState(1) // center default
+  const initialColorState = resolveInitialColorState(topClothingSelection)
+  const [baseColorIndex, setBaseColorIndex] = useState(initialColorState.paletteIndex)
+  const [activeShadeIndex, setActiveShadeIndex] = useState(initialColorState.shadeIndex)
+  const shades = useMemo(() => getAvatarColorShades(baseColorIndex), [baseColorIndex])
+  const [lightShade, baseColor, darkShade] = shades
 
   // Category selector groups (upper & lower) with cyclic scrolling via arrows
   const [upperCenterIdx, setUpperCenterIdx] = useState(1) // 'Jackets'
@@ -364,7 +493,6 @@ function VirtualTryOnPanel({
       pantsImages: bottomAssets.length > 0 ? bottomAssets : [''],
     }
   }, [])
-
   const [jacketIndex, setJacketIndex] = useState(() => {
     const selection = currentAvatar?.clothingSelections?.top ?? null
     const index = findClothingIndex('top', selection)
@@ -812,30 +940,26 @@ function VirtualTryOnPanel({
     )
   }
 
-  const renderDesktopColorSelector = () => (
+  const renderDesktopColorSelector = (focus: 'top' | 'bottom') => (
     <div className={styles.desktopColorSelector}>
       <button
         type="button"
         className={styles.desktopVerticalArrow}
-        onClick={() =>
-          setBaseColorIndex((i) => (i + basePalette.length - 1) % basePalette.length)
-        }
+        onClick={() => handlePaletteShift(focus, -1)}
       >
         <img src={ArrowUp} alt="Previous palette" />
       </button>
       <button
         type="button"
         className={styles.desktopColorButton}
-        onClick={() =>
-          setActiveShadeIndex((idx) => (idx + 1) % shades.length)
-        }
+        onClick={() => cycleShade(focus)}
       >
         <ColorBtn size={45} color={shades[activeShadeIndex]} active />
       </button>
       <button
         type="button"
         className={styles.desktopVerticalArrow}
-        onClick={() => setBaseColorIndex((i) => (i + 1) % basePalette.length)}
+        onClick={() => handlePaletteShift(focus, 1)}
       >
         <img src={ArrowDown} alt="Next palette" />
       </button>
@@ -911,7 +1035,7 @@ function VirtualTryOnPanel({
             </div>
           </div>
           <div className={styles.desktopFooterRightBottom}>
-            <div className={styles.desktopFooterRightCol}>{renderDesktopColorSelector()}</div>
+            <div className={styles.desktopFooterRightCol}>{renderDesktopColorSelector(focus)}</div>
             <div className={styles.desktopFooterRightCol}>
               {renderDesktopOptionSelector(focus)}
             </div>
@@ -969,7 +1093,7 @@ function VirtualTryOnPanel({
       <div className={styles.desktopFullBodyRowBottom}>
         <div className={`${styles.desktopFullBodyCol} ${styles.desktopFullBodyColorCol}`}>
           <div className={styles.desktopFullBodyColorSelector}>
-            {renderDesktopColorSelector()}
+            {renderDesktopColorSelector('top')}
           </div>
         </div>
         <div className={`${styles.desktopFullBodyCol} ${styles.desktopFullBodyOptionCol}`}>
@@ -1522,11 +1646,7 @@ function VirtualTryOnPanel({
                         <button
                           type="button"
                           className={styles.colorArrowBtn}
-                          onClick={() =>
-                            setBaseColorIndex(
-                              (i) => (i + basePalette.length - 1) % basePalette.length,
-                            )
-                          }
+                          onClick={() => handlePaletteShift('top', -1)}
                         >
                           <img src={ArrowLeft} alt="Prev Palette" width={22} height={30} />
                         </button>
@@ -1536,7 +1656,7 @@ function VirtualTryOnPanel({
                               key={shade + idx}
                               type="button"
                               className={styles.colorCircleBtnWrapper}
-                              onClick={() => setActiveShadeIndex(idx)}
+                              onClick={() => handleShadeSelect('top', idx)}
                             >
                               <ColorBtn
                                 size={idx === activeShadeIndex ? 45 : 32}
@@ -1549,7 +1669,7 @@ function VirtualTryOnPanel({
                         <button
                           type="button"
                           className={styles.colorArrowBtn}
-                          onClick={() => setBaseColorIndex((i) => (i + 1) % basePalette.length)}
+                          onClick={() => handlePaletteShift('top', 1)}
                         >
                           <img src={ArrowRight} alt="Next Palette" width={22} height={30} />
                         </button>
@@ -1588,11 +1708,7 @@ function VirtualTryOnPanel({
                         <button
                           type="button"
                           className={styles.colorArrowBtn}
-                          onClick={() =>
-                            setBaseColorIndex(
-                              (i) => (i + basePalette.length - 1) % basePalette.length,
-                            )
-                          }
+                          onClick={() => handlePaletteShift('bottom', -1)}
                         >
                           <img src={ArrowLeft} alt="Prev Palette" width={22} height={30} />
                         </button>
@@ -1602,7 +1718,7 @@ function VirtualTryOnPanel({
                               key={shade + idx}
                               type="button"
                               className={styles.colorCircleBtnWrapper}
-                              onClick={() => setActiveShadeIndex(idx)}
+                              onClick={() => handleShadeSelect('bottom', idx)}
                             >
                               <ColorBtn
                                 size={idx === activeShadeIndex ? 45 : 32}
@@ -1615,7 +1731,7 @@ function VirtualTryOnPanel({
                         <button
                           type="button"
                           className={styles.colorArrowBtn}
-                          onClick={() => setBaseColorIndex((i) => (i + 1) % basePalette.length)}
+                          onClick={() => handlePaletteShift('bottom', 1)}
                         >
                           <img src={ArrowRight} alt="Next Palette" width={22} height={30} />
                         </button>

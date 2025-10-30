@@ -10,6 +10,7 @@ import {
   type BodyMeasurements,
   type BackendAvatarMorphTarget,
   type QuickModeSettings,
+  type AvatarClothingSelection,
   type AvatarClothingState,
 } from '../context/AvatarConfigurationContext'
 import { convertSliderValueToUnrealValue } from '../services/avatarCommandService'
@@ -26,6 +27,12 @@ import {
 } from '../services/avatarApi'
 import { useAuthData } from '../hooks/useAuthData'
 import type { CreateAvatarCommand } from '../types/provisioning'
+import {
+  matchAvatarColorShade,
+  normalizeAvatarColorHex,
+  resolveAvatarColorById,
+  resolveAvatarColorShade,
+} from '../constants/avatarColors'
 
 import avatarsButton from '../assets/avatars-button.png'
 import RLeft from '../assets/r-left.svg?react'
@@ -634,21 +641,75 @@ export default function UnrealMeasurements() {
       return Object.keys(normalized).length ? normalized : undefined
     }
 
+    const toFiniteNumber = (value: unknown): number | null => {
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        return Math.trunc(value)
+      }
+
+      if (typeof value === 'string') {
+        const parsed = Number(value)
+        if (Number.isFinite(parsed)) {
+          return Math.trunc(parsed)
+        }
+      }
+
+      return null
+    }
+
     const normalizeClothingSelection = (
       source: unknown,
-    ): { itemId: number; subCategory?: string | null } | null => {
+    ): AvatarClothingSelection | null => {
       if (!source || typeof source !== 'object') return null
       const record = source as Record<string, unknown>
       const itemId = Number(record.itemId)
       if (!Number.isFinite(itemId)) return null
+
       const rawSubCategory = record.subCategory
       const subCategory =
         typeof rawSubCategory === 'string' && rawSubCategory.trim().length
           ? rawSubCategory.trim()
           : null
+
+      let paletteIndex = toFiniteNumber(record.colorPaletteIndex)
+      let shadeIndex = toFiniteNumber(record.colorShadeIndex)
+      let colorId = toFiniteNumber(record.colorId)
+      let colorHex = normalizeAvatarColorHex(record.colorHex)
+
+      if (!colorHex && paletteIndex != null && shadeIndex != null) {
+        const resolved = resolveAvatarColorShade(paletteIndex, shadeIndex)
+        colorHex = resolved.colorHex
+        paletteIndex = resolved.paletteIndex
+        shadeIndex = resolved.shadeIndex
+        colorId = colorId ?? resolved.colorId
+      }
+
+      if (!colorHex && colorId != null) {
+        const resolved = resolveAvatarColorById(colorId)
+        if (resolved) {
+          colorHex = resolved.colorHex
+          paletteIndex = resolved.paletteIndex
+          shadeIndex = resolved.shadeIndex
+          colorId = resolved.colorId
+        }
+      }
+
+      if (colorHex) {
+        const matched = matchAvatarColorShade(colorHex)
+        if (matched) {
+          if (paletteIndex == null) paletteIndex = matched.paletteIndex
+          if (shadeIndex == null) shadeIndex = matched.shadeIndex
+          if (colorId == null) colorId = matched.colorId
+          colorHex = matched.colorHex
+        }
+      }
+
       return {
         itemId,
         ...(subCategory ? { subCategory } : {}),
+        ...(colorHex ? { colorHex } : {}),
+        ...(paletteIndex != null ? { colorPaletteIndex: paletteIndex } : {}),
+        ...(shadeIndex != null ? { colorShadeIndex: shadeIndex } : {}),
+        ...(colorId != null ? { colorId } : {}),
       }
     }
 

@@ -106,6 +106,8 @@ export interface FittingRoomCommandPayloads {
     subCategory: string;
     /** Identifikator artikla kao broj. */
     itemId: number;
+    /** Opcionalna hex boja ako se bira varijanta boje. */
+    colorHex?: string | null;
   };
   rotateCamera: {
     /** Smjer rotacije kamere. */
