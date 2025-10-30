@@ -10,6 +10,7 @@ import {
   type BodyMeasurements,
   type BackendAvatarMorphTarget,
   type QuickModeSettings,
+  type AvatarClothingState,
 } from '../context/AvatarConfigurationContext'
 import { convertSliderValueToUnrealValue } from '../services/avatarCommandService'
 import { applyMeasurementMorphOverrides } from '../services/morphEstimation'
@@ -291,6 +292,7 @@ export default function UnrealMeasurements() {
     savePendingChanges,
     isSavingPendingChanges,
     savePendingChangesError,
+    dirtySections,
   } = useAvatarConfiguration()
 
   const accordionAvatar = useMemo(() => {
@@ -427,7 +429,7 @@ export default function UnrealMeasurements() {
   }, [currentAvatar])
 
   const persistMorphTargets = useCallback(async (): Promise<boolean> => {
-    if (!hasDirtyMorphsRef.current) {
+    if (!hasDirtyMorphsRef.current && dirtySections.size === 0) {
       return true
     }
 
@@ -450,7 +452,7 @@ export default function UnrealMeasurements() {
     }
 
     return false
-  }, [computedFallbacks, getActiveAvatarId, savePendingChanges])
+  }, [computedFallbacks, dirtySections, getActiveAvatarId, savePendingChanges])
 
   // Auto-load avatar if none loaded
   const { isLoading: isAvatarLoading } = loaderState
@@ -489,6 +491,14 @@ export default function UnrealMeasurements() {
     void load()
     return () => { cancelled = true }
   }, [avatarIdFromState, currentAvatar, fetchAvatarById, loadAvatar, isAvatarLoading])
+
+  useEffect(() => {
+    const hasDirtySections = dirtySections.size > 0
+    if (hasDirtyMorphsRef.current !== hasDirtySections) {
+      hasDirtyMorphsRef.current = hasDirtySections
+    }
+    setHasDirtyMorphs(hasDirtySections)
+  }, [dirtySections])
 
   useEffect(() => {
     if (isAuthenticated) return
@@ -624,6 +634,43 @@ export default function UnrealMeasurements() {
       return Object.keys(normalized).length ? normalized : undefined
     }
 
+    const normalizeClothingSelection = (
+      source: unknown,
+    ): { itemId: number; subCategory?: string | null } | null => {
+      if (!source || typeof source !== 'object') return null
+      const record = source as Record<string, unknown>
+      const itemId = Number(record.itemId)
+      if (!Number.isFinite(itemId)) return null
+      const rawSubCategory = record.subCategory
+      const subCategory =
+        typeof rawSubCategory === 'string' && rawSubCategory.trim().length
+          ? rawSubCategory.trim()
+          : null
+      return {
+        itemId,
+        ...(subCategory ? { subCategory } : {}),
+      }
+    }
+
+    const normalizeClothingSelections = (
+      source: unknown,
+    ): AvatarClothingState | undefined => {
+      if (!source || typeof source !== 'object') return undefined
+      const record = source as Record<string, unknown>
+      let hasSelection = false
+      const normalized: AvatarClothingState = {}
+
+      ;(['top', 'bottom'] as const).forEach(category => {
+        const selection = normalizeClothingSelection(record[category])
+        if (selection) {
+          normalized[category] = selection
+          hasSelection = true
+        }
+      })
+
+      return hasSelection ? normalized : undefined
+    }
+
     const loadGuestAvatar = async () => {
       const metadata = readStoredMetadata()
       const command = readPendingCommand()
@@ -687,6 +734,10 @@ export default function UnrealMeasurements() {
           | QuickModeSettings
           | null
 
+      const clothingSelections =
+        normalizeClothingSelections(command?.data.clothingSelections) ??
+        normalizeClothingSelections(metadata?.clothingSelections)
+
       const guestAvatar = {
         type: 'createAvatar' as const,
         id: (metadata?.avatarId as string | null | undefined) ?? 'guest',
@@ -704,6 +755,7 @@ export default function UnrealMeasurements() {
         bodyMeasurements: bodyMeasurements as BodyMeasurements | undefined,
         morphTargets,
         quickModeSettings,
+        clothingSelections: clothingSelections ?? null,
       }
 
       try {

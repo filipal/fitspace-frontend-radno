@@ -1,14 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
+
+type SourceHint = {
+  summary: string
+  location: string
+}
 
 type Metric = {
   label: string
   value: string
   warn?: boolean
+  sources?: SourceHint[]
 }
 
 const STORAGE_KEY = 'fsViewportOverlayEnabled'
 
-const overlayBaseStyle: React.CSSProperties = {
+const overlayBaseStyle: CSSProperties = {
   position: 'fixed',
   left: 0,
   top: 0,
@@ -28,12 +34,12 @@ const overlayBaseStyle: React.CSSProperties = {
   padding: '4px',
 }
 
-const panelStyle: React.CSSProperties = {
+const panelStyle: CSSProperties = {
   position: 'fixed',
   bottom: '12px',
   left: '12px',
   zIndex: 1000000,
-  pointerEvents: 'none',
+  pointerEvents: 'auto',
   fontFamily: 'monospace',
   fontSize: '11px',
   lineHeight: 1.4,
@@ -42,12 +48,14 @@ const panelStyle: React.CSSProperties = {
   padding: '10px',
   borderRadius: '6px',
   maxWidth: 'min(90vw, 420px)',
+  maxHeight: 'min(70vh, 480px)',
+  overflowY: 'auto',
   boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
   display: 'grid',
   gap: '6px',
 }
 
-const toggleButtonStyle: React.CSSProperties = {
+const toggleButtonStyle: CSSProperties = {
   position: 'fixed',
   bottom: '12px',
   left: '12px',
@@ -63,7 +71,7 @@ const toggleButtonStyle: React.CSSProperties = {
   cursor: 'pointer',
 }
 
-const hideButtonStyle: React.CSSProperties = {
+const hideButtonStyle: CSSProperties = {
   position: 'fixed',
   top: '12px',
   right: '12px',
@@ -142,16 +150,211 @@ export function ViewportOverlay() {
       return
     }
 
-    const formatPx = (value: number | null | undefined) =>
-      value == null ? '—' : `${Math.round(value)}px`
+    const formatPx = (value: number | null | undefined) => {
+      if (value == null || Number.isNaN(value)) {
+        return '—'
+      }
+
+      const rounded = Math.round(value * 10) / 10
+      const display = Number.isInteger(rounded)
+        ? rounded.toFixed(0)
+        : rounded.toFixed(1)
+      return `${display}px`
+    }
 
     const formatDelta = (value: number | null | undefined) => {
       if (value == null || Number.isNaN(value)) {
         return '—'
       }
-      const rounded = Math.round(value)
+      const rounded = Math.round(value * 10) / 10
       const sign = rounded > 0 ? '+' : ''
-      return `${sign}${rounded} px`
+      const display = Number.isInteger(rounded)
+        ? rounded.toFixed(0)
+        : rounded.toFixed(1)
+      return `${sign}${display} px`
+    }
+
+    const metricSourceHints: Record<string, SourceHint[]> = {
+      'Δ page ↔︎ visible': [
+        {
+          summary: 'Layout wrapper (`.page`) dobiva visinu iz CSS varijable',
+          location: 'src/components/ResponsivePage/ResponsivePage.module.scss:8-37',
+        },
+        {
+          summary: 'Wrapper se montira u React komponenti',
+          location: 'src/components/ResponsivePage/ResponsivePage.tsx:22-35',
+        },
+      ],
+      'Δ var ↔︎ visible': [
+        {
+          summary: 'Početna vrijednost varijable definirana je globalno',
+          location: 'src/index.css:55-97',
+        },
+        {
+          summary: 'ResponsivePage dodatno prilagođava varijablu',
+          location: 'src/components/ResponsivePage/ResponsivePage.module.scss:8-37',
+        },
+        {
+          summary: 'Pojedine stranice (npr. AvatarInfo) mogu je pregaziti',
+          location: 'src/pages/AvatarInfoPage.tsx:147-160',
+        },
+      ],
+      'Δ app ↔︎ visible': [
+        {
+          summary: 'JavaScript overlay izračunava `--app-visible-height`',
+          location: 'src/components/ViewportOverlay/ViewportOverlay.tsx:252-274',
+        },
+        {
+          summary: 'Stranica koristi vrijednost kroz `.page` stil',
+          location: 'src/pages/AvatarInfoPage.module.scss:4-20',
+        },
+      ],
+      '--fs-viewport-height': [
+        {
+          summary: 'Root fallback na `100svh/100dvh`',
+          location: 'src/index.css:55-97',
+        },
+        {
+          summary: 'ResponsivePage kombinira vrijednost sa safe-area umetkom',
+          location: 'src/components/ResponsivePage/ResponsivePage.module.scss:8-37',
+        },
+        {
+          summary: 'AvatarInfoPage u `useMemo` postavlja vlastiti izračun',
+          location: 'src/pages/AvatarInfoPage.tsx:147-160, 266-288',
+        },
+      ],
+      '--app-visible-height': [
+        {
+          summary: 'Overlay zapisuje trenutačnu visinu visualViewporta',
+          location: 'src/components/ViewportOverlay/ViewportOverlay.tsx:252-274',
+        },
+        {
+          summary: 'Stranica koristi fallback u SCSS-u ako varijabla nedostaje',
+          location: 'src/pages/AvatarInfoPage.module.scss:4-20',
+        },
+      ],
+      '--fs-page-max-height': [
+        {
+          summary: 'Globalni `index.css` definira maksimalnu vrijednost',
+          location: 'src/index.css:69-77',
+        },
+        {
+          summary: 'ResponsivePage `.canvas` osigurava da layout prati taj maksimum',
+          location: 'src/components/ResponsivePage/ResponsivePage.module.scss:60-80',
+        },
+        {
+          summary: 'AvatarInfoPage računa vlastiti `--fs-page-max-height`',
+          location: 'src/pages/AvatarInfoPage.tsx:153-158, 273-287',
+        },
+      ],
+      '--fs-scale': [
+        {
+          summary: 'Osnovna vrijednost postavljena je u globalnom CSS-u',
+          location: 'src/index.css:58-67',
+        },
+        {
+          summary: 'AvatarInfoPage računa specifičan scale za mobilni layout',
+          location: 'src/pages/AvatarInfoPage.tsx:230-286',
+        },
+      ],
+      '--fs-scale-height': [
+        {
+          summary: 'Globalni odnos visine i dizajna',
+          location: 'src/index.css:62-66',
+        },
+        {
+          summary: 'AvatarInfoPage računa `heightScaleSafe` za sadržaj',
+          location: 'src/pages/AvatarInfoPage.tsx:230-286',
+        },
+      ],
+      '--fs-scale-height-content': [
+        {
+          summary: 'Specifični scale za sadržaj koji postavlja AvatarInfoPage',
+          location: 'src/pages/AvatarInfoPage.tsx:257-286',
+        },
+      ],
+      '--fs-header-scale': [
+        {
+          summary: 'Mobilni algoritam određuje koliko se zaglavlje može smanjiti',
+          location: 'src/pages/AvatarInfoPage.tsx:230-286',
+        },
+        {
+          summary: 'Header primjenjuje scale kroz clamp()',
+          location: 'src/components/Header/Header.module.scss:1-40',
+        },
+      ],
+      '--fs-header-height': [
+        {
+          summary: 'Osnovna visina zaglavlja u mobilnom dizajnu',
+          location: 'src/pages/AvatarInfoPage.tsx:230-286',
+        },
+        {
+          summary: 'Clamp visina zaglavlja definirana u SCSS-u',
+          location: 'src/components/Header/Header.module.scss:18-45',
+        },
+      ],
+      '--fs-header-height-physical': [
+        {
+          summary: 'AvatarInfoPage izvozí procijenjenu fizičku visinu zaglavlja',
+          location: 'src/pages/AvatarInfoPage.tsx:230-286',
+        },
+      ],
+      'header rect': [
+        {
+          summary: 'Header komponenta pruža `data-fs-header` za mjerenje',
+          location: 'src/components/Header/Header.tsx:17-40',
+        },
+        {
+          summary: 'Stil zaglavlja definiran je ovdje',
+          location: 'src/components/Header/Header.module.scss:1-120',
+        },
+      ],
+      'Δ header ↔︎ design': [
+        {
+          summary: 'Razlika između izračunate i renderirane visine zaglavlja',
+          location: 'src/pages/AvatarInfoPage.tsx:230-286',
+        },
+        {
+          summary: 'Provjeri clamp logiku u SCSS-u',
+          location: 'src/components/Header/Header.module.scss:18-45',
+        },
+      ],
+      'Δ header ↔︎ physical': [
+        {
+          summary: 'Procjena fizičke visine dolazi iz React izračuna',
+          location: 'src/pages/AvatarInfoPage.tsx:230-286',
+        },
+      ],
+      '--fs-canvas-height': [
+        {
+          summary: 'Globalni canvas u `index.css` ovisi o `--fs-scale`',
+          location: 'src/index.css:69-72',
+        },
+        {
+          summary: 'AvatarInfoPage računa visinu platna prema sadržaju',
+          location: 'src/pages/AvatarInfoPage.tsx:267-286',
+        },
+      ],
+      '--fs-design-height': [
+        {
+          summary: 'Default mobile design visina',
+          location: 'src/index.css:44-53',
+        },
+        {
+          summary: 'AvatarInfoPage po potrebi postavlja novu vrijednost',
+          location: 'src/pages/AvatarInfoPage.tsx:147-159, 230-286',
+        },
+      ],
+      '--fs-design-safe-height': [
+        {
+          summary: 'Sigurna visina u globalnom CSS-u',
+          location: 'src/index.css:44-53',
+        },
+        {
+          summary: 'AvatarInfoPage koristi vrijednost za segmentirano skaliranje',
+          location: 'src/pages/AvatarInfoPage.tsx:147-159, 230-286',
+        },
+      ],
     }
 
     let measurementProbe: HTMLDivElement | null = null
@@ -245,7 +448,10 @@ export function ViewportOverlay() {
         return trimmed
       }
 
-      const approx = `${Math.round(resolved)} px`
+      const approxValue = Math.round(resolved * 10) / 10
+      const approx = Number.isInteger(approxValue)
+        ? `${approxValue.toFixed(0)} px`
+        : `${approxValue.toFixed(1)} px`
       if (/^-?\d+(?:\.\d+)?px$/.test(trimmed)) {
         return approx
       }
@@ -293,13 +499,35 @@ export function ViewportOverlay() {
 
       const appVisibleHeightRaw = computedRoot.getPropertyValue('--app-visible-height')
       const fsViewportHeightRaw = computedPage.getPropertyValue('--fs-viewport-height')
-      const fsPageMaxHeight = computedPage.getPropertyValue('--fs-page-max-height').trim()
-      const fsScale = computedPage.getPropertyValue('--fs-scale').trim()
-      const fsCanvasHeight = computedPage.getPropertyValue('--fs-canvas-height').trim()
-      const fsDesignHeight = computedPage.getPropertyValue('--fs-design-height').trim()
+      const fsPageMaxHeightRaw = computedPage.getPropertyValue('--fs-page-max-height')
+      const fsScaleRaw = computedPage.getPropertyValue('--fs-scale')
+      const fsScaleWidthRaw = computedPage.getPropertyValue('--fs-scale-width')
+      const fsScaleHeightRaw = computedPage.getPropertyValue('--fs-scale-height')
+      const fsScaleHeightContentRaw = computedPage.getPropertyValue('--fs-scale-height-content')
+      const fsCanvasHeightRaw = computedPage.getPropertyValue('--fs-canvas-height')
+      const fsDesignHeightRaw = computedPage.getPropertyValue('--fs-design-height')
+      const fsDesignSafeHeightRaw = computedPage.getPropertyValue('--fs-design-safe-height')
+      const fsHeaderScaleRaw = computedPage.getPropertyValue('--fs-header-scale')
+      const fsHeaderHeightRaw = computedPage.getPropertyValue('--fs-header-height')
+      const fsHeaderHeightPhysicalRaw = computedPage.getPropertyValue('--fs-header-height-physical')
+
+      const headerElement =
+        pageElement?.querySelector<HTMLElement>('[data-fs-header]') ??
+        document.querySelector<HTMLElement>('[data-fs-header]') ??
+        null
+      const headerRect = headerElement?.getBoundingClientRect() ?? null
 
       const appVisibleHeightPx = resolveCssLength(appVisibleHeightRaw, root)
       const fsViewportHeightPx = resolveCssLength(fsViewportHeightRaw, pageElement ?? root)
+      const fsPageMaxHeightPx = resolveCssLength(fsPageMaxHeightRaw, pageElement ?? root)
+      const fsCanvasHeightPx = resolveCssLength(fsCanvasHeightRaw, pageElement ?? root)
+      const fsDesignHeightPx = resolveCssLength(fsDesignHeightRaw, pageElement ?? root)
+      const fsDesignSafeHeightPx = resolveCssLength(fsDesignSafeHeightRaw, pageElement ?? root)
+      const fsHeaderHeightPx = resolveCssLength(fsHeaderHeightRaw, pageElement ?? root)
+      const fsHeaderHeightPhysicalPx = resolveCssLength(
+        fsHeaderHeightPhysicalRaw,
+        pageElement ?? root,
+      )
       const pageRect = pageElement?.getBoundingClientRect() ?? null
 
       const pageScrollHeight = pageElement?.scrollHeight ?? null
@@ -314,6 +542,22 @@ export function ViewportOverlay() {
           : null
       const deltaVisibleVsApp =
         appVisibleHeightPx != null ? appVisibleHeightPx - visibleHeight : null
+      const deltaVisibleVsDesign =
+        fsDesignHeightPx != null ? fsDesignHeightPx - visibleHeight : null
+      const deltaPageVsDesign =
+        pageRect && fsDesignHeightPx != null
+          ? pageRect.height - fsDesignHeightPx
+          : null
+      const deltaHeaderVsDesign =
+        headerRect && fsHeaderHeightPx != null
+          ? headerRect.height - fsHeaderHeightPx
+          : null
+      const deltaHeaderVsPhysical =
+        headerRect && fsHeaderHeightPhysicalPx != null
+          ? headerRect.height - fsHeaderHeightPhysicalPx
+          : null
+
+      const screen = window.screen
 
       setMetrics([
         {
@@ -328,6 +572,13 @@ export function ViewportOverlay() {
         {
           label: 'window.inner',
           value: `${Math.round(window.innerWidth)} × ${Math.round(window.innerHeight)} px`,
+        },
+        {
+          label: 'screen (avail)',
+          value:
+            screen
+              ? `${screen.availWidth ?? screen.width} × ${screen.availHeight ?? screen.height} px`
+              : '∅',
         },
         {
           label: 'window.scrollY',
@@ -362,19 +613,47 @@ export function ViewportOverlay() {
         },
         {
           label: '--fs-page-max-height',
-          value: fsPageMaxHeight || '—',
+          value: formatCssVarValue(fsPageMaxHeightRaw, fsPageMaxHeightPx),
         },
         {
           label: '--fs-scale',
-          value: fsScale || '—',
+          value: fsScaleRaw.trim() || '—',
+        },
+        {
+          label: '--fs-scale-width',
+          value: fsScaleWidthRaw.trim() || '—',
+        },
+        {
+          label: '--fs-scale-height',
+          value: fsScaleHeightRaw.trim() || '—',
+        },
+        {
+          label: '--fs-scale-height-content',
+          value: fsScaleHeightContentRaw.trim() || '—',
+        },
+        {
+          label: '--fs-header-scale',
+          value: fsHeaderScaleRaw.trim() || '—',
+        },
+        {
+          label: '--fs-header-height',
+          value: formatCssVarValue(fsHeaderHeightRaw, fsHeaderHeightPx),
+        },
+        {
+          label: '--fs-header-height-physical',
+          value: formatCssVarValue(fsHeaderHeightPhysicalRaw, fsHeaderHeightPhysicalPx),
         },
         {
           label: '--fs-canvas-height',
-          value: fsCanvasHeight || '—',
+          value: formatCssVarValue(fsCanvasHeightRaw, fsCanvasHeightPx),
         },
         {
           label: '--fs-design-height',
-          value: fsDesignHeight || '—',
+          value: formatCssVarValue(fsDesignHeightRaw, fsDesignHeightPx),
+        },
+        {
+          label: '--fs-design-safe-height',
+          value: formatCssVarValue(fsDesignSafeHeightRaw, fsDesignSafeHeightPx),
         },
         {
           label: 'page rect',
@@ -409,7 +688,41 @@ export function ViewportOverlay() {
           warn:
             deltaVisibleVsApp != null && Math.abs(deltaVisibleVsApp) > 2,
         },
-      ])
+        {
+          label: 'Δ design ↔︎ visible',
+          value: formatDelta(deltaVisibleVsDesign),
+          warn:
+            deltaVisibleVsDesign != null && Math.abs(deltaVisibleVsDesign) > 2,
+        },
+        {
+          label: 'Δ page ↔︎ design',
+          value: formatDelta(deltaPageVsDesign),
+          warn:
+            deltaPageVsDesign != null && Math.abs(deltaPageVsDesign) > 2,
+        },
+        {
+          label: 'header rect',
+          value: headerRect
+            ? `${Math.round(headerRect.width)} × ${Math.round(headerRect.height)} px`
+            : '∅',
+          warn: headerRect == null,
+        },
+        {
+          label: 'Δ header ↔︎ design',
+          value: formatDelta(deltaHeaderVsDesign),
+          warn:
+            deltaHeaderVsDesign != null && Math.abs(deltaHeaderVsDesign) > 2,
+        },
+        {
+          label: 'Δ header ↔︎ physical',
+          value: formatDelta(deltaHeaderVsPhysical),
+          warn:
+            deltaHeaderVsPhysical != null && Math.abs(deltaHeaderVsPhysical) > 2,
+        },
+      ].map(metric => ({
+        ...metric,
+        sources: metricSourceHints[metric.label],
+      })))
     }
 
     const scheduleUpdate = () => {
@@ -505,25 +818,65 @@ export function ViewportOverlay() {
             margin: 0,
             display: 'grid',
             gap: '3px',
-            pointerEvents: 'none',
+            pointerEvents: 'auto',
           }}
         >
           {metrics.map(metric => (
             <li
               key={metric.label}
               style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                gap: '16px',
+                display: 'grid',
+                gridTemplateColumns: 'max-content minmax(0, 1fr)',
+                alignItems: 'start',
+                gap: '8px',
                 color: metric.warn ? '#ffb74d' : undefined,
-                whiteSpace: 'nowrap',
-                pointerEvents: 'none',
+                whiteSpace: 'normal',
+                wordBreak: 'break-word',
+                pointerEvents: 'auto',
               }}
             >
               <span style={{ opacity: 0.75 }}>{metric.label}</span>
-              <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+              <span
+                style={{
+                  fontVariantNumeric: 'tabular-nums',
+                  textAlign: 'right',
+                  display: 'block',
+                }}
+              >
                 {metric.value}
               </span>
+              {metric.warn && metric.sources?.length ? (
+                <div
+                  style={{
+                    gridColumn: '1 / span 2',
+                    display: 'grid',
+                    gap: '4px',
+                    fontSize: '10px',
+                    color: '#f5f5f5',
+                    opacity: 0.9,
+                    paddingLeft: '6px',
+                    borderLeft: '1px solid rgba(255,255,255,0.2)',
+                  }}
+                >
+                  {metric.sources.map((source, index) => (
+                    <div key={`${metric.label}-source-${index}`} style={{ display: 'grid', gap: '2px' }}>
+                      <span style={{ fontWeight: 500 }}>{source.summary}</span>
+                      <code
+                        style={{
+                          fontSize: '10px',
+                          background: 'rgba(255,255,255,0.08)',
+                          padding: '2px 4px',
+                          borderRadius: '4px',
+                          display: 'inline-block',
+                          width: 'fit-content',
+                        }}
+                      >
+                        {source.location}
+                      </code>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>
@@ -538,4 +891,4 @@ export function ViewportOverlay() {
       </button>
     </>
   )
-}
+} 

@@ -23,6 +23,7 @@ export default function Header({
 }: HeaderProps) {
   return (
     <header
+      data-fs-header="true"
       className={cn(styles.appHeader, className, { [styles.light]: variant === 'light' })}
       {...props}
     >

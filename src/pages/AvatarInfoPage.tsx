@@ -46,6 +46,9 @@ type AvatarInfoPageCssVars = CSSProperties & {
   '--fs-design-height'?: string
   '--fs-design-safe-height'?: string
   '--fs-viewport-height'?: string
+  '--fs-header-scale'?: string
+  '--fs-header-height'?: string
+  '--fs-header-height-physical'?: string
   '--fs-scale-width'?: string
   '--fs-scale-height'?: string
   '--fs-scale-height-content'?: string
@@ -149,6 +152,9 @@ export default function AvatarInfoPage() {
         '--fs-design-height': `${designHeight}px`,
         '--fs-design-safe-height': `${designHeight}px`,
         '--fs-viewport-height': `${viewportHeight.toFixed(3)}px`,
+        '--fs-header-scale': '1',
+        '--fs-header-height': `${HEADER_DESIGN_HEIGHT.toFixed(3)}px`,
+        '--fs-header-height-physical': `${HEADER_DESIGN_HEIGHT.toFixed(3)}px`,
         '--fs-scale-width': scaleWidth.toFixed(5),
         '--fs-scale-height': scaleHeight.toFixed(5),
         '--fs-scale-height-content': scaleHeight.toFixed(5),
@@ -284,6 +290,9 @@ export default function AvatarInfoPage() {
       '--fs-design-height': `${MOBILE_DESIGN_HEIGHT.toFixed(3)}px`,
       '--fs-design-safe-height': `${MOBILE_SAFE_HEIGHT.toFixed(3)}px`,
       '--fs-viewport-height': `${viewportHeight.toFixed(3)}px`,
+      '--fs-header-scale': headerScale.toFixed(5),
+      '--fs-header-height': `${(headerScale * HEADER_DESIGN_HEIGHT).toFixed(3)}px`,
+      '--fs-header-height-physical': `${(headerScale * HEADER_DESIGN_HEIGHT).toFixed(3)}px`,
       '--fs-scale-width': viewportScaleWidth.toFixed(5),
       '--fs-scale-height': heightScaleSafe.toFixed(5),
       '--fs-scale-height-content': heightScaleContent.toFixed(5),
