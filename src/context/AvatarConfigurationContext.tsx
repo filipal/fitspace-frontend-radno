@@ -87,6 +87,9 @@ export interface AvatarClothingSelection {
   colorPaletteIndex?: number | null;
   colorShadeIndex?: number | null;
   colorId?: number | null;
+  sizeLabel?: string | null;
+  bottomWaist?: number | null;
+  bottomLength?: number | null;
 }
 
 export type AvatarClothingState = Partial<
@@ -256,6 +259,13 @@ const sanitizeClothingSelection = (
   let shadeIndex = toFiniteIndex((value as { colorShadeIndex?: unknown }).colorShadeIndex);
   let colorId = toFiniteIndex((value as { colorId?: unknown }).colorId);
   let colorHex = normalizeAvatarColorHex((value as { colorHex?: unknown }).colorHex);
+  const rawSizeLabel = (value as { sizeLabel?: unknown }).sizeLabel;
+  const sizeLabel =
+    typeof rawSizeLabel === 'string' && rawSizeLabel.trim().length
+      ? rawSizeLabel.trim()
+      : null;
+  const bottomWaist = toFiniteIndex((value as { bottomWaist?: unknown }).bottomWaist);
+  const bottomLength = toFiniteIndex((value as { bottomLength?: unknown }).bottomLength);
 
   if (!colorHex && paletteIndex != null && shadeIndex != null) {
     const resolved = resolveAvatarColorShade(paletteIndex, shadeIndex);
@@ -298,6 +308,9 @@ const sanitizeClothingSelection = (
     ...(paletteIndex != null ? { colorPaletteIndex: paletteIndex } : {}),
     ...(shadeIndex != null ? { colorShadeIndex: shadeIndex } : {}),
     ...(colorId != null ? { colorId } : {}),
+    ...(sizeLabel ? { sizeLabel } : {}),
+    ...(bottomWaist != null ? { bottomWaist } : {}),
+    ...(bottomLength != null ? { bottomLength } : {}),
   };
   return selection;
 };
@@ -868,7 +881,17 @@ export function AvatarConfigurationProvider({ children }: { children: React.Reac
             normalizedSelection.itemId === currentSelection.itemId &&
             (normalizedSelection.subCategory ?? null) ===
               (currentSelection.subCategory ?? null) &&
-            (normalizedSelection.colorHex ?? null) === (currentSelection.colorHex ?? null));
+            (normalizedSelection.colorHex ?? null) === (currentSelection.colorHex ?? null) &&
+            (normalizedSelection.colorPaletteIndex ?? null) ===
+              (currentSelection.colorPaletteIndex ?? null) &&
+            (normalizedSelection.colorShadeIndex ?? null) ===
+              (currentSelection.colorShadeIndex ?? null) &&
+            (normalizedSelection.colorId ?? null) === (currentSelection.colorId ?? null) &&
+            (normalizedSelection.sizeLabel ?? null) === (currentSelection.sizeLabel ?? null) &&
+            (normalizedSelection.bottomWaist ?? null) ===
+              (currentSelection.bottomWaist ?? null) &&
+            (normalizedSelection.bottomLength ?? null) ===
+              (currentSelection.bottomLength ?? null));
 
         if (sameSelection) {
           return prev;

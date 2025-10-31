@@ -121,6 +121,21 @@ const sanitizeClothingSelectionPayload = (
   let shadeIndex = toFiniteNumber(record.colorShadeIndex);
   let colorId = toFiniteNumber(record.colorId);
   let colorHex = normalizeAvatarColorHex(record.colorHex);
+  const rawSizeLabel = record.sizeLabel;
+  const sizeLabel =
+    typeof rawSizeLabel === 'string' && rawSizeLabel.trim().length
+      ? rawSizeLabel.trim()
+      : null;
+  const rawBottomWaist = toFiniteNumber(record.bottomWaist);
+  const rawBottomLength = toFiniteNumber(record.bottomLength);
+  const bottomWaist =
+    rawBottomWaist != null && Number.isFinite(rawBottomWaist)
+      ? Math.trunc(rawBottomWaist)
+      : null;
+  const bottomLength =
+    rawBottomLength != null && Number.isFinite(rawBottomLength)
+      ? Math.trunc(rawBottomLength)
+      : null;
 
   if (!colorHex && paletteIndex != null && shadeIndex != null) {
     const resolved = resolveAvatarColorShade(paletteIndex, shadeIndex);
@@ -163,6 +178,9 @@ const sanitizeClothingSelectionPayload = (
     ...(paletteIndex != null ? { colorPaletteIndex: paletteIndex } : {}),
     ...(shadeIndex != null ? { colorShadeIndex: shadeIndex } : {}),
     ...(colorId != null ? { colorId } : {}),
+    ...(sizeLabel ? { sizeLabel } : {}),
+    ...(bottomWaist != null ? { bottomWaist } : {}),
+    ...(bottomLength != null ? { bottomLength } : {}),
   };
 
   return selection;

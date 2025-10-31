@@ -77,6 +77,66 @@ const toCqw = (px: number) => (px === 0 ? '0' : `calc(${px} / ${DESIGN_WIDTH} * 
 
 const DEFAULT_COLOR_STATE = { paletteIndex: 2, shadeIndex: 1 } as const
 
+const SIZE_SEQUENCE = ['SX', 'S', 'M', 'L', 'XL', 'XXL'] as const
+const DEFAULT_TOP_SIZE_INDEX = 2
+const BOTTOM_SIZES = [
+  { w: 28, l: 30 },
+  { w: 29, l: 30 },
+  { w: 30, l: 30 },
+  { w: 31, l: 32 },
+  { w: 32, l: 32 },
+  { w: 33, l: 32 },
+  { w: 34, l: 32 },
+] as const
+const DEFAULT_BOTTOM_SIZE_INDEX = 3
+
+const normalizeFiniteInteger = (value: unknown): number | null => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.trunc(value)
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? Math.trunc(parsed) : null
+  }
+
+  return null
+}
+
+const resolveTopSizeIndex = (
+  selection: AvatarClothingSelection | null | undefined,
+): number => {
+  const label = selection?.sizeLabel
+  if (typeof label === 'string' && label.trim().length) {
+    const normalized = label.trim().toUpperCase()
+    const matchIndex = SIZE_SEQUENCE.findIndex(
+      entry => entry.toUpperCase() === normalized,
+    )
+    if (matchIndex >= 0) {
+      return matchIndex
+    }
+  }
+
+  return DEFAULT_TOP_SIZE_INDEX
+}
+
+const resolveBottomSizeIndex = (
+  selection: AvatarClothingSelection | null | undefined,
+): number => {
+  const waist = normalizeFiniteInteger(selection?.bottomWaist ?? null)
+  const length = normalizeFiniteInteger(selection?.bottomLength ?? null)
+  if (waist != null && length != null) {
+    const matchIndex = BOTTOM_SIZES.findIndex(
+      size => size.w === waist && size.l === length,
+    )
+    if (matchIndex >= 0) {
+      return matchIndex
+    }
+  }
+
+  return DEFAULT_BOTTOM_SIZE_INDEX
+}
+
 const resolveInitialColorState = (
   selection: AvatarClothingSelection | null | undefined,
 ): { paletteIndex: number; shadeIndex: number } => {
@@ -225,6 +285,35 @@ function VirtualTryOnPanel({
     setBaseColorIndex(prev => (prev === state.paletteIndex ? prev : state.paletteIndex))
     setActiveShadeIndex(prev => (prev === state.shadeIndex ? prev : state.shadeIndex))
   }, [topClothingSelection])
+
+  const [sizeCenterIdx, setSizeCenterIdx] = useState(() =>
+    resolveTopSizeIndex(topClothingSelection),
+  )
+  const [bottomSizeCenterIdx, setBottomSizeCenterIdx] = useState(() =>
+    resolveBottomSizeIndex(bottomClothingSelection),
+  )
+
+  useEffect(() => {
+    const nextIndex = resolveTopSizeIndex(topClothingSelection)
+    setSizeCenterIdx(prev => (prev === nextIndex ? prev : nextIndex))
+  }, [topClothingSelection])
+
+  useEffect(() => {
+    const nextIndex = resolveBottomSizeIndex(bottomClothingSelection)
+    setBottomSizeCenterIdx(prev => (prev === nextIndex ? prev : nextIndex))
+  }, [bottomClothingSelection])
+
+  const sizeSequence = SIZE_SEQUENCE
+  const sizeAbove = sizeSequence[(sizeCenterIdx - 1 + sizeSequence.length) % sizeSequence.length]
+  const sizeMain = sizeSequence[sizeCenterIdx]
+  const sizeBelow = sizeSequence[(sizeCenterIdx + 1) % sizeSequence.length]
+
+  const bottomSizes = BOTTOM_SIZES
+  const bottomSizeAbove =
+    bottomSizes[(bottomSizeCenterIdx - 1 + bottomSizes.length) % bottomSizes.length]
+  const bottomSizeMain = bottomSizes[bottomSizeCenterIdx]
+  const bottomSizeBelow = bottomSizes[(bottomSizeCenterIdx + 1) % bottomSizes.length]
+
   useEffect(() => {
     if (typeof window === 'undefined') return
     const mediaQuery = window.matchMedia('(min-width: 1024px)')
@@ -303,15 +392,31 @@ function VirtualTryOnPanel({
         },
         label,
       )
+      const sizePayload =
+        category === 'top'
+          ? { sizeLabel: sizeSequence[sizeCenterIdx] }
+          : {
+              bottomWaist: bottomSizes[bottomSizeCenterIdx].w,
+              bottomLength: bottomSizes[bottomSizeCenterIdx].l,
+            }
+
       updateClothingSelection(category, {
         itemId,
         subCategory: effectiveSubCategory,
+        ...sizePayload,
       })
       console.log(
         `Queued selectClothing command: itemId=${itemId}, category=${category}, subCategory=${effectiveSubCategory}`,
       )
     },
-    [sendQueued, updateClothingSelection],
+    [
+      bottomSizeCenterIdx,
+      bottomSizes,
+      sendQueued,
+      sizeCenterIdx,
+      sizeSequence,
+      updateClothingSelection,
+    ],
   )
 
   const getSelectionIdentifier = useCallback(
@@ -328,6 +433,18 @@ function VirtualTryOnPanel({
       return getClothingIdentifierForIndex(category, fallbackIndex)
     },
     [bottomOptionIndex, clothingSelections, findClothingIndex, topOptionIndex],
+  )
+
+  const persistClothingSelectionUpdates = useCallback(
+    (category: ClothingCategory, updates: Partial<AvatarClothingSelection>) => {
+      const existing = clothingSelections?.[category] ?? null
+      const baseSelection = existing
+        ? { ...existing }
+        : { ...getSelectionIdentifier(category) }
+
+      updateClothingSelection(category, { ...baseSelection, ...updates })
+    },
+    [clothingSelections, getSelectionIdentifier, updateClothingSelection],
   )
 
   const applyClothingColor = useCallback(
@@ -390,6 +507,27 @@ function VirtualTryOnPanel({
     },
     [activeShadeIndex, applyClothingColor, baseColorIndex],
   )
+
+  const cycleSize = (dir: 1 | -1) => {
+    setSizeCenterIdx((i) => {
+      const nextIndex = (i + dir + sizeSequence.length) % sizeSequence.length
+      const sizeLabel = sizeSequence[nextIndex]
+      persistClothingSelectionUpdates('top', { sizeLabel })
+      return nextIndex
+    })
+  }
+
+  const cycleBottomSize = (dir: 1 | -1) => {
+    setBottomSizeCenterIdx((i) => {
+      const nextIndex = (i + dir + bottomSizes.length) % bottomSizes.length
+      const selection = bottomSizes[nextIndex]
+      persistClothingSelectionUpdates('bottom', {
+        bottomWaist: selection.w,
+        bottomLength: selection.l,
+      })
+      return nextIndex
+    })
+  }
 
   const cycleTopPrev = () => {
     setTopOptionIndex((i) => {
@@ -518,32 +656,6 @@ function VirtualTryOnPanel({
   }
 
   // Size selector (shown in right upper arrows when topExpandedFooter)
-  const sizeSequence = ['SX', 'S', 'M', 'L', 'XL', 'XXL']
-  const [sizeCenterIdx, setSizeCenterIdx] = useState(2) // 'M'
-  const cycleSize = (dir: 1 | -1) =>
-    setSizeCenterIdx((i) => (i + dir + sizeSequence.length) % sizeSequence.length)
-  const sizeAbove = sizeSequence[(sizeCenterIdx - 1 + sizeSequence.length) % sizeSequence.length]
-  const sizeMain = sizeSequence[sizeCenterIdx]
-  const sizeBelow = sizeSequence[(sizeCenterIdx + 1) % sizeSequence.length]
-
-  // Bottom detailed sizes (Waist/Length pairs) displayed as two-line W## / L##
-  const bottomSizes = [
-    { w: 28, l: 30 },
-    { w: 29, l: 30 },
-    { w: 30, l: 30 },
-    { w: 31, l: 32 },
-    { w: 32, l: 32 },
-    { w: 33, l: 32 },
-    { w: 34, l: 32 },
-  ]
-  const [bottomSizeCenterIdx, setBottomSizeCenterIdx] = useState(3) // pick a mid value (31/32)
-  const cycleBottomSize = (dir: 1 | -1) =>
-    setBottomSizeCenterIdx((i) => (i + dir + bottomSizes.length) % bottomSizes.length)
-  const bottomSizeAbove =
-    bottomSizes[(bottomSizeCenterIdx - 1 + bottomSizes.length) % bottomSizes.length]
-  const bottomSizeMain = bottomSizes[bottomSizeCenterIdx]
-  const bottomSizeBelow = bottomSizes[(bottomSizeCenterIdx + 1) % bottomSizes.length]
-
   // Layout math (container width 410):
   // Desired button widths: 60 (outer) + 50 + 50 + 60 (outer) = 220
   // Keep a small middle gap (10) between the two inner buttons.

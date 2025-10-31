@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import cn from 'classnames'
 import { useNavigate } from 'react-router-dom'
 import leftArrow from '../assets/arrow-left.svg'
@@ -48,6 +48,20 @@ interface ViewportState {
   offsetTop: number
   orientation: ViewportOrientation
   maxHeight: number
+  keyboardOpen: boolean
+}
+
+const textInputTags = new Set(['INPUT', 'TEXTAREA'])
+
+const isTextInputElement = (element: Element | null): element is HTMLInputElement | HTMLTextAreaElement => {
+  if (!element) return false
+  if (!textInputTags.has(element.tagName)) return false
+  if (element instanceof HTMLInputElement) {
+    const type = element.type
+    return type !== 'button' && type !== 'checkbox' && type !== 'radio' && type !== 'submit' && type !== 'reset'
+  }
+
+  return element instanceof HTMLTextAreaElement
 }
 
 const VIEWPORT_WIDTH_THRESHOLD = 20
@@ -139,9 +153,16 @@ export default function AvatarInfoPage() {
       offsetTop: snapshot.offsetTop,
       orientation,
       maxHeight: snapshot.height,
+      keyboardOpen: false,
     }
   })
+  const [keyboardLockedHeight, setKeyboardLockedHeight] = useState<number | null>(null)
+  const viewportSnapshotRef = useRef(viewportSize)
+  useEffect(() => {
+    viewportSnapshotRef.current = viewportSize
+  }, [viewportSize])
   const { width: viewportWidth, height: viewportHeight } = viewportSize
+  const layoutViewportHeight = keyboardLockedHeight ?? viewportHeight
   const age = usePicker(1, ages)
   const height = usePicker(2, heights)
   const weight = usePicker(2, weights)
@@ -171,23 +192,45 @@ export default function AvatarInfoPage() {
           ),
         )
         let maxHeight = previous.maxHeight
+        const previousKeyboardOpen = previous.keyboardOpen
+        let keyboardOpen = previous.keyboardOpen
 
         if (orientationChanged || widthDelta > VIEWPORT_WIDTH_THRESHOLD) {
           maxHeight = snapshot.height
+          keyboardOpen = false
         } else if (snapshot.height > maxHeight) {
           maxHeight = snapshot.height
         }
 
-        const keyboardLikely = (
-          snapshot.offsetTop > 0 ||
-          (heightDrop > dynamicDropThreshold && widthDelta < 4)
-        ) && snapshot.height < maxHeight
+        const dropFromMax = maxHeight - snapshot.height
+        const baseKeyboardSignal =
+          (snapshot.offsetTop > 0.5 || heightDrop > dynamicDropThreshold) &&
+          !orientationChanged &&
+          widthDelta < VIEWPORT_WIDTH_THRESHOLD
 
-        if (!keyboardLikely && snapshot.height < maxHeight - 1) {
+        const keyboardLikely =
+          baseKeyboardSignal ||
+          (keyboardOpen && dropFromMax > 1)
+
+        if (keyboardLikely) {
+          keyboardOpen = true
+        } else if (keyboardOpen) {
+          const recovered = dropFromMax <= 1.5 && snapshot.offsetTop < 1
+          if (recovered) {
+            keyboardOpen = false
+            maxHeight = snapshot.height
+          }
+        }
+
+        if (previousKeyboardOpen && !keyboardOpen) {
           maxHeight = snapshot.height
         }
 
-        const effectiveHeight = keyboardLikely ? maxHeight : snapshot.height
+        if (!keyboardOpen && snapshot.height < maxHeight - 1) {
+          maxHeight = snapshot.height
+        }
+
+        const effectiveHeight = keyboardOpen ? maxHeight : snapshot.height
 
         if (
           snapshot.width === previous.width &&
@@ -195,7 +238,8 @@ export default function AvatarInfoPage() {
           snapshot.height === previous.rawHeight &&
           snapshot.offsetTop === previous.offsetTop &&
           orientation === previous.orientation &&
-          maxHeight === previous.maxHeight
+          maxHeight === previous.maxHeight &&
+          keyboardOpen === previous.keyboardOpen
         ) {
           return previous
         }
@@ -207,6 +251,7 @@ export default function AvatarInfoPage() {
           offsetTop: snapshot.offsetTop,
           orientation,
           maxHeight,
+          keyboardOpen,
         }
       })
     }
@@ -223,6 +268,62 @@ export default function AvatarInfoPage() {
     }
   }, [])
 
+  useEffect(() => {
+    const handleFocusIn = (event: FocusEvent) => {
+      const target = event.target as Element | null
+      if (!isTextInputElement(target)) {
+        return
+      }
+
+      setKeyboardLockedHeight((previous) => {
+        if (previous != null) {
+          return previous
+        }
+        const snapshot = viewportSnapshotRef.current
+        return snapshot.maxHeight
+      })
+
+      setViewportSize((previous) => {
+        if (previous.keyboardOpen) {
+          return previous
+        }
+
+        return {
+          ...previous,
+          height: previous.maxHeight,
+          keyboardOpen: true,
+        }
+      })
+    }
+
+    const handleFocusOut = () => {
+      const activeElement = document.activeElement
+      if (isTextInputElement(activeElement)) {
+        return
+      }
+
+      setKeyboardLockedHeight(null)
+      setViewportSize((previous) => {
+        if (!previous.keyboardOpen) {
+          return previous
+        }
+
+        return {
+          ...previous,
+          keyboardOpen: false,
+        }
+      })
+    }
+
+    document.addEventListener('focusin', handleFocusIn, true)
+    document.addEventListener('focusout', handleFocusOut, true)
+
+    return () => {
+      document.removeEventListener('focusin', handleFocusIn, true)
+      document.removeEventListener('focusout', handleFocusOut, true)
+    }
+  }, [])
+
   const { cssVars: layoutVars, pageHeight } = useMemo(() => {
     if (viewportWidth >= DESKTOP_BREAKPOINT) {
       const designWidth = Math.min(DESKTOP_DESIGN_WIDTH, viewportWidth)
@@ -233,19 +334,19 @@ export default function AvatarInfoPage() {
         Number.POSITIVE_INFINITY
       )
       const scaleHeight = clamp(
-        viewportHeight / (designHeight || 1),
+        layoutViewportHeight / (designHeight || 1),
         0,
         Number.POSITIVE_INFINITY
       )
       const canvasWidth = designWidth
       const canvasHeight = designHeight
-      const pageMaxHeight = Math.max(canvasHeight, viewportHeight)
+      const pageMaxHeight = Math.max(canvasHeight, layoutViewportHeight)
 
       const cssVars: AvatarInfoPageCssVars = {
         '--fs-design-width': `${designWidth}px`,
         '--fs-design-height': `${designHeight}px`,
         '--fs-design-safe-height': `${designHeight}px`,
-        '--fs-viewport-height': `${viewportHeight.toFixed(3)}px`,
+        '--fs-viewport-height': `${layoutViewportHeight.toFixed(3)}px`,
         '--fs-header-scale-design': '1',
         '--fs-header-scale': '1',
         '--fs-header-scale-min': HEADER_MIN_SCALE.toFixed(5),
@@ -281,13 +382,13 @@ export default function AvatarInfoPage() {
       0,
     )
     const targetHeight = clamp(
-      viewportHeight,
+      layoutViewportHeight,
       minFlexibleHeight,
       fullFlexibleHeight,
     )
 
-    const expansionFactor = viewportHeight > fullFlexibleHeight
-      ? viewportHeight / fullFlexibleHeight
+    const expansionFactor = layoutViewportHeight > fullFlexibleHeight
+      ? layoutViewportHeight / fullFlexibleHeight
       : 1
 
     const working = segments.map((segment) => ({ ...segment, scale: 1 }))
@@ -363,7 +464,7 @@ export default function AvatarInfoPage() {
     const heightScaleContent = contentScale
     const viewportScaleWidth = clamp(scaleWidth, 0, Number.POSITIVE_INFINITY)
     const viewportScaleHeight = designHeight > 0
-      ? clamp(viewportHeight / designHeight, 0, Number.POSITIVE_INFINITY)
+      ? clamp(layoutViewportHeight / designHeight, 0, Number.POSITIVE_INFINITY)
       : 1
     const viewportScale = clamp(
       Math.min(viewportScaleWidth, viewportScaleHeight),
@@ -374,13 +475,13 @@ export default function AvatarInfoPage() {
     const pageHeight = designHeight
     const scaledPageHeight = pageHeight * viewportScale
     const canvasHeight = MOBILE_DESIGN_HEIGHT * heightScaleContent * viewportScale
-    const pageMaxHeight = Math.max(scaledPageHeight, viewportHeight)
+    const pageMaxHeight = Math.max(scaledPageHeight, layoutViewportHeight)
     const widthRatioToFigma = MOBILE_DESIGN_WIDTH / FIGMA_REFERENCE_WIDTH
     const desiredBottomPadding = Math.min(
       45,
       45 * viewportScale * widthRatioToFigma,
     )
-    const extraSpace = Math.max(viewportHeight - scaledPageHeight, 0)
+    const extraSpace = Math.max(layoutViewportHeight - scaledPageHeight, 0)
     const bottomPadding = Math.max(
       desiredBottomPadding - extraSpace,
       MIN_BOTTOM_PADDING,
@@ -395,7 +496,7 @@ export default function AvatarInfoPage() {
       '--fs-design-width': `${MOBILE_DESIGN_WIDTH}px`,
       '--fs-design-height': `${(contentScale * MOBILE_DESIGN_HEIGHT).toFixed(3)}px`,
       '--fs-design-safe-height': `${designHeight.toFixed(3)}px`,
-      '--fs-viewport-height': `${viewportHeight.toFixed(3)}px`,
+      '--fs-viewport-height': `${layoutViewportHeight.toFixed(3)}px`,
       '--fs-header-scale-design': headerScale.toFixed(5),
       '--fs-header-scale': headerScalePhysical.toFixed(5),
       '--fs-header-scale-min': headerScaleMin.toFixed(5),
@@ -413,10 +514,10 @@ export default function AvatarInfoPage() {
     }
 
     return { cssVars, pageHeight: scaledPageHeight }
-  }, [viewportHeight, viewportWidth])
+  }, [layoutViewportHeight, viewportWidth])
 
   const needsScroll =
-    viewportWidth >= DESKTOP_BREAKPOINT || pageHeight > viewportHeight + 0.5
+    viewportWidth >= DESKTOP_BREAKPOINT || pageHeight > layoutViewportHeight + 0.5
   const pageClassName = needsScroll
     ? `${styles.page} ${styles.pageScrollable}`
     : styles.page
