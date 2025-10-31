@@ -158,8 +158,43 @@ export default function AvatarInfoPage() {
   })
   const [keyboardLockedHeight, setKeyboardLockedHeight] = useState<number | null>(null)
   const viewportSnapshotRef = useRef(viewportSize)
+  const stableViewportHeightRef = useRef(viewportSize.maxHeight)
   useEffect(() => {
+    const previousSnapshot = viewportSnapshotRef.current
     viewportSnapshotRef.current = viewportSize
+
+    if (viewportSize.keyboardOpen) {
+      return
+    }
+
+    const orientationChanged = previousSnapshot.orientation !== viewportSize.orientation
+    const widthChanged = Math.abs(previousSnapshot.width - viewportSize.width) > VIEWPORT_WIDTH_THRESHOLD
+
+    if (orientationChanged || widthChanged) {
+      stableViewportHeightRef.current = viewportSize.maxHeight
+      return
+    }
+
+    const dynamicDropThreshold = Math.min(
+      KEYBOARD_HEIGHT_THRESHOLD_MAX,
+      Math.max(
+        KEYBOARD_HEIGHT_THRESHOLD_MIN,
+        previousSnapshot.maxHeight * KEYBOARD_HEIGHT_DROP_RATIO,
+      ),
+    )
+
+    const dropFromStable = stableViewportHeightRef.current - viewportSize.maxHeight
+
+    if (dropFromStable > 0 && dropFromStable <= dynamicDropThreshold + 1) {
+      stableViewportHeightRef.current = viewportSize.maxHeight
+      return
+    }
+
+    if (viewportSize.maxHeight > stableViewportHeightRef.current) {
+      stableViewportHeightRef.current = viewportSize.maxHeight
+    } else if (viewportSize.height > stableViewportHeightRef.current) {
+      stableViewportHeightRef.current = viewportSize.height
+    }
   }, [viewportSize])
   const { width: viewportWidth, height: viewportHeight } = viewportSize
   const layoutViewportHeight = keyboardLockedHeight ?? viewportHeight
@@ -183,12 +218,11 @@ export default function AvatarInfoPage() {
         const orientation = getOrientation(snapshot.width, snapshot.height)
         const orientationChanged = orientation !== previous.orientation
         const widthDelta = Math.abs(snapshot.width - previous.width)
-        const heightDrop = previous.rawHeight - snapshot.height
         const dynamicDropThreshold = Math.min(
           KEYBOARD_HEIGHT_THRESHOLD_MAX,
           Math.max(
             KEYBOARD_HEIGHT_THRESHOLD_MIN,
-            previous.rawHeight * KEYBOARD_HEIGHT_DROP_RATIO,
+            previous.maxHeight * KEYBOARD_HEIGHT_DROP_RATIO,
           ),
         )
         let maxHeight = previous.maxHeight
@@ -204,7 +238,7 @@ export default function AvatarInfoPage() {
 
         const dropFromMax = maxHeight - snapshot.height
         const baseKeyboardSignal =
-          (snapshot.offsetTop > 0.5 || heightDrop > dynamicDropThreshold) &&
+          (snapshot.offsetTop > 0.5 || dropFromMax > dynamicDropThreshold) &&
           !orientationChanged &&
           widthDelta < VIEWPORT_WIDTH_THRESHOLD
 
@@ -223,10 +257,6 @@ export default function AvatarInfoPage() {
         }
 
         if (previousKeyboardOpen && !keyboardOpen) {
-          maxHeight = snapshot.height
-        }
-
-        if (!keyboardOpen && snapshot.height < maxHeight - 1) {
           maxHeight = snapshot.height
         }
 
@@ -279,8 +309,7 @@ export default function AvatarInfoPage() {
         if (previous != null) {
           return previous
         }
-        const snapshot = viewportSnapshotRef.current
-        return snapshot.maxHeight
+        return stableViewportHeightRef.current
       })
 
       setViewportSize((previous) => {
@@ -290,29 +319,17 @@ export default function AvatarInfoPage() {
 
         return {
           ...previous,
-          height: previous.maxHeight,
+          height: Math.max(stableViewportHeightRef.current, previous.height, previous.maxHeight),
           keyboardOpen: true,
         }
       })
     }
 
-    const handleFocusOut = () => {
-      const activeElement = document.activeElement
-      if (isTextInputElement(activeElement)) {
+    const handleFocusOut = (event: FocusEvent) => {
+      const nextFocusedElement = (event.relatedTarget as Element | null) ?? document.activeElement
+      if (isTextInputElement(nextFocusedElement)) {
         return
       }
-
-      setKeyboardLockedHeight(null)
-      setViewportSize((previous) => {
-        if (!previous.keyboardOpen) {
-          return previous
-        }
-
-        return {
-          ...previous,
-          keyboardOpen: false,
-        }
-      })
     }
 
     document.addEventListener('focusin', handleFocusIn, true)
@@ -323,6 +340,12 @@ export default function AvatarInfoPage() {
       document.removeEventListener('focusout', handleFocusOut, true)
     }
   }, [])
+
+  useEffect(() => {
+    if (!viewportSize.keyboardOpen) {
+      setKeyboardLockedHeight(null)
+    }
+  }, [viewportSize.keyboardOpen])
 
   const { cssVars: layoutVars, pageHeight } = useMemo(() => {
     if (viewportWidth >= DESKTOP_BREAKPOINT) {

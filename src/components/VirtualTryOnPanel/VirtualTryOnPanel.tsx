@@ -90,6 +90,11 @@ const BOTTOM_SIZES = [
 ] as const
 const DEFAULT_BOTTOM_SIZE_INDEX = 3
 
+type LegacyMediaQueryList = MediaQueryList & {
+  addListener?: (listener: (event: MediaQueryListEvent) => void) => void
+  removeListener?: (listener: (event: MediaQueryListEvent) => void) => void
+}
+
 const normalizeFiniteInteger = (value: unknown): number | null => {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return Math.trunc(value)
@@ -325,13 +330,15 @@ function VirtualTryOnPanel({
     if (typeof mediaQuery.addEventListener === 'function') {
       mediaQuery.addEventListener('change', listener)
     } else {
-      mediaQuery.addListener(listener)
+      const legacyMediaQuery = mediaQuery as LegacyMediaQueryList
+      legacyMediaQuery.addListener?.(listener)
     }
     return () => {
       if (typeof mediaQuery.removeEventListener === 'function') {
         mediaQuery.removeEventListener('change', listener)
       } else {
-        mediaQuery.removeListener(listener)
+        const legacyMediaQuery = mediaQuery as LegacyMediaQueryList
+        legacyMediaQuery.removeListener?.(listener)
       }
     }
   }, [])
