@@ -36,7 +36,27 @@ const MIN_BOTTOM_PADDING = 12
 interface ViewportSize {
   width: number
   height: number
+  offsetTop: number
 }
+
+type ViewportOrientation = 'portrait' | 'landscape'
+
+interface ViewportState {
+  width: number
+  height: number
+  rawHeight: number
+  offsetTop: number
+  orientation: ViewportOrientation
+  maxHeight: number
+}
+
+const VIEWPORT_WIDTH_THRESHOLD = 20
+const KEYBOARD_HEIGHT_THRESHOLD_MIN = 60
+const KEYBOARD_HEIGHT_THRESHOLD_MAX = 160
+const KEYBOARD_HEIGHT_DROP_RATIO = 0.12
+
+const getOrientation = (width: number, height: number): ViewportOrientation =>
+  width > height ? 'landscape' : 'portrait'
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max)
@@ -46,7 +66,9 @@ type AvatarInfoPageCssVars = CSSProperties & {
   '--fs-design-height'?: string
   '--fs-design-safe-height'?: string
   '--fs-viewport-height'?: string
+  '--fs-header-scale-design'?: string
   '--fs-header-scale'?: string
+  '--fs-header-scale-min'?: string
   '--fs-header-scale-max'?: string
   '--fs-header-height'?: string
   '--fs-header-height-physical'?: string
@@ -65,15 +87,24 @@ function readViewportSize(): ViewportSize {
     return {
       width: MOBILE_DESIGN_WIDTH,
       height: MOBILE_SAFE_HEIGHT,
+      offsetTop: 0,
     }
   }
 
   const viewport = window.visualViewport
   if (viewport) {
-    return { width: viewport.width, height: viewport.height }
+    return {
+      width: viewport.width,
+      height: viewport.height,
+      offsetTop: viewport.offsetTop,
+    }
   }
 
-  return { width: window.innerWidth, height: window.innerHeight }
+  return {
+    width: window.innerWidth,
+    height: window.innerHeight,
+    offsetTop: 0,
+  }
 }
 
 const ages = ['15-19', ...Array.from({ length: 8 }, (_, i) => {
@@ -97,11 +128,20 @@ export default function AvatarInfoPage() {
   const { loadAvatarFromBackend } = useAvatarConfiguration()
   const { avatars, maxAvatars, refreshAvatars, setPendingAvatarName } = useAvatars()
   const authData = useAuthData()
-  const [viewportSize, setViewportSize] = useState<ViewportSize>(() => readViewportSize())
-  const {
-    width: viewportWidth,
-    height: viewportHeight,
-  } = viewportSize
+  const [viewportSize, setViewportSize] = useState<ViewportState>(() => {
+    const snapshot = readViewportSize()
+    const orientation = getOrientation(snapshot.width, snapshot.height)
+
+    return {
+      width: snapshot.width,
+      height: snapshot.height,
+      rawHeight: snapshot.height,
+      offsetTop: snapshot.offsetTop,
+      orientation,
+      maxHeight: snapshot.height,
+    }
+  })
+  const { width: viewportWidth, height: viewportHeight } = viewportSize
   const age = usePicker(1, ages)
   const height = usePicker(2, heights)
   const weight = usePicker(2, weights)
@@ -117,16 +157,69 @@ export default function AvatarInfoPage() {
 
   useEffect(() => {
     const handleResize = () => {
-      setViewportSize(readViewportSize())
+      setViewportSize((previous) => {
+        const snapshot = readViewportSize()
+        const orientation = getOrientation(snapshot.width, snapshot.height)
+        const orientationChanged = orientation !== previous.orientation
+        const widthDelta = Math.abs(snapshot.width - previous.width)
+        const heightDrop = previous.rawHeight - snapshot.height
+        const dynamicDropThreshold = Math.min(
+          KEYBOARD_HEIGHT_THRESHOLD_MAX,
+          Math.max(
+            KEYBOARD_HEIGHT_THRESHOLD_MIN,
+            previous.rawHeight * KEYBOARD_HEIGHT_DROP_RATIO,
+          ),
+        )
+        let maxHeight = previous.maxHeight
+
+        if (orientationChanged || widthDelta > VIEWPORT_WIDTH_THRESHOLD) {
+          maxHeight = snapshot.height
+        } else if (snapshot.height > maxHeight) {
+          maxHeight = snapshot.height
+        }
+
+        const keyboardLikely = (
+          snapshot.offsetTop > 0 ||
+          (heightDrop > dynamicDropThreshold && widthDelta < 4)
+        ) && snapshot.height < maxHeight
+
+        if (!keyboardLikely && snapshot.height < maxHeight - 1) {
+          maxHeight = snapshot.height
+        }
+
+        const effectiveHeight = keyboardLikely ? maxHeight : snapshot.height
+
+        if (
+          snapshot.width === previous.width &&
+          effectiveHeight === previous.height &&
+          snapshot.height === previous.rawHeight &&
+          snapshot.offsetTop === previous.offsetTop &&
+          orientation === previous.orientation &&
+          maxHeight === previous.maxHeight
+        ) {
+          return previous
+        }
+
+        return {
+          width: snapshot.width,
+          height: effectiveHeight,
+          rawHeight: snapshot.height,
+          offsetTop: snapshot.offsetTop,
+          orientation,
+          maxHeight,
+        }
+      })
     }
 
     window.addEventListener('resize', handleResize)
     const viewport = window.visualViewport
     viewport?.addEventListener('resize', handleResize)
+    viewport?.addEventListener('scroll', handleResize)
 
     return () => {
       window.removeEventListener('resize', handleResize)
       viewport?.removeEventListener('resize', handleResize)
+      viewport?.removeEventListener('scroll', handleResize)
     }
   }, [])
 
@@ -153,7 +246,9 @@ export default function AvatarInfoPage() {
         '--fs-design-height': `${designHeight}px`,
         '--fs-design-safe-height': `${designHeight}px`,
         '--fs-viewport-height': `${viewportHeight.toFixed(3)}px`,
+        '--fs-header-scale-design': '1',
         '--fs-header-scale': '1',
+        '--fs-header-scale-min': HEADER_MIN_SCALE.toFixed(5),
         '--fs-header-height': `${HEADER_DESIGN_HEIGHT.toFixed(3)}px`,
         '--fs-header-height-physical': `${HEADER_DESIGN_HEIGHT.toFixed(3)}px`,
         '--fs-scale-width': scaleWidth.toFixed(5),
@@ -291,15 +386,22 @@ export default function AvatarInfoPage() {
       MIN_BOTTOM_PADDING,
     )
 
+    const viewportScaleClamped = Math.min(viewportScale, 1)
+    const headerScalePhysical = headerScale * viewportScale
+    const headerScaleMin = HEADER_MIN_SCALE * viewportScaleClamped
+    const headerScaleMax = Math.max(headerScalePhysical, viewportScaleClamped)
+
     const cssVars: AvatarInfoPageCssVars = {
       '--fs-design-width': `${MOBILE_DESIGN_WIDTH}px`,
       '--fs-design-height': `${(contentScale * MOBILE_DESIGN_HEIGHT).toFixed(3)}px`,
       '--fs-design-safe-height': `${designHeight.toFixed(3)}px`,
       '--fs-viewport-height': `${viewportHeight.toFixed(3)}px`,
-      '--fs-header-scale': headerScale.toFixed(5),
-      '--fs-header-scale-max': Math.max(headerScale, 1).toFixed(5),
+      '--fs-header-scale-design': headerScale.toFixed(5),
+      '--fs-header-scale': headerScalePhysical.toFixed(5),
+      '--fs-header-scale-min': headerScaleMin.toFixed(5),
+      '--fs-header-scale-max': headerScaleMax.toFixed(5),
       '--fs-header-height': `${(headerScale * HEADER_DESIGN_HEIGHT).toFixed(3)}px`,
-      '--fs-header-height-physical': `${(headerScale * HEADER_DESIGN_HEIGHT * viewportScale).toFixed(3)}px`,
+      '--fs-header-height-physical': `${(headerScalePhysical * HEADER_DESIGN_HEIGHT).toFixed(3)}px`,
       '--fs-scale-width': viewportScaleWidth.toFixed(5),
       '--fs-scale-height': heightScaleSafe.toFixed(5),
       '--fs-scale-height-content': heightScaleContent.toFixed(5),

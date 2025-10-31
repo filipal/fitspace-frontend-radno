@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useAuthData } from '../hooks/useAuthData';
 import type {
+  AvatarClothingSelection,
   AvatarClothingState,
   AvatarCreationMode,
   BackendAvatarData,
@@ -10,6 +11,12 @@ import type {
   QuickModeSettings,
 } from '../context/AvatarConfigurationContext';
 import type { ClothingCategory } from '../constants/clothing';
+import {
+  matchAvatarColorShade,
+  normalizeAvatarColorHex,
+  resolveAvatarColorById,
+  resolveAvatarColorShade,
+} from '../constants/avatarColors';
 import type { CreateAvatarCommand } from '../types/provisioning';
 
 // VITE_AVATAR_API_BASE_URL must be defined; otherwise resolveAvatarUrl throws an AvatarApiError.
@@ -93,7 +100,7 @@ const CLOTHING_CATEGORIES: ClothingCategory[] = ['top', 'bottom'];
 
 const sanitizeClothingSelectionPayload = (
   value: unknown,
-): { itemId: number; subCategory?: string | null } | null => {
+): AvatarClothingSelection | null => {
   if (!value || typeof value !== 'object') {
     return null;
   }
@@ -110,10 +117,55 @@ const sanitizeClothingSelectionPayload = (
       ? rawSubCategory.trim()
       : null;
 
-  return {
+  let paletteIndex = toFiniteNumber(record.colorPaletteIndex);
+  let shadeIndex = toFiniteNumber(record.colorShadeIndex);
+  let colorId = toFiniteNumber(record.colorId);
+  let colorHex = normalizeAvatarColorHex(record.colorHex);
+
+  if (!colorHex && paletteIndex != null && shadeIndex != null) {
+    const resolved = resolveAvatarColorShade(paletteIndex, shadeIndex);
+    colorHex = resolved.colorHex;
+    paletteIndex = resolved.paletteIndex;
+    shadeIndex = resolved.shadeIndex;
+    colorId = colorId ?? resolved.colorId;
+  }
+
+  if (!colorHex && colorId != null) {
+    const resolved = resolveAvatarColorById(colorId);
+    if (resolved) {
+      colorHex = resolved.colorHex;
+      paletteIndex = resolved.paletteIndex;
+      shadeIndex = resolved.shadeIndex;
+      colorId = resolved.colorId;
+    }
+  }
+
+  if (colorHex) {
+    const matched = matchAvatarColorShade(colorHex);
+    if (matched) {
+      if (paletteIndex == null) {
+        paletteIndex = matched.paletteIndex;
+      }
+      if (shadeIndex == null) {
+        shadeIndex = matched.shadeIndex;
+      }
+      if (colorId == null) {
+        colorId = matched.colorId;
+      }
+      colorHex = matched.colorHex;
+    }
+  }
+
+  const selection: AvatarClothingSelection = {
     itemId,
     ...(subCategory ? { subCategory } : {}),
+    ...(colorHex ? { colorHex } : {}),
+    ...(paletteIndex != null ? { colorPaletteIndex: paletteIndex } : {}),
+    ...(shadeIndex != null ? { colorShadeIndex: shadeIndex } : {}),
+    ...(colorId != null ? { colorId } : {}),
   };
+
+  return selection;
 };
 
 const sanitizeClothingSelectionsPayload = (

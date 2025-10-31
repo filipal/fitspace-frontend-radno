@@ -214,6 +214,17 @@ function VirtualTryOnPanel({
   const bottomOptions = ['tapered fit', 'regular fit', 'loose fit', 'boot cut', 'straight fit']
   const topClothingSelection = currentAvatar?.clothingSelections?.top ?? null
   const bottomClothingSelection = currentAvatar?.clothingSelections?.bottom ?? null
+  const [baseColorIndex, setBaseColorIndex] = useState(() =>
+    resolveInitialColorState(topClothingSelection).paletteIndex,
+  )
+  const [activeShadeIndex, setActiveShadeIndex] = useState(() =>
+    resolveInitialColorState(topClothingSelection).shadeIndex,
+  )
+  useEffect(() => {
+    const state = resolveInitialColorState(topClothingSelection)
+    setBaseColorIndex(prev => (prev === state.paletteIndex ? prev : state.paletteIndex))
+    setActiveShadeIndex(prev => (prev === state.shadeIndex ? prev : state.shadeIndex))
+  }, [topClothingSelection])
   useEffect(() => {
     if (typeof window === 'undefined') return
     const mediaQuery = window.matchMedia('(min-width: 1024px)')
@@ -276,16 +287,6 @@ function VirtualTryOnPanel({
     }
   }, [topClothingSelection, bottomClothingSelection, findClothingIndex])
 
-  useEffect(() => {
-    const state = resolveInitialColorState(topClothingSelection)
-    setBaseColorIndex((prev) => (prev === state.paletteIndex ? prev : state.paletteIndex))
-    setActiveShadeIndex((prev) => (prev === state.shadeIndex ? prev : state.shadeIndex))
-  }, [
-    topClothingSelection?.colorHex,
-    topClothingSelection?.colorPaletteIndex,
-    topClothingSelection?.colorShadeIndex,
-    topClothingSelection?.colorId,
-  ])
   const shouldShrinkCategoryText = (text: string) => text.trim().length >= 10
   const sendClothingSelection = useCallback(
     (category: ClothingCategory, itemIndex: number, overrideSubCategory?: string) => {
@@ -419,11 +420,7 @@ function VirtualTryOnPanel({
     })
   }
   // Color group behaves like SkinAccordion iconsThree (light/base/dark) with center selectable enlargement
-  const initialColorState = resolveInitialColorState(topClothingSelection)
-  const [baseColorIndex, setBaseColorIndex] = useState(initialColorState.paletteIndex)
-  const [activeShadeIndex, setActiveShadeIndex] = useState(initialColorState.shadeIndex)
   const shades = useMemo(() => getAvatarColorShades(baseColorIndex), [baseColorIndex])
-  const [lightShade, baseColor, darkShade] = shades
 
   // Category selector groups (upper & lower) with cyclic scrolling via arrows
   const [upperCenterIdx, setUpperCenterIdx] = useState(1) // 'Jackets'
