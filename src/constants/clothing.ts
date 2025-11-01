@@ -19,7 +19,6 @@ import TatamiLt01 from '../assets/virtualtryon/tops/tatami_lt_01.png'
 import TwinLeatherJacket from '../assets/virtualtryon/tops/twin_leather_jacket.png'
 import BiaBlack from '../assets/virtualtryon/tops/bia_black.png'
 import BiaGrey from '../assets/virtualtryon/tops/bia_grey.png'
-import BaseLayersTop3 from '../assets/virtualtryon/tops/baseLayers_top_3.png'
 import CommandoUhBlack from '../assets/virtualtryon/tops/commando_uh_black.png'
 import CommandoUhGrey from '../assets/virtualtryon/tops/commando_uh_grey.png'
 import ShellUh03 from '../assets/virtualtryon/tops/shell_uh_03.png'
@@ -102,15 +101,14 @@ const clothingCatalog: ClothingCatalog = {
     { itemId: 14, subCategory: 'Jackets', asset: TwinLeatherJacket, name: 'twin_leather_jacket' },
     { itemId: 15, subCategory: 'Base Layer', asset: BiaBlack, name: 'bia_black' },
     { itemId: 16, subCategory: 'Base Layer', asset: BiaGrey, name: 'bia_grey' },
-    { itemId: 17, subCategory: 'Base Layer', asset: BaseLayersTop3, name: 'baseLayers_top_3' },
-    { itemId: 18, subCategory: 'Base Layer', asset: CommandoUhBlack, name: 'commando_uh_black' },
-    { itemId: 19, subCategory: 'Base Layer', asset: CommandoUhGrey, name: 'commando_uh_grey' },
-    { itemId: 20, subCategory: 'Base Layer', asset: ShellUh03, name: 'shell_uh_03' },
-    { itemId: 21, subCategory: 'Base Layer', asset: ShellWwBlack02, name: 'shell_ww_black_02' },
-    { itemId: 22, subCategory: 'Hoodies', asset: JohnSkull01, name: 'john_skull_01' },
-    { itemId: 23, subCategory: 'Hoodies', asset: MaxDontDie, name: 'max_dont_die' },
-    { itemId: 24, subCategory: 'Hoodies', asset: MaxPain, name: 'max_pain' },
-    { itemId: 25, subCategory: 'Hoodies', asset: MaxTokyo, name: 'max_tokyo' },
+    { itemId: 17, subCategory: 'Base Layer', asset: CommandoUhBlack, name: 'commando_uh_black' },
+    { itemId: 18, subCategory: 'Base Layer', asset: CommandoUhGrey, name: 'commando_uh_grey' },
+    { itemId: 19, subCategory: 'Base Layer', asset: ShellUh03, name: 'shell_uh_03' },
+    { itemId: 20, subCategory: 'Base Layer', asset: ShellWwBlack02, name: 'shell_ww_black_02' },
+    { itemId: 21, subCategory: 'Hoodies', asset: JohnSkull01, name: 'john_skull_01' },
+    { itemId: 22, subCategory: 'Hoodies', asset: MaxDontDie, name: 'max_dont_die' },
+    { itemId: 23, subCategory: 'Hoodies', asset: MaxPain, name: 'max_pain' },
+    { itemId: 24, subCategory: 'Hoodies', asset: MaxTokyo, name: 'max_tokyo' },
   ],
   bottom: [
     { itemId: 0, subCategory: 'Pants', asset: BossDyn01, name: 'pants_falcon' },

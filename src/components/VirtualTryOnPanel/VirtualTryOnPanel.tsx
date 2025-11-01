@@ -14,6 +14,7 @@ import { useAvatarConfiguration } from '../../context/AvatarConfigurationContext
 import type { AvatarClothingSelection } from '../../context/AvatarConfigurationContext'
 import { PixelStreamingView } from '../PixelStreamingView/PixelStreamingView'
 // Using ?react variants for unified styling
+
 import avatarBg from '../../assets/male-avatar.png'
 import avatarsButton from '../../assets/avatar-button.svg'
 import ArrowLeft from '../../assets/arrow-left.svg'
