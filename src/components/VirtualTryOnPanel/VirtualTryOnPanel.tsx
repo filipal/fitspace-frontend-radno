@@ -40,6 +40,7 @@ import HeatMapButton from '../../assets/heat-map-button.svg'
 import TensionMapButton from '../../assets/tension-map-button.svg'
 import {
   type ClothingCategory,
+  type ClothingItemConfig,
   getClothingCatalog,
   getClothingIdentifierForIndex,
   getClothingSubCategoryList,
@@ -71,6 +72,26 @@ interface ControlButton {
 const catalog = getClothingCatalog()
 const upperCategories = getClothingSubCategoryList('top')
 const lowerCategories = getClothingSubCategoryList('bottom')
+
+interface GroupedClothingItem extends ClothingItemConfig {
+  index: number
+}
+
+const groupClothingItemsBySubCategory = (items: ClothingItemConfig[]) => {
+  const groups = new Map<string, GroupedClothingItem[]>()
+
+  items.forEach((item, index) => {
+    const key = item.subCategory.toLowerCase()
+    const entry = groups.get(key) ?? []
+    entry.push({ ...item, index })
+    groups.set(key, entry)
+  })
+
+  return groups
+}
+
+const formatClothingLabel = (name: string | null | undefined) =>
+  name ? name.replace(/_/g, ' ').toUpperCase() : ''
 
 const DESIGN_WIDTH = 430
 const toCqw = (px: number) => (px === 0 ? '0' : `calc(${px} / ${DESIGN_WIDTH} * 100cqw)`)
@@ -355,7 +376,7 @@ function VirtualTryOnPanel({
     const resolvedTopIndex = findClothingIndex('top', topClothingSelection)
     if (resolvedTopIndex != null) {
       setTopOptionIndex(prev => (prev === resolvedTopIndex ? prev : resolvedTopIndex))
-      setJacketIndex(prev => (prev === resolvedTopIndex ? prev : resolvedTopIndex))
+      setTopItemIndex(prev => (prev === resolvedTopIndex ? prev : resolvedTopIndex))
     }
     if (topClothingSelection?.subCategory) {
       const normalizedTopSub = topClothingSelection.subCategory.toLowerCase()
@@ -370,7 +391,7 @@ function VirtualTryOnPanel({
     const resolvedBottomIndex = findClothingIndex('bottom', bottomClothingSelection)
     if (resolvedBottomIndex != null) {
       setBottomOptionIndex(prev => (prev === resolvedBottomIndex ? prev : resolvedBottomIndex))
-      setPantsIndex(prev => (prev === resolvedBottomIndex ? prev : resolvedBottomIndex))
+      setBottomItemIndex(prev => (prev === resolvedBottomIndex ? prev : resolvedBottomIndex))
     }
     if (bottomClothingSelection?.subCategory) {
       const normalizedBottomSub = bottomClothingSelection.subCategory.toLowerCase()
@@ -573,16 +594,36 @@ function VirtualTryOnPanel({
   const cycleUpper = (dir: 1 | -1) => {
     setUpperCenterIdx((i) => {
       const newIndex = (i + dir + upperCategories.length) % upperCategories.length
-      // Pošalji selectClothing prema odabranoj potkategoriji gornjeg dijela
-      sendClothingSelection('top', newIndex, upperCategories[newIndex])
+      const categoryName = upperCategories[newIndex]
+      const categoryItems = topGroups.get(categoryName.toLowerCase()) ?? []
+      if (categoryItems.length) {
+        const targetIndex = categoryItems[0].index
+        setTopItemIndex((current) => {
+          if (current === targetIndex) {
+            return current
+          }
+          sendClothingSelection('top', targetIndex, categoryName)
+          return targetIndex
+        })
+      }
       return newIndex
     })
   }
   const cycleLower = (dir: 1 | -1) => {
     setLowerCenterIdx((i) => {
       const newIndex = (i + dir + lowerCategories.length) % lowerCategories.length
-      // Pošalji selectClothing prema odabranoj potkategoriji donjeg dijela
-      sendClothingSelection('bottom', newIndex, lowerCategories[newIndex])
+      const categoryName = lowerCategories[newIndex]
+      const categoryItems = bottomGroups.get(categoryName.toLowerCase()) ?? []
+      if (categoryItems.length) {
+        const targetIndex = categoryItems[0].index
+        setBottomItemIndex((current) => {
+          if (current === targetIndex) {
+            return current
+          }
+          sendClothingSelection('bottom', targetIndex, categoryName)
+          return targetIndex
+        })
+      }
       return newIndex
     })
   }
@@ -626,41 +667,103 @@ function VirtualTryOnPanel({
     fullBodyDetailCategories[(fullBodyDetailCenterIdx + 1) % fullBodyDetailCategories.length]
 
   // Right-side image selectors (jackets & pants) single image display with arrows
-  const { jacketImages, pantsImages } = useMemo(() => {
-    const topAssets = catalog.top.map(item => item.asset)
-    const bottomAssets = catalog.bottom.map(item => item.asset)
-
-    return {
-      jacketImages: topAssets.length > 0 ? topAssets : [''],
-      pantsImages: bottomAssets.length > 0 ? bottomAssets : [''],
-    }
-  }, [])
-  const [jacketIndex, setJacketIndex] = useState(() => {
+  const topGroups = useMemo(
+    () => groupClothingItemsBySubCategory(catalog.top),
+    [],
+  )
+  const bottomGroups = useMemo(
+    () => groupClothingItemsBySubCategory(catalog.bottom),
+    [],
+  )
+  const [topItemIndex, setTopItemIndex] = useState(() => {
     const selection = currentAvatar?.clothingSelections?.top ?? null
     const index = findClothingIndex('top', selection)
     return index ?? 0
   })
-  const [pantsIndex, setPantsIndex] = useState(() => {
+  const [bottomItemIndex, setBottomItemIndex] = useState(() => {
     const selection = currentAvatar?.clothingSelections?.bottom ?? null
     const index = findClothingIndex('bottom', selection)
     return index ?? 0
   })
+  const topCategoryItems = useMemo(
+    () => topGroups.get(upperMain.toLowerCase()) ?? [],
+    [topGroups, upperMain],
+  )
+  const bottomCategoryItems = useMemo(
+    () => bottomGroups.get(lowerMain.toLowerCase()) ?? [],
+    [bottomGroups, lowerMain],
+  )
+
+  useEffect(() => {
+    if (!topCategoryItems.length) {
+      return
+    }
+    const hasMatch = topCategoryItems.some(item => item.index === topItemIndex)
+    if (!hasMatch) {
+      const fallback = topCategoryItems[0]
+      setTopItemIndex(fallback.index)
+      sendClothingSelection('top', fallback.index, fallback.subCategory)
+    }
+  }, [sendClothingSelection, topCategoryItems, topItemIndex])
+
+  useEffect(() => {
+    if (!bottomCategoryItems.length) {
+      return
+    }
+    const hasMatch = bottomCategoryItems.some(item => item.index === bottomItemIndex)
+    if (!hasMatch) {
+      const fallback = bottomCategoryItems[0]
+      setBottomItemIndex(fallback.index)
+      sendClothingSelection('bottom', fallback.index, fallback.subCategory)
+    }
+  }, [sendClothingSelection, bottomCategoryItems, bottomItemIndex])
   const cycleJackets = (dir: 1 | -1) => {
-    setJacketIndex((i) => {
-      const newIndex = (i + dir + jacketImages.length) % jacketImages.length
-      // Pošalji selectClothing uz centralizirane identifikatore za gornji dio
-      sendClothingSelection('top', newIndex)
-      return newIndex
+    const categoryItems = topCategoryItems
+    if (!categoryItems.length) {
+      return
+    }
+
+    setTopItemIndex((currentIndex) => {
+      const currentPosition = categoryItems.findIndex(item => item.index === currentIndex)
+      const normalized = currentPosition >= 0 ? currentPosition : 0
+      const nextPosition = (normalized + dir + categoryItems.length) % categoryItems.length
+      const nextItem = categoryItems[nextPosition]
+      if (!nextItem) {
+        return currentIndex
+      }
+
+      if (nextItem.index !== currentIndex) {
+        sendClothingSelection('top', nextItem.index)
+      }
+      return nextItem.index
     })
   }
   const cyclePants = (dir: 1 | -1) => {
-    setPantsIndex((i) => {
-      const newIndex = (i + dir + pantsImages.length) % pantsImages.length
-      // Pošalji selectClothing uz centralizirane identifikatore za donji dio
-      sendClothingSelection('bottom', newIndex)
-      return newIndex
+    const categoryItems = bottomCategoryItems
+    if (!categoryItems.length) {
+      return
+    }
+
+    setBottomItemIndex((currentIndex) => {
+      const currentPosition = categoryItems.findIndex(item => item.index === currentIndex)
+      const normalized = currentPosition >= 0 ? currentPosition : 0
+      const nextPosition = (normalized + dir + categoryItems.length) % categoryItems.length
+      const nextItem = categoryItems[nextPosition]
+      if (!nextItem) {
+        return currentIndex
+      }
+
+      if (nextItem.index !== currentIndex) {
+        sendClothingSelection('bottom', nextItem.index)
+      }
+      return nextItem.index
     })
   }
+
+  const currentTopItem = catalog.top[topItemIndex] ?? null
+  const currentBottomItem = catalog.bottom[bottomItemIndex] ?? null
+  const topDisplayName = formatClothingLabel(currentTopItem?.name)
+  const bottomDisplayName = formatClothingLabel(currentBottomItem?.name)
 
   // Size selector (shown in right upper arrows when topExpandedFooter)
   // Layout math (container width 410):
@@ -1408,7 +1511,10 @@ function VirtualTryOnPanel({
                 </div>
                 {/* Right full body image display */}
                 <div className={`${styles.imageDisplay} ${styles.imageDisplayFullBody}`}>
-                  <img src={pantsImages[pantsIndex]} alt="Full Body Item" />
+                  <img
+                    src={currentBottomItem?.asset ?? ''}
+                    alt={bottomDisplayName || 'Full Body Item'}
+                  />
                 </div>
               </>
             )}
@@ -1595,7 +1701,7 @@ function VirtualTryOnPanel({
                   </button>
                 </div>
                 <div className={`${styles.imageDisplay} ${styles.imageDisplayFirst}`}>
-                  <img src={jacketImages[jacketIndex]} alt="Jacket" />
+                  <img src={currentTopItem?.asset ?? ''} alt={topDisplayName || 'Top Item'} />
                 </div>
               </>
             )}
@@ -1675,7 +1781,7 @@ function VirtualTryOnPanel({
                   </button>
                 </div>
                 <div className={`${styles.imageDisplay} ${styles.imageDisplaySecond}`}>
-                  <img src={pantsImages[pantsIndex]} alt="Pants" />
+                  <img src={currentBottomItem?.asset ?? ''} alt={bottomDisplayName || 'Bottom Item'} />
                 </div>
               </>
             )}
@@ -1727,7 +1833,9 @@ function VirtualTryOnPanel({
               <>
                 {fullBodyMode && !topExpandedFooter && !bottomExpandedFooter && (
                   <>
-                    <div className={styles.footerFullBodyTitle}>FALCON LEATHER AVIATOR JACKET</div>
+                    <div className={styles.footerFullBodyTitle}>
+                      {topDisplayName || 'FULL BODY'}
+                    </div>
                     <div className={styles.footerFullBodyLabel}>FULL BODY</div>
                   </>
                 )}
@@ -1857,11 +1965,7 @@ function VirtualTryOnPanel({
                 )}
                 {!topExpandedFooter && !bottomExpandedFooter && !fullBodyMode && (
                   <div className={styles.footerLeft}>
-                    <div className={styles.titleBox}>
-                      {bottomOpen
-                        ? 'FALCON LEATHER AVIATOR PANTS'
-                        : 'FALCON LEATHER AVIATOR JACKET'}
-                    </div>
+                    <div className={styles.titleBox}>{topDisplayName || ' '}</div>
                     <button
                       type="button"
                       className={`${styles.footerButton} ${styles.topButton}`}
@@ -1890,7 +1994,7 @@ function VirtualTryOnPanel({
                     >
                       BOT
                     </button>
-                    <div className={styles.infoBox}>BOSS DYN 01</div>
+                    <div className={styles.infoBox}>{bottomDisplayName || ' '}</div>
                   </div>
                 )}
               </>

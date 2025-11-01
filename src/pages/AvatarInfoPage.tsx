@@ -197,7 +197,14 @@ export default function AvatarInfoPage() {
     }
   }, [viewportSize])
   const { width: viewportWidth, height: viewportHeight } = viewportSize
-  const layoutViewportHeight = keyboardLockedHeight ?? viewportHeight
+  const fallbackLockedHeight = viewportSize.keyboardOpen
+    ? Math.max(
+        stableViewportHeightRef.current,
+        viewportSize.maxHeight,
+        viewportSize.height,
+      )
+    : null
+  const layoutViewportHeight = keyboardLockedHeight ?? fallbackLockedHeight ?? viewportHeight
   const age = usePicker(1, ages)
   const height = usePicker(2, heights)
   const weight = usePicker(2, weights)
@@ -305,11 +312,17 @@ export default function AvatarInfoPage() {
         return
       }
 
+      const stableHeight = Math.max(
+        stableViewportHeightRef.current,
+        viewportSnapshotRef.current.maxHeight,
+        viewportSnapshotRef.current.height,
+      )
+
       setKeyboardLockedHeight((previous) => {
         if (previous != null) {
           return previous
         }
-        return stableViewportHeightRef.current
+        return stableHeight
       })
 
       setViewportSize((previous) => {
@@ -317,9 +330,12 @@ export default function AvatarInfoPage() {
           return previous
         }
 
+        const lockedHeight = Math.max(stableHeight, previous.height, previous.maxHeight)
+
         return {
           ...previous,
-          height: Math.max(stableViewportHeightRef.current, previous.height, previous.maxHeight),
+          height: lockedHeight,
+          maxHeight: Math.max(previous.maxHeight, lockedHeight),
           keyboardOpen: true,
         }
       })
@@ -342,10 +358,24 @@ export default function AvatarInfoPage() {
   }, [])
 
   useEffect(() => {
-    if (!viewportSize.keyboardOpen) {
-      setKeyboardLockedHeight(null)
+    if (viewportSize.keyboardOpen) {
+      const stableHeight = Math.max(
+        stableViewportHeightRef.current,
+        viewportSize.maxHeight,
+        viewportSize.height,
+      )
+
+      setKeyboardLockedHeight((previous) => {
+        if (previous != null) {
+          return previous
+        }
+        return stableHeight
+      })
+      return
     }
-  }, [viewportSize.keyboardOpen])
+
+    setKeyboardLockedHeight(null)
+  }, [viewportSize.keyboardOpen, viewportSize.height, viewportSize.maxHeight])
 
   const { cssVars: layoutVars, pageHeight } = useMemo(() => {
     if (viewportWidth >= DESKTOP_BREAKPOINT) {
